@@ -1,0 +1,764 @@
+{
+	"info": {
+		"_postman_id": "fluxos-api-collection-v1",
+		"name": "FluxOS REST API v1",
+		"description": "Comprehensive Postman collection for FluxOS retail management, inventory, ledger, debts, and WhatsApp commerce API.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "storeId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "productId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "customerId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "debtId",
+			"value": "1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "1.1 Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"owner@fluxos.io\",\n    \"password\": \"Secret123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "1.2 Login (Auto Save Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('authToken', jsonData.token);",
+									"        console.log('AuthToken saved successfully:', jsonData.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"owner@fluxos.io\",\n    \"password\": \"Secret123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Store Management",
+			"item": [
+				{
+					"name": "2.1 Create Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.store && jsonData.store.id) {",
+									"        pm.collectionVariables.set('storeId', jsonData.store.id);",
+									"        console.log('StoreID saved:', jsonData.store.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"FluxOS Flagship Store\",\n    \"address\": \"Jl. Sudirman No. 1, Jakarta Pusat\",\n    \"timezone\": \"Asia/Jakarta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Products & Inventory",
+			"item": [
+				{
+					"name": "3.1 Create Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('productId', jsonData.id);",
+									"        console.log('ProductID saved:', jsonData.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Kopi Arabika Gayo 250g\",\n    \"sku\": \"SKU-KOP-GAYO-01\",\n    \"buy_price\": 50000,\n    \"sell_price\": 85000,\n    \"initial_stock\": 100\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "3.2 Adjust Stock (Stock In / Out)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity_delta\": 25,\n    \"notes\": \"Restock barang dari Supplier\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/products/{{productId}}/adjustments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"products",
+								"{{productId}}",
+								"adjustments"
+							]
+						}
+					}
+				},
+				{
+					"name": "3.3 Get Stock Movements Audit Log",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/products/{{productId}}/movements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"products",
+								"{{productId}}",
+								"movements"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Customer Management",
+			"item": [
+				{
+					"name": "4.1 Create Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('customerId', jsonData.id);",
+									"        console.log('CustomerID saved:', jsonData.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Budi Santoso\",\n    \"phone\": \"081234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/customers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"customers"
+							]
+						}
+					}
+				},
+				{
+					"name": "4.2 List Customers",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/customers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"customers"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Sales & Checkout",
+			"item": [
+				{
+					"name": "5.1 Cash Sale (POS Checkout)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Penjualan Kasir POS #001\",\n    \"items\": [\n        {\n            \"product_id\": {{productId}},\n            \"quantity\": 2\n        }\n    ],\n    \"payments\": [\n        {\n            \"amount\": 170000,\n            \"payment_method\": \"cash\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/sales",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"sales"
+							]
+						}
+					}
+				},
+				{
+					"name": "5.2 Credit / Debt Sale (Kasbon / Hutang)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Penjualan Kredit Customer Budi\",\n    \"items\": [\n        {\n            \"product_id\": {{productId}},\n            \"quantity\": 2\n        }\n    ],\n    \"payments\": [\n        {\n            \"amount\": 70000,\n            \"payment_method\": \"cash\"\n        },\n        {\n            \"amount\": 100000,\n            \"payment_method\": \"debt\",\n            \"customer_id\": {{customerId}},\n            \"due_date\": \"2026-10-25\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/sales",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"sales"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Operational Expenses",
+			"item": [
+				{
+					"name": "6.1 Log Expense (Biaya Operasional)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"utilities\",\n    \"amount\": 75000,\n    \"description\": \"Tagihan Listrik & WiFi Toko\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/expenses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"expenses"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Debt & Repayment Management",
+			"item": [
+				{
+					"name": "7.1 Get Active Debts (Eager Loaded)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (Array.isArray(jsonData) && jsonData.length > 0) {",
+									"        pm.collectionVariables.set('debtId', jsonData[0].id);",
+									"        console.log('Active DebtID saved:', jsonData[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/debts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"debts"
+							]
+						}
+					}
+				},
+				{
+					"name": "7.2 Pay Debt / Cicilan",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 50000,\n    \"payment_method\": \"transfer\",\n    \"notes\": \"Cicilan pertama via transfer bank\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/debts/{{debtId}}/payments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"debts",
+								"{{debtId}}",
+								"payments"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Reports & Analytics",
+			"item": [
+				{
+					"name": "8.1 Profit & Loss Report",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/reports/profit-loss?start_date=2026-01-01&end_date=2026-12-31",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"reports",
+								"profit-loss"
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2026-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2026-12-31"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "8.2 Stock Valuation Report",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/reports/stock-valuation",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"reports",
+								"stock-valuation"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9. WhatsApp Bot Integration",
+			"item": [
+				{
+					"name": "9.1 Link WhatsApp Account",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/whatsapp/link",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"whatsapp",
+								"link"
+							]
+						}
+					}
+				},
+				{
+					"name": "9.2 WhatsApp Inbound Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Hub-Signature-256",
+								"value": "sha256=a1b2c3d4e5f6...",
+								"description": "Computed HMAC-SHA256 signature using WEBHOOK_SECRET"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"message\": \"pesan kopi arabika 2 pack kirim ke budi\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/webhooks/whatsapp",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhooks",
+								"whatsapp"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

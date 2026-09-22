@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
 import {
   ShoppingCart,
   Package,
@@ -15,26 +17,41 @@ import {
   Store,
   Sparkles,
   Layers,
-  Receipt,
-  RotateCcw,
-  Clock,
-  ChevronRight,
-  Calculator,
   Check,
-  Smartphone,
-  BarChart2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+
+// Animation Variants following craft animation-discipline (150-300ms, smooth physics)
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemFadeUp: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.35, ease: "easeOut" },
+  },
+};
 
 export default function HomePage() {
   const { token } = useAuth();
   const { activeStore } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeWorkflowTab, setActiveWorkflowTab] = useState<"pos" | "kasbon" | "whatsapp" | "copilot">("pos");
+  const [activePaymentMethod, setActivePaymentMethod] = useState<"tunai" | "qris" | "kasbon">("tunai");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transactionSuccess, setTransactionSuccess] = useState(false);
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
@@ -44,14 +61,28 @@ export default function HomePage() {
     }
   };
 
+  const handleSimulateCheckout = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      setIsProcessing(false);
+      setTransactionSuccess(true);
+      setTimeout(() => setTransactionSuccess(false), 3000);
+    }, 800);
+  };
+
   return (
-    <div className="min-h-screen bg-[#fafafa] text-slate-900 font-sans flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-[#fafafa] text-slate-900 font-sans flex flex-col selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       {/* Top Banner for Authenticated Store Owners */}
       {token && (
-        <div className="bg-[#0f0f0f] text-slate-200 text-xs py-2 px-4 border-b border-white/10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="bg-[#0f0f0f] text-slate-200 text-xs py-2 px-4 border-b border-white/10"
+        >
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span className="font-normal text-slate-300">
                 Sesi aktif pemilik toko: <strong className="font-semibold text-white">{activeStore?.name || "Toko Utama"}</strong>
               </span>
@@ -72,22 +103,31 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Main Header / Navigation */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
+      <motion.header
+        initial={{ y: -10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Identity */}
           <Link
             href="/"
-            className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-lg p-1"
+            className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 rounded-lg p-1 group"
           >
-            <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white font-semibold text-base flex items-center justify-center shadow-xs">
+            <motion.div
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-8 h-8 rounded-lg bg-emerald-700 text-white font-semibold text-base flex items-center justify-center shadow-xs"
+            >
               A
-            </div>
+            </motion.div>
             <div>
-              <span className="font-semibold text-base tracking-tight text-slate-950 block leading-none">
+              <span className="font-semibold text-base tracking-tight text-slate-950 block leading-none group-hover:text-emerald-800 transition-colors">
                 ArthaOS
               </span>
               <span className="text-[10px] font-medium text-slate-500 tracking-[0.08em] uppercase block mt-0.5">
@@ -140,9 +180,11 @@ export default function HomePage() {
           <div className="hidden md:flex items-center gap-3">
             {token ? (
               <Link href="/dashboard">
-                <Button variant="primary" size="sm" className="bg-emerald-700 hover:bg-emerald-800 font-semibold text-xs h-9 px-4">
-                  Buka Dashboard Toko
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="primary" size="sm" className="bg-emerald-700 hover:bg-emerald-800 font-semibold text-xs h-9 px-4 shadow-xs">
+                    Buka Dashboard Toko
+                  </Button>
+                </motion.div>
               </Link>
             ) : (
               <>
@@ -152,9 +194,11 @@ export default function HomePage() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="primary" size="sm" className="bg-emerald-700 hover:bg-emerald-800 font-semibold text-xs h-9 px-4">
-                    Daftar Toko
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="primary" size="sm" className="bg-emerald-700 hover:bg-emerald-800 font-semibold text-xs h-9 px-4 shadow-xs">
+                      Daftar Toko
+                    </Button>
+                  </motion.div>
                 </Link>
               </>
             )}
@@ -179,129 +223,162 @@ export default function HomePage() {
         </div>
 
         {/* Mobile Drawer Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-5 space-y-3 shadow-sm animate-in slide-in-from-top-1">
-            <div className="flex flex-col space-y-1 text-sm font-medium text-slate-700">
-              <button
-                type="button"
-                onClick={() => scrollToSection("fitur-pos")}
-                className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
-              >
-                1. Kasir POS Kilat
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection("fitur-stok")}
-                className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
-              >
-                2. Manajemen Inventori & FIFO
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection("fitur-kasbon")}
-                className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
-              >
-                3. Buku Kasbon Pelanggan
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection("fitur-whatsapp")}
-                className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
-              >
-                4. WhatsApp Hub & Otomasi Order
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection("copilot")}
-                className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center gap-1.5 text-emerald-800"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-600" strokeWidth={1.75} /> 5. Artha AI Copilot
-              </button>
-            </div>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="md:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-5 space-y-3 shadow-sm overflow-hidden"
+            >
+              <div className="flex flex-col space-y-1 text-sm font-medium text-slate-700">
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("fitur-pos")}
+                  className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
+                >
+                  1. Kasir POS Kilat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("fitur-stok")}
+                  className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
+                >
+                  2. Manajemen Inventori & FIFO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("fitur-kasbon")}
+                  className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
+                >
+                  3. Buku Kasbon Pelanggan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("fitur-whatsapp")}
+                  className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center"
+                >
+                  4. WhatsApp Hub & Otomasi Order
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("copilot")}
+                  className="text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 min-h-11 flex items-center gap-1.5 text-emerald-800"
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-600" strokeWidth={1.75} /> 5. Artha AI Copilot
+                </button>
+              </div>
 
-            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-              {token ? (
-                <Link href="/dashboard" className="w-full">
-                  <Button variant="primary" className="w-full justify-center min-h-11 font-semibold text-sm bg-emerald-700 hover:bg-emerald-800">
-                    Masuk ke Dashboard Toko
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login" className="w-full">
-                    <Button variant="outline" className="w-full justify-center min-h-11 font-medium text-sm border-slate-300">
-                      Masuk ke Akun
-                    </Button>
-                  </Link>
-                  <Link href="/register" className="w-full">
+              <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                {token ? (
+                  <Link href="/dashboard" className="w-full">
                     <Button variant="primary" className="w-full justify-center min-h-11 font-semibold text-sm bg-emerald-700 hover:bg-emerald-800">
-                      Daftar Akun Baru
+                      Masuk ke Dashboard Toko
                     </Button>
                   </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
+                ) : (
+                  <>
+                    <Link href="/login" className="w-full">
+                      <Button variant="outline" className="w-full justify-center min-h-11 font-medium text-sm border-slate-300">
+                        Masuk ke Akun
+                      </Button>
+                    </Link>
+                    <Link href="/register" className="w-full">
+                      <Button variant="primary" className="w-full justify-center min-h-11 font-semibold text-sm bg-emerald-700 hover:bg-emerald-800">
+                        Daftar Akun Baru
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
 
       {/* HERO SECTION */}
       <section className="relative pt-10 pb-16 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28 border-b border-slate-200 bg-[#fafafa]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-            {/* Left Content (7 Columns) */}
-            <div className="lg:col-span-7 space-y-6">
+            {/* Left Content (7 Columns) with Stagger Animation */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="lg:col-span-7 space-y-6"
+            >
               {/* Category Kicker with 0.08em tracking */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-xs font-medium text-emerald-800 tracking-[0.08em] uppercase">
-                <Store className="w-3.5 h-3.5 text-emerald-700 shrink-0" strokeWidth={1.75} />
-                <span>Sistem Operasi Bisnis Ritel</span>
-              </div>
+              <motion.div variants={itemFadeUp}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-xs font-medium text-emerald-800 tracking-[0.08em] uppercase">
+                  <Store className="w-3.5 h-3.5 text-emerald-700 shrink-0" strokeWidth={1.75} />
+                  <span>Sistem Operasi Bisnis Ritel</span>
+                </div>
+              </motion.div>
 
               {/* Display H1 with tight tracking and line-height */}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-950 tracking-tight leading-[1.15]">
+              <motion.h1
+                variants={itemFadeUp}
+                className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-950 tracking-tight leading-[1.15]"
+              >
                 Kelola Kasir, Inventori Stok, dan Kasbon Toko Secara Terintegrasi.
-              </h1>
+              </motion.h1>
 
               {/* Body Copy with max-w-[65ch] line length */}
-              <p className="text-base text-slate-600 leading-relaxed max-w-[65ch] font-normal">
+              <motion.p
+                variants={itemFadeUp}
+                className="text-base text-slate-600 leading-relaxed max-w-[65ch] font-normal"
+              >
                 ArthaOS mencatat transaksi penjualan kilat, mengontrol pergerakan stok barang FIFO, mengelola buku piutang kasbon pelanggan, serta mengekstrak pesanan belanja langsung dari percakapan WhatsApp.
-              </p>
+              </motion.p>
 
               {/* CTA Group: Max 1 Primary Accent CTA */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <motion.div
+                variants={itemFadeUp}
+                className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+              >
                 {token ? (
                   <Link href="/pos" className="w-full sm:w-auto">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full sm:w-auto min-h-12 px-6 bg-emerald-700 hover:bg-emerald-800 font-semibold text-sm shadow-xs flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" strokeWidth={1.75} /> Buka Layar Kasir POS
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full sm:w-auto min-h-12 px-6 bg-emerald-700 hover:bg-emerald-800 font-semibold text-sm shadow-xs flex items-center justify-center gap-2"
+                      >
+                        <ShoppingCart className="w-4 h-4" strokeWidth={1.75} /> Buka Layar Kasir POS
+                      </Button>
+                    </motion.div>
                   </Link>
                 ) : (
                   <Link href="/register" className="w-full sm:w-auto">
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full sm:w-auto min-h-12 px-6 bg-emerald-700 hover:bg-emerald-800 font-semibold text-sm shadow-xs flex items-center justify-center gap-2"
-                    >
-                      Daftar Toko Gratis <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full sm:w-auto min-h-12 px-6 bg-emerald-700 hover:bg-emerald-800 font-semibold text-sm shadow-xs flex items-center justify-center gap-2"
+                      >
+                        Daftar Toko Gratis <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
+                      </Button>
+                    </motion.div>
                   </Link>
                 )}
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={() => scrollToSection("perbandingan")}
                   className="min-h-12 px-5 py-2.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-700 transition-colors flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 >
                   Bandingkan dengan Cara Manual
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
 
               {/* Functional Highlights List */}
-              <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3.5 border-t border-slate-200">
+              <motion.div
+                variants={itemFadeUp}
+                className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3.5 border-t border-slate-200"
+              >
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" strokeWidth={1.75} />
                   <span className="text-xs font-medium text-slate-700">Multi-Metode (Tunai, QRIS, Kasbon)</span>
@@ -314,11 +391,26 @@ export default function HomePage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" strokeWidth={1.75} />
                   <span className="text-xs font-medium text-slate-700">Ekstraksi Pesanan WhatsApp</span>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
-            {/* Right Live POS Interface Simulator (5 Columns) */}
-            <div className="lg:col-span-5">
+            {/* Right Live POS Interface Simulator (5 Columns) with Interactive States */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.15, ease: [0.2, 0, 0, 1] }}
+              className="lg:col-span-5 relative"
+            >
+              {/* Floating Decorative Micro-Badge */}
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-3.5 -right-2 z-10 bg-emerald-800 text-white text-[10px] font-mono uppercase tracking-[0.08em] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1.5 border border-emerald-600"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping"></span>
+                <span>Real-Time Sync</span>
+              </motion.div>
+
               <div className="border border-slate-200/90 bg-white shadow-sm overflow-hidden rounded-2xl">
                 {/* Header Mockup */}
                 <div className="px-4 py-3 bg-[#0f0f0f] text-white flex items-center justify-between border-b border-white/10">
@@ -347,58 +439,101 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  {/* Sample Items in Cart */}
+                  {/* Sample Items in Cart with Animation */}
                   <div className="space-y-2">
-                    <div className="p-2.5 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-200/70">
+                    <motion.div
+                      layout
+                      className="p-2.5 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-200/70"
+                    >
                       <div>
                         <p className="font-medium text-slate-900">Kopi Susu Gula Aren 250ml</p>
                         <p className="text-[11px] text-slate-500">2 pcs x Rp 18.000 (Stok: 42)</p>
                       </div>
                       <span className="font-mono font-semibold text-slate-900">Rp 36.000</span>
-                    </div>
+                    </motion.div>
 
-                    <div className="p-2.5 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-200/70">
+                    <motion.div
+                      layout
+                      className="p-2.5 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-200/70"
+                    >
                       <div>
                         <p className="font-medium text-slate-900">Beras Pandan Wangi 5kg</p>
                         <p className="text-[11px] text-slate-500">1 sak x Rp 75.000 (FIFO Batch A)</p>
                       </div>
                       <span className="font-mono font-semibold text-slate-900">Rp 75.000</span>
-                    </div>
+                    </motion.div>
                   </div>
 
-                  {/* Payment Method Selector */}
+                  {/* Payment Method Selector with interactive tabs */}
                   <div className="pt-1">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-[0.08em] block mb-1.5">
                       Pilihan Metode Pembayaran:
                     </span>
                     <div className="grid grid-cols-3 gap-1.5 text-[11px] text-center font-medium">
-                      <div className="py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-md">
+                      <button
+                        type="button"
+                        onClick={() => setActivePaymentMethod("tunai")}
+                        className={`py-1.5 rounded-md transition-all ${
+                          activePaymentMethod === "tunai"
+                            ? "bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-xs"
+                            : "bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
                         Tunai
-                      </div>
-                      <div className="py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-md">
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivePaymentMethod("qris")}
+                        className={`py-1.5 rounded-md transition-all ${
+                          activePaymentMethod === "qris"
+                            ? "bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-xs"
+                            : "bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
                         QRIS Instan
-                      </div>
-                      <div className="py-1.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-md">
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActivePaymentMethod("kasbon")}
+                        className={`py-1.5 rounded-md transition-all ${
+                          activePaymentMethod === "kasbon"
+                            ? "bg-emerald-50 border border-emerald-300 text-emerald-900 shadow-xs"
+                            : "bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
                         Kasbon Toko
-                      </div>
+                      </button>
                     </div>
                   </div>
 
-                  {/* Subtotal and Settle Bar */}
+                  {/* Subtotal and Interactive Settle Button */}
                   <div className="pt-2.5 border-t border-slate-200 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-500 block uppercase tracking-[0.08em]">Total Belanja</span>
                       <span className="text-base font-semibold text-slate-950 font-mono">Rp 111.000</span>
                     </div>
-                    <Link href="/pos">
-                      <Button size="sm" variant="primary" className="bg-emerald-700 hover:bg-emerald-800 font-semibold text-xs h-8 px-3.5">
-                        [F8] Selesaikan Transaksi
-                      </Button>
-                    </Link>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={handleSimulateCheckout}
+                      disabled={isProcessing}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-8 px-3.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      {isProcessing ? (
+                        <span>Memproses...</span>
+                      ) : transactionSuccess ? (
+                        <span className="flex items-center gap-1 text-emerald-200">
+                          <Check className="w-3.5 h-3.5" /> Berhasil Dicatat!
+                        </span>
+                      ) : (
+                        <span>[F8] Selesaikan Transaksi</span>
+                      )}
+                    </motion.button>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -406,7 +541,13 @@ export default function HomePage() {
       {/* SECTION 2: COMPARISON AGAINST STATUS QUO (Soul / Unconventional Section) */}
       <section id="perbandingan" className="py-14 sm:py-20 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="max-w-2xl space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35 }}
+            className="max-w-2xl space-y-2"
+          >
             <span className="text-xs font-semibold text-emerald-800 uppercase tracking-[0.08em]">
               Efisiensi Nyata
             </span>
@@ -416,11 +557,17 @@ export default function HomePage() {
             <p className="text-sm text-slate-600 leading-relaxed font-normal max-w-[65ch]">
               Mengapa beralih ke sistem digital terintegrasi memberikan dampak langsung pada pengurangan selisih kas dan piutang tak tertagih.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Status Quo Card */}
-            <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35 }}
+              className="p-6 bg-slate-50 border border-slate-200 rounded-2xl space-y-4"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <h3 className="font-semibold text-sm text-slate-800">Cara Lama: Buku Nota & Kertas</h3>
                 <span className="text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
@@ -445,10 +592,16 @@ export default function HomePage() {
                   <span><strong>Rekap Tutup Toko Makan Waktu:</strong> Menghitung ulang uang fisik dan mencocokkan nota bon hingga larut malam.</span>
                 </li>
               </ul>
-            </div>
+            </motion.div>
 
             {/* ArthaOS Card */}
-            <div className="p-6 bg-emerald-50/40 border border-emerald-200/90 rounded-2xl space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35 }}
+              className="p-6 bg-emerald-50/40 border border-emerald-200/90 rounded-2xl space-y-4"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-emerald-200/80">
                 <h3 className="font-semibold text-sm text-emerald-950">Standar ArthaOS Terintegrasi</h3>
                 <span className="text-[11px] font-medium text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
@@ -473,7 +626,7 @@ export default function HomePage() {
                   <span><strong>Laporan Shift Real-Time:</strong> Rekap penjualan harian, laba kotor, dan rincian metode pembayaran dalam 1 klik.</span>
                 </li>
               </ul>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -482,7 +635,13 @@ export default function HomePage() {
       <section className="py-14 sm:py-20 bg-[#fafafa] border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Header */}
-          <div className="max-w-3xl space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35 }}
+            className="max-w-3xl space-y-2"
+          >
             <span className="text-xs font-semibold text-emerald-800 uppercase tracking-[0.08em]">
               Modul Operasional
             </span>
@@ -492,12 +651,20 @@ export default function HomePage() {
             <p className="text-sm text-slate-600 leading-relaxed max-w-[65ch] font-normal">
               Setiap modul dirancang dari kebutuhan faktual ritel: kecepatan antrean kasir, akurasi mutasi barang, tertib kasbon, dan otomasi pesanan digital.
             </p>
-          </div>
+          </motion.div>
 
-          {/* 4 Cards Grid */}
+          {/* 4 Cards Grid with Staggered Scroll-In */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. Kasir POS */}
-            <div id="fitur-pos" className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 0.05 }}
+              whileHover={{ y: -4, transition: { duration: 0.15 } }}
+              id="fitur-pos"
+              className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors shadow-xs"
+            >
               <div className="space-y-3">
                 <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.75} />
@@ -517,10 +684,18 @@ export default function HomePage() {
                   <span>Shortcut keyboard kasir cepat</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* 2. Inventori FIFO */}
-            <div id="fitur-stok" className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 0.1 }}
+              whileHover={{ y: -4, transition: { duration: 0.15 } }}
+              id="fitur-stok"
+              className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors shadow-xs"
+            >
               <div className="space-y-3">
                 <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
                   <Package className="w-4 h-4" strokeWidth={1.75} />
@@ -540,10 +715,18 @@ export default function HomePage() {
                   <span>Multi-outlet per cabang toko</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* 3. Buku Kasbon */}
-            <div id="fitur-kasbon" className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 0.15 }}
+              whileHover={{ y: -4, transition: { duration: 0.15 } }}
+              id="fitur-kasbon"
+              className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors shadow-xs"
+            >
               <div className="space-y-3">
                 <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
                   <CreditCard className="w-4 h-4" strokeWidth={1.75} />
@@ -563,10 +746,18 @@ export default function HomePage() {
                   <span>Tautan pengingat WhatsApp santun</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* 4. WhatsApp Hub */}
-            <div id="fitur-whatsapp" className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 0.2 }}
+              whileHover={{ y: -4, transition: { duration: 0.15 } }}
+              id="fitur-whatsapp"
+              className="p-5 bg-white border border-slate-200 rounded-2xl flex flex-col justify-between space-y-4 hover:border-slate-400 transition-colors shadow-xs"
+            >
               <div className="space-y-3">
                 <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4" strokeWidth={1.75} />
@@ -586,15 +777,21 @@ export default function HomePage() {
                   <span>Broadcast promo tertarget</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 4: INTERACTIVE WORKFLOW DEMO (Tabbed Explorer) */}
+      {/* SECTION 4: INTERACTIVE WORKFLOW DEMO (Animated Tabs) */}
       <section className="py-14 sm:py-20 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35 }}
+            className="text-center max-w-2xl mx-auto space-y-2"
+          >
             <span className="text-xs font-semibold text-emerald-800 uppercase tracking-[0.08em]">
               Alur Kerja Nyata
             </span>
@@ -604,185 +801,197 @@ export default function HomePage() {
             <p className="text-sm text-slate-600 max-w-[65ch] mx-auto font-normal">
               Pilih alur di bawah untuk melihat bagaimana sistem menangani transaksi harian toko secara sistematis.
             </p>
-          </div>
+          </motion.div>
 
-          {/* Workflow Tab Selector */}
+          {/* Workflow Tab Selector with Animated Sliding Pill */}
           <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2">
-            <button
-              type="button"
-              onClick={() => setActiveWorkflowTab("pos")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-11 ${
-                activeWorkflowTab === "pos"
-                  ? "bg-[#0f0f0f] text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              1. Alur Kasir POS
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveWorkflowTab("kasbon")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-11 ${
-                activeWorkflowTab === "kasbon"
-                  ? "bg-[#0f0f0f] text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              2. Alur Buku Kasbon
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveWorkflowTab("whatsapp")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-11 ${
-                activeWorkflowTab === "whatsapp"
-                  ? "bg-[#0f0f0f] text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              3. Alur Order WhatsApp
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveWorkflowTab("copilot")}
-              className={`px-4 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-11 ${
-                activeWorkflowTab === "copilot"
-                  ? "bg-[#0f0f0f] text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
-            >
-              4. Alur Konsultasi AI
-            </button>
+            {([
+              { id: "pos", label: "1. Alur Kasir POS" },
+              { id: "kasbon", label: "2. Alur Buku Kasbon" },
+              { id: "whatsapp", label: "3. Alur Order WhatsApp" },
+              { id: "copilot", label: "4. Alur Konsultasi AI" },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveWorkflowTab(tab.id)}
+                className={`relative px-4 py-2.5 rounded-xl text-xs font-medium transition-colors min-h-11 ${
+                  activeWorkflowTab === tab.id
+                    ? "text-white"
+                    : "text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200/80"
+                }`}
+              >
+                {activeWorkflowTab === tab.id && (
+                  <motion.div
+                    layoutId="activeWorkflowPill"
+                    className="absolute inset-0 bg-[#0f0f0f] rounded-xl z-0"
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Tab Content Box */}
-          <div className="max-w-4xl mx-auto p-6 sm:p-8 bg-slate-50 border border-slate-200 rounded-2xl">
-            {activeWorkflowTab === "pos" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700">
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    1
+          {/* Tab Content Box with AnimatePresence */}
+          <div className="max-w-4xl mx-auto p-6 sm:p-8 bg-slate-50 border border-slate-200 rounded-2xl min-h-55">
+            <AnimatePresence mode="wait">
+              {activeWorkflowTab === "pos" && (
+                <motion.div
+                  key="pos"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700"
+                >
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      1
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Pilih Barang & Qty</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Ketik nama item atau scan barcode. Keranjang otomatis mengakumulasi subtotal dan memeriksa ketersediaan stok berjalan.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Pilih Barang & Qty</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Ketik nama item atau scan barcode. Keranjang otomatis mengakumulasi subtotal dan memeriksa ketersediaan stok berjalan.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    2
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      2
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Pilih Cara Bayar</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Pilih Tunai (kalkulasi kembalian otomatis), scan QRIS, atau catat sebagai kasbon dengan memilih nama kontak pelanggan.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Pilih Cara Bayar</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Pilih Tunai (kalkulasi kembalian otomatis), scan QRIS, atau catat sebagai kasbon dengan memilih nama kontak pelanggan.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    3
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      3
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Struk & Potong Stok</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Sistem mencetak struk kasir, memotong stok inventori secara real-time, dan membukukan laba kotor transaksi.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Struk & Potong Stok</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Sistem mencetak struk kasir, memotong stok inventori secara real-time, dan membukukan laba kotor transaksi.
-                  </p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
 
-            {activeWorkflowTab === "kasbon" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700">
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    1
+              {activeWorkflowTab === "kasbon" && (
+                <motion.div
+                  key="kasbon"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700"
+                >
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      1
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Catat Piutang Pelanggan</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Pilih nama pelanggan terdaftar pada saat checkout POS. Tagihan otomatis masuk ke buku kasbon digital toko.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Catat Piutang Pelanggan</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Pilih nama pelanggan terdaftar pada saat checkout POS. Tagihan otomatis masuk ke buku kasbon digital toko.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    2
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      2
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Pantau & Tagih via WA</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Lihat saldo tertahan per pelanggan dan kirim rincian nota tagihan santun langsung ke nomor WhatsApp pelanggan.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Pantau & Tagih via WA</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Lihat saldo tertahan per pelanggan dan kirim rincian nota tagihan santun langsung ke nomor WhatsApp pelanggan.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    3
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      3
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Catat Cicilan / Pelunasan</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Input pembayaran cicilan bertahap. Sistem mencatat riwayat pelunasan hingga status tagihan lunas secara otomatis.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Catat Cicilan / Pelunasan</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Input pembayaran cicilan bertahap. Sistem mencatat riwayat pelunasan hingga status tagihan lunas secara otomatis.
-                  </p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
 
-            {activeWorkflowTab === "whatsapp" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700">
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    1
+              {activeWorkflowTab === "whatsapp" && (
+                <motion.div
+                  key="whatsapp"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700"
+                >
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      1
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Terima Chat Belanja</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Pelanggan mengirim daftar barang belanjaan sehari-hari melalui pesan WhatsApp ke nomor resmi toko Anda.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Terima Chat Belanja</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Pelanggan mengirim daftar barang belanjaan sehari-hari melalui pesan WhatsApp ke nomor resmi toko Anda.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    2
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      2
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Ekstraksi Otomatis AI</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      ArthaOS membedah teks chat, mencocokkan nama barang dan kuantitas ke database katalog produk toko Anda.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Ekstraksi Otomatis AI</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    ArthaOS membedah teks chat, mencocokkan nama barang dan kuantitas ke database katalog produk toko Anda.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    3
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      3
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Konfirmasi Kasir 1-Klik</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Kasir meninjau ringkasan item dalam satu klik, barang siap dikemas, dan total tagihan dikirim balik ke pembeli.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Konfirmasi Kasir 1-Klik</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Kasir meninjau ringkasan item dalam satu klik, barang siap dikemas, dan total tagihan dikirim balik ke pembeli.
-                  </p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
 
-            {activeWorkflowTab === "copilot" && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700">
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    1
+              {activeWorkflowTab === "copilot" && (
+                <motion.div
+                  key="copilot"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-700"
+                >
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      1
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Tanya Kinerja Toko</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Ajukan pertanyaan seputar estimasi laba kotor, produk lambat terjual, atau evaluasi resiko kasbon pelanggan.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Tanya Kinerja Toko</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Ajukan pertanyaan seputar estimasi laba kotor, produk lambat terjual, atau evaluasi resiko kasbon pelanggan.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    2
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      2
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Analisis Data Riil</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      AI membaca database transaksi riil toko Anda dan menyusun langkah rekomendasi bernomor yang dapat dieksekusi.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Analisis Data Riil</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    AI membaca database transaksi riil toko Anda dan menyusun langkah rekomendasi bernomor yang dapat dieksekusi.
-                  </p>
-                </div>
-                <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
-                  <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
-                    3
+                  <div className="space-y-2 p-4 bg-white rounded-xl border border-slate-200/80">
+                    <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-900 font-semibold flex items-center justify-center">
+                      3
+                    </div>
+                    <h3 className="font-semibold text-sm text-slate-900">Eksekusi Keputusan</h3>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      Ambil tindakan cepat: tambah stok barang laris, sesuaikan margin harga jual, atau siarkan promo WhatsApp.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-sm text-slate-900">Eksekusi Keputusan</h3>
-                  <p className="text-slate-600 leading-relaxed font-normal">
-                    Ambil tindakan cepat: tambah stok barang laris, sesuaikan margin harga jual, atau siarkan promo WhatsApp.
-                  </p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -792,7 +1001,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Left Description (6 Columns) */}
-            <div className="lg:col-span-6 space-y-5">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="lg:col-span-6 space-y-5"
+            >
               <span className="text-xs font-mono uppercase tracking-[0.08em] text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-2.5 py-1 rounded-full inline-block">
                 Konsultan Finansial Ritel
               </span>
@@ -806,36 +1021,50 @@ export default function HomePage() {
               </p>
 
               <div className="space-y-3 pt-2">
-                <div className="p-3.5 bg-slate-900/90 border border-white/10 rounded-xl space-y-1">
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className="p-3.5 bg-slate-900/90 border border-white/10 rounded-xl space-y-1"
+                >
                   <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" strokeWidth={1.75} /> Batasan Domain Bisnis Ketat
                   </p>
                   <p className="text-xs text-slate-300 leading-relaxed font-normal">
                     AI difokuskan secara disiplin pada operasional toko ritel dan menolak perintah pembuatan kode pemrograman atau topik di luar manajemen toko.
                   </p>
-                </div>
+                </motion.div>
 
-                <div className="p-3.5 bg-slate-900/90 border border-white/10 rounded-xl space-y-1">
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className="p-3.5 bg-slate-900/90 border border-white/10 rounded-xl space-y-1"
+                >
                   <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                     <Layers className="w-4 h-4" strokeWidth={1.75} /> Sistem Memory Percakapan Multi-Turn
                   </p>
                   <p className="text-xs text-slate-300 leading-relaxed font-normal">
                     AI mengingat konteks pertanyaan Anda sebelumnya sehingga dapat melakukan konsultasi finansial bertahap secara akurat.
                   </p>
-                </div>
+                </motion.div>
               </div>
 
               <div className="pt-2">
                 <Link href={token ? "/copilot" : "/login"}>
-                  <Button variant="primary" className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-10 px-5">
-                    Buka Workspace AI Copilot <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.75} />
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="inline-block">
+                    <Button variant="primary" className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-10 px-5 shadow-xs">
+                      Buka Workspace AI Copilot <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.75} />
+                    </Button>
+                  </motion.div>
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
             {/* Right Chat Demo Box (6 Columns) */}
-            <div className="lg:col-span-6">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="lg:col-span-6"
+            >
               <div className="p-4 sm:p-5 bg-black/60 border border-white/10 rounded-2xl space-y-3.5 shadow-xl text-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   <div className="flex items-center gap-2">
@@ -853,14 +1082,26 @@ export default function HomePage() {
                 </div>
 
                 {/* Turn 1 User */}
-                <div className="flex justify-end">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3 }}
+                  className="flex justify-end"
+                >
                   <div className="bg-emerald-800 text-white rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%] text-xs font-normal">
                     Berapa total omset dan kasbon toko saat ini?
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Turn 1 AI */}
-                <div className="flex justify-start">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="flex justify-start"
+                >
                   <div className="bg-[#18181b] border border-white/10 text-slate-200 rounded-2xl rounded-tl-none p-3.5 max-w-[90%] text-xs space-y-1.5 leading-relaxed font-normal">
                     <p className="font-semibold text-emerald-400">Laporan Keuangan Toko:</p>
                     <p>• Total Omset Berjalan: Rp 1.475.000 (18 transaksi)</p>
@@ -869,33 +1110,51 @@ export default function HomePage() {
                       Rekomendasi: Lakukan penagihan kasbon yang mendekati jatuh tempo untuk menjaga likuiditas stok barang.
                     </p>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Turn 2 User (Context Memory) */}
-                <div className="flex justify-end">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="flex justify-end"
+                >
                   <div className="bg-emerald-800 text-white rounded-2xl rounded-tr-none px-3.5 py-2 max-w-[85%] text-xs font-normal">
                     Dari kasbon itu, berikan saran tindakan penagihannya
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Turn 2 AI */}
-                <div className="flex justify-start">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  className="flex justify-start"
+                >
                   <div className="bg-[#18181b] border border-white/10 text-slate-200 rounded-2xl rounded-tl-none p-3.5 max-w-[90%] text-xs space-y-1.5 leading-relaxed font-normal">
                     <p className="font-semibold text-emerald-400">Langkah Penagihan Kasbon (Rp 454.500):</p>
                     <p>1. Kirim rincian nota via WhatsApp Hub kepada pelanggan bersangkutan.</p>
                     <p>2. Tawarkan opsi pembayaran parsial (cicilan) mulai Rp 50.000.</p>
                     <p>3. Batasi transaksi kasbon baru sampai tagihan lama diselesaikan.</p>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* SECTION 6: CONVERSION / CTA */}
       <section className="py-14 sm:py-20 bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.35 }}
+          className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5"
+        >
           <span className="text-xs font-semibold text-emerald-800 uppercase tracking-[0.08em] bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full inline-block">
             Mulai Penggunaan
           </span>
@@ -911,26 +1170,32 @@ export default function HomePage() {
           <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
             {token ? (
               <Link href="/dashboard" className="w-full sm:w-auto">
-                <Button variant="primary" size="lg" className="w-full sm:w-auto min-h-12 px-7 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm">
-                  Buka Dashboard Toko Sekarang
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="primary" size="lg" className="w-full sm:w-auto min-h-12 px-7 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-xs">
+                    Buka Dashboard Toko Sekarang
+                  </Button>
+                </motion.div>
               </Link>
             ) : (
               <>
                 <Link href="/register" className="w-full sm:w-auto">
-                  <Button variant="primary" size="lg" className="w-full sm:w-auto min-h-12 px-7 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm">
-                    Daftar Akun Toko Baru
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto min-h-12 px-7 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-xs">
+                      Daftar Akun Toko Baru
+                    </Button>
+                  </motion.div>
                 </Link>
                 <Link href="/login" className="w-full sm:w-auto">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-12 px-6 bg-white hover:bg-slate-50 text-slate-700 border-slate-300 font-medium text-sm">
-                    Masuk ke Akun
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-12 px-6 bg-white hover:bg-slate-50 text-slate-700 border-slate-300 font-medium text-sm">
+                      Masuk ke Akun
+                    </Button>
+                  </motion.div>
                 </Link>
               </>
             )}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* FOOTER */}

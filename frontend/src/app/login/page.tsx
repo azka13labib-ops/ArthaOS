@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
@@ -50,95 +50,88 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
-        {/* Brand Icon */}
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500 text-slate-950 font-extrabold text-2xl mb-4 shadow-lg shadow-emerald-500/20">
-          A
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-          Masuk ke ArthaOS
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400">
-          Kelola transaksi kasir, stok gudang, dan laporan laba rugi dalam satu sistem.
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-2xl rounded-2xl border border-slate-200">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div
-                role="alert"
-                className="p-3.5 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2"
-              >
-                <span>{error}</span>
-              </div>
-            )}
-
-            <Input
-              label="Alamat Email"
-              type="email"
-              placeholder="nama@bisnisanda.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-              required
-              autoFocus
-            />
-
-            <Input
-              label="Kata Sandi"
-              type="password"
-              placeholder="Minimal 8 karakter"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              required
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full text-sm font-semibold"
-              isLoading={isLoading}
-            >
-              Masuk ke Dashboard <ArrowRight className="w-4 h-4 ml-1.5" />
-            </Button>
-          </form>
-
-          {/* Demo Auto-fill Helper */}
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl p-3">
-              <div className="text-left">
-                <p className="text-xs font-semibold text-slate-800">
-                  Akun Demo Siap Pakai (Data Lengkap)
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  budi@artha-retail.com / password123
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleFillDemo}
-                className="text-xs font-semibold"
-              >
-                Gunakan
-              </Button>
-            </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4">
+        <div className="bg-white border border-slate-200">
+          <div className="p-8 border-b border-slate-200 bg-slate-950 text-white">
+            <h1 className="text-2xl font-bold tracking-tight mb-2">
+              Masuk ke ArthaOS
+            </h1>
+            <p className="text-sm text-slate-400">
+              Kelola transaksi kasir, stok gudang, dan laporan laba rugi dalam satu sistem.
+            </p>
           </div>
+          
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div
+                  role="alert"
+                  className="p-4 text-sm font-medium text-rose-800 bg-rose-50 border border-rose-200"
+                >
+                  {error}
+                </div>
+              )}
 
-          <div className="mt-6 text-center text-xs text-slate-500">
-            Belum memiliki akun bisnis?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-            >
-              Daftar sekarang
-            </Link>
+              <Input
+                label="Alamat Email"
+                type="email"
+                placeholder="nama@bisnisanda.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+              />
+
+              <Input
+                label="Kata Sandi"
+                type="password"
+                placeholder="Minimal 8 karakter"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full rounded-none bg-slate-950 text-white hover:bg-slate-800 h-12 text-sm font-bold"
+                isLoading={isLoading}
+              >
+                Masuk ke Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </form>
+
+            <div className="mt-8 pt-8 border-t border-slate-200">
+              <div className="p-4 border border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">
+                    Akun Demo Siap Pakai
+                  </p>
+                  <p className="text-xs text-slate-500 font-mono mt-1">
+                    budi@artha-retail.com
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleFillDemo}
+                  className="rounded-none border-slate-300 text-xs px-4 h-9 bg-white w-full sm:w-auto"
+                >
+                  Gunakan
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center text-sm text-slate-500">
+              Belum memiliki akun bisnis?{" "}
+              <Link
+                href="/register"
+                className="font-bold text-slate-950 hover:underline"
+              >
+                Daftar sekarang
+              </Link>
+            </div>
           </div>
         </div>
       </div>

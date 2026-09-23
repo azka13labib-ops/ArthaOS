@@ -17,12 +17,11 @@ import {
   Package,
   Send,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
 import { Customer, Debt, Product, Transaction } from "@/lib/types";
@@ -55,17 +54,17 @@ export default function WhatsAppHubPage() {
   const templates = [
     {
       title: "Struk Digital Pembelian",
-      desc: "Kirim bukti transaksi kasir instan via pesan WhatsApp pelanggan",
+      desc: "Kirim bukti transaksi kasir instan via pesan WhatsApp",
       text: `*STRUK DIGITAL - ${activeStore?.name || "TOKO KAMI"}*\n\nTerima kasih telah berbelanja di outlet kami!\nTotal Pembayaran: Rp 50.000\nStatus: LUNAS (TUNAI)\n\nSimpan pesan ini sebagai bukti pembayaran yang sah.`,
     },
     {
-      title: "Pengingat Kasbon / Jatuh Tempo",
-      desc: "Pemberitahuan ramah tagihan kasbon yang akan / sudah jatuh tempo",
+      title: "Pengingat Jatuh Tempo Kasbon",
+      desc: "Pemberitahuan tagihan kasbon yang akan / sudah jatuh tempo",
       text: `Halo Kak, kami dari *${activeStore?.name || "Toko"}* menginfokan tagihan kasbon Anda sebesar *Rp 75.000* memiliki tanggal jatuh tempo pada akhir pekan ini. Pembayaran dapat ditransfer atau tunai di toko. Terima kasih!`,
     },
     {
       title: "Info Stok Barang Masuk (Restock)",
-      desc: "Siarkan info barang baru kepada pelanggan setia",
+      desc: "Siarkan info barang baru kepada pelanggan",
       text: `Kabar gembira! Stok produk favorit Anda telah tersedia kembali di *${activeStore?.name || "Toko"}*. Kunjungi toko kami hari ini untuk penawaran terbaik!`,
     },
   ];
@@ -164,7 +163,6 @@ export default function WhatsAppHubPage() {
     }
   };
 
-  // Helper to generate sanitized WhatsApp direct link
   const createWhatsAppLink = (phoneNumber: string, message: string) => {
     let clean = phoneNumber.replace(/[^0-9]/g, "");
     if (clean.startsWith("0")) {
@@ -173,7 +171,6 @@ export default function WhatsAppHubPage() {
     return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
   };
 
-  // Closing summary calculations
   const totalOmset = todaySales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
   const totalBiaya = todayExpenses.reduce((sum, e) => sum + (e.total_amount || 0), 0);
   const estimasiLaba = totalOmset - totalBiaya;
@@ -182,65 +179,55 @@ export default function WhatsAppHubPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto w-full">
+      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="pb-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="pb-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                WhatsApp Commerce & Otomasi Toko
-              </h2>
-              <Badge variant="success" size="sm">
-                Engine Otomasi Siap
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Jadwalkan pesan otomatis harian, tagihan kasbon ramah, dan rekap tutup toko ke nomor WhatsApp.
+            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1">
+              WhatsApp Engine
+            </h1>
+            <p className="text-sm text-slate-500">
+              Jadwalkan pesan otomatis harian, tagihan kasbon, dan rekap tutup toko.
             </p>
+          </div>
+          <div className="flex items-center">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold tracking-widest uppercase">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Engine Aktif
+            </span>
           </div>
         </div>
 
         {/* SECTION 1: Scheduled Automations (Otomasi Terjadwal) */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                <Zap className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Otomasi & Pengingat Terjadwal (Scheduled Automation)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Kirim pesan WhatsApp otomatis tanpa perlu klik manual satu per satu setiap hari
-                </p>
-              </div>
-            </div>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-slate-950" />
+            <h2 className="text-lg font-medium text-slate-950 tracking-tight">Otomasi Terjadwal</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Automation Card 1: Kasbon Reminder */}
-            <Card className="border-slate-200 hover:border-emerald-300 transition-all flex flex-col justify-between">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="p-2.5 bg-amber-50 text-amber-700 rounded-xl border border-amber-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Kasbon Reminder */}
+            <div className="border border-slate-200 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+              <div className="p-6 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="p-3 bg-slate-50 border border-slate-200 text-slate-950">
                     <Users className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      {autoKasbonActive ? "Aktif" : "Mati"}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500">
+                      {autoKasbonActive ? "On" : "Off"}
                     </span>
                     <button
                       type="button"
                       onClick={() => setAutoKasbonActive(!autoKasbonActive)}
-                      className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        autoKasbonActive ? "bg-emerald-600" : "bg-slate-300"
+                      className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
+                        autoKasbonActive ? "bg-slate-950" : "bg-slate-200"
                       }`}
                       title="Ubah status otomasi kasbon"
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          autoKasbonActive ? "translate-x-4" : "translate-x-0"
+                        className={`bg-white w-4 h-4 rounded-none transform transition-transform ${
+                          autoKasbonActive ? "translate-x-6" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -248,55 +235,53 @@ export default function WhatsAppHubPage() {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-1.5 text-amber-700 text-xs font-semibold mb-1">
+                  <div className="flex items-center gap-2 text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-3">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Setiap Senin Pukul 09:00 WIB</span>
+                    <span>Setiap Senin 09:00</span>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Pengingat Kasbon Otomatis
+                  <h4 className="text-base font-medium text-slate-950">
+                    Pengingat Kasbon
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
                     Memindai pelanggan yang memiliki kasbon aktif dan menyiapkan tagihan ramah beserta rincian nota.
                   </p>
                 </div>
+              </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Trigger Mandiri:</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 h-8 font-semibold"
-                    onClick={openKasbonAutomation}
-                  >
-                    <Play className="w-3 h-3 mr-1" /> Uji Coba Kirim
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-none border-slate-300 text-xs px-4 h-9 bg-white"
+                  onClick={openKasbonAutomation}
+                >
+                  <Play className="w-3 h-3 mr-2" /> Uji Coba
+                </Button>
+              </div>
+            </div>
 
-            {/* Automation Card 2: Daily Closing Report */}
-            <Card className="border-slate-200 hover:border-emerald-300 transition-all flex flex-col justify-between">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+            {/* Daily Closing Report */}
+            <div className="border border-slate-200 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+              <div className="p-6 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="p-3 bg-slate-50 border border-slate-200 text-slate-950">
                     <DollarSign className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      {autoClosingActive ? "Aktif" : "Mati"}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500">
+                      {autoClosingActive ? "On" : "Off"}
                     </span>
                     <button
                       type="button"
                       onClick={() => setAutoClosingActive(!autoClosingActive)}
-                      className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        autoClosingActive ? "bg-emerald-600" : "bg-slate-300"
+                      className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
+                        autoClosingActive ? "bg-slate-950" : "bg-slate-200"
                       }`}
                       title="Ubah status otomasi laporan harian"
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          autoClosingActive ? "translate-x-4" : "translate-x-0"
+                        className={`bg-white w-4 h-4 rounded-none transform transition-transform ${
+                          autoClosingActive ? "translate-x-6" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -304,55 +289,53 @@ export default function WhatsAppHubPage() {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-1.5 text-blue-700 text-xs font-semibold mb-1">
+                  <div className="flex items-center gap-2 text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-3">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Setiap Hari Pukul 21:00 WIB</span>
+                    <span>Setiap Hari 21:00</span>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Rekap Tutup Toko ke Owner
+                  <h4 className="text-base font-medium text-slate-950">
+                    Rekap Tutup Toko
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Kirim ringkasan total omset, transaksi, pengeluaran, dan laba kotor hari ini langsung ke nomor Owner.
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                    Kirim ringkasan total omset, transaksi, pengeluaran, dan laba kotor hari ini langsung ke owner.
                   </p>
                 </div>
+              </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Trigger Mandiri:</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs text-blue-700 border-blue-200 hover:bg-blue-50 h-8 font-semibold"
-                    onClick={openClosingAutomation}
-                  >
-                    <Play className="w-3 h-3 mr-1" /> Rekap Hari Ini
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-none border-slate-300 text-xs px-4 h-9 bg-white"
+                  onClick={openClosingAutomation}
+                >
+                  <Play className="w-3 h-3 mr-2" /> Pratinjau
+                </Button>
+              </div>
+            </div>
 
-            {/* Automation Card 3: Low Stock Warning */}
-            <Card className="border-slate-200 hover:border-emerald-300 transition-all flex flex-col justify-between">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="p-2.5 bg-rose-50 text-rose-700 rounded-xl border border-rose-200">
+            {/* Low Stock Warning */}
+            <div className="border border-slate-200 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+              <div className="p-6 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="p-3 bg-slate-50 border border-slate-200 text-slate-950">
                     <Package className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      {autoStockActive ? "Aktif" : "Mati"}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500">
+                      {autoStockActive ? "On" : "Off"}
                     </span>
                     <button
                       type="button"
                       onClick={() => setAutoStockActive(!autoStockActive)}
-                      className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors ${
-                        autoStockActive ? "bg-emerald-600" : "bg-slate-300"
+                      className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
+                        autoStockActive ? "bg-slate-950" : "bg-slate-200"
                       }`}
                       title="Ubah status otomasi stok"
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                          autoStockActive ? "translate-x-4" : "translate-x-0"
+                        className={`bg-white w-4 h-4 rounded-none transform transition-transform ${
+                          autoStockActive ? "translate-x-6" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -360,71 +343,64 @@ export default function WhatsAppHubPage() {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-1.5 text-rose-700 text-xs font-semibold mb-1">
+                  <div className="flex items-center gap-2 text-slate-500 text-[11px] font-semibold uppercase tracking-wider mb-3">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>Harian Pukul 12:00 & 18:00 WIB</span>
+                    <span>Harian 12:00 & 18:00</span>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Peringatan Stok Kritis (Restock)
+                  <h4 className="text-base font-medium text-slate-950">
+                    Peringatan Restock
                   </h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">
                     Notifikasi daftar barang yang stoknya di bawah batas aman agar pengadaan barang tidak terlambat.
                   </p>
                 </div>
+              </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">Trigger Mandiri:</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs text-rose-700 border-rose-200 hover:bg-rose-50 h-8 font-semibold"
-                    onClick={openStockAutomation}
-                  >
-                    <Play className="w-3 h-3 mr-1" /> Cek Stok Kritis
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-none border-slate-300 text-xs px-4 h-9 bg-white"
+                  onClick={openStockAutomation}
+                >
+                  <Play className="w-3 h-3 mr-2" /> Cek Stok
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* SECTION 2: 2 Column Layout (Device Connection & Templates) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 pt-4">
           {/* Left Column: Device Link & Webhook Status */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="w-5 h-5 text-emerald-600" />
-                  <CardTitle>Hubungkan WhatsApp Toko</CardTitle>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Daftarkan nomor WhatsApp resmi untuk outlet {activeStore?.name}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <div className="space-y-6">
+            <div className="border border-slate-200 bg-white">
+              <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                <Smartphone className="w-4 h-4 text-slate-950" />
+                <h3 className="text-lg font-medium text-slate-950 tracking-tight">Hubungkan WhatsApp</h3>
+              </div>
+              <div className="p-6 space-y-6">
                 {linkSuccess ? (
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 space-y-2">
-                    <div className="flex items-center gap-2 font-bold text-sm">
+                  <div className="p-5 border border-emerald-200 bg-emerald-50 text-emerald-950 space-y-3">
+                    <div className="flex items-center gap-3 font-semibold">
                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                      <span>Nomor WhatsApp Terverifikasi</span>
+                      <span>Terkoneksi</span>
                     </div>
-                    <p className="text-xs text-emerald-800">
+                    <p className="text-sm text-emerald-800/80">
                       Nomor <span className="font-mono font-bold">{phone}</span> telah terhubung dengan webhook AI engine ArthaOS.
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleLinkAccount} className="space-y-4">
+                  <form onSubmit={handleLinkAccount} className="space-y-5">
                     {error && (
-                      <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+                      <div className="p-4 text-xs text-rose-800 bg-rose-50 border border-rose-200">
                         {error}
                       </div>
                     )}
 
                     <Input
                       label="Nomor WhatsApp Outlet"
-                      placeholder="Contoh: 08123456789 / 628123456789"
+                      placeholder="Contoh: 08123456789"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       required
@@ -433,123 +409,112 @@ export default function WhatsAppHubPage() {
                     <Button
                       type="submit"
                       variant="primary"
-                      className="w-full text-xs font-bold"
+                      className="w-full rounded-none bg-slate-950 text-white hover:bg-slate-800 h-11"
                       isLoading={isLinking}
                     >
-                      Hubungkan & Pasangkan Perangkat
+                      Hubungkan Perangkat
                     </Button>
                   </form>
                 )}
 
-                <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-                  <div className="flex items-start gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Keamanan data pelanggan terisolasi per-toko (multi-tenant isolation).</span>
+                <div className="pt-6 border-t border-slate-100 space-y-4 text-sm text-slate-500">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                    <span>Keamanan data terisolasi per-toko (multi-tenant isolation).</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Bot className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Format pesan formal dan sopan untuk menjaga hubungan baik dengan pelanggan.</span>
+                  <div className="flex items-start gap-3">
+                    <Bot className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                    <span>Pesan menggunakan format formal dan standar sistem.</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Copy-Paste WhatsApp Templates */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-emerald-600" />
-                  <CardTitle>Template Format Pesan Cepat</CardTitle>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Salin pesan format WhatsApp siap kirim ke pelanggan Anda
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
+          <div className="space-y-6">
+            <div className="border border-slate-200 bg-white">
+              <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                <MessageSquare className="w-4 h-4 text-slate-950" />
+                <h3 className="text-lg font-medium text-slate-950 tracking-tight">Template Pesan Cepat</h3>
+              </div>
+              <div className="p-6 space-y-4">
                 {templates.map((tmpl, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2"
+                    className="p-5 border border-slate-200 bg-white hover:border-slate-300 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900">{tmpl.title}</h4>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-950">{tmpl.title}</h4>
+                        <p className="text-xs text-slate-500 mt-1">{tmpl.desc}</p>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="text-xs h-7 px-2.5"
+                        className="rounded-none border-slate-200 text-xs px-3 h-8"
                         onClick={() => handleCopy(tmpl.text, idx)}
                       >
                         {copiedIndex === idx ? (
                           <>
-                            <Check className="w-3 h-3 mr-1 text-emerald-600" /> Tersalin
+                            <Check className="w-3 h-3 mr-1.5 text-slate-950" /> Tersalin
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3 h-3 mr-1" /> Salin Teks
+                            <Copy className="w-3 h-3 mr-1.5" /> Salin
                           </>
                         )}
                       </Button>
                     </div>
-                    <p className="text-[11px] text-slate-500">{tmpl.desc}</p>
-                    <pre className="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 whitespace-pre-wrap font-sans">
+                    <pre className="p-4 bg-slate-50 border border-slate-100 text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed">
                       {tmpl.text}
                     </pre>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* MODAL 1: Batch Kasbon Reminder Preview */}
         {activeModal === "kasbon" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-amber-100 text-amber-700 rounded-lg">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Pratinjau Otomasi Pengingat Kasbon
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Daftar pelanggan dengan tagihan kasbon aktif yang siap dikirimkan pengingat
-                    </p>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white max-w-2xl w-full max-h-[85vh] flex flex-col border border-slate-200 shadow-2xl">
+              <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-slate-950" />
+                  <h3 className="text-lg font-medium text-slate-950 tracking-tight">
+                    Pratinjau Otomasi Kasbon
+                  </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveModal(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+                  className="text-slate-400 hover:text-slate-950 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-white">
                 {isLoadingModalData ? (
-                  <div className="py-12 text-center text-sm text-slate-500">
-                    Memindai buku kasbon toko...
+                  <div className="py-12 flex justify-center">
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
                   </div>
                 ) : unpaidDebts.length === 0 ? (
-                  <div className="py-10 text-center space-y-2">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-                    <p className="text-sm font-bold text-slate-800">
+                  <div className="py-12 text-center space-y-3">
+                    <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto" />
+                    <p className="text-base font-medium text-slate-950">
                       Buku Kasbon Bersih!
                     </p>
-                    <p className="text-xs text-slate-500">
-                      Tidak ada tagihan kasbon yang belum lunas di outlet ini saat ini.
+                    <p className="text-sm text-slate-500">
+                      Tidak ada tagihan kasbon yang belum lunas.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
-                      Ditemukan <strong>{unpaidDebts.length} pelanggan</strong> dengan kasbon aktif. Klik &quot;Kirim WhatsApp&quot; untuk langsung membuka chat WhatsApp dengan pesan tagihan yang sudah terisi otomatis.
+                  <div className="space-y-4">
+                    <div className="p-4 border border-slate-200 bg-slate-50 text-sm text-slate-600">
+                      Ditemukan <strong className="text-slate-950">{unpaidDebts.length} pelanggan</strong> dengan kasbon aktif.
                     </div>
 
                     {unpaidDebts.map((debt) => {
@@ -561,46 +526,40 @@ export default function WhatsAppHubPage() {
                       return (
                         <div
                           key={debt.id}
-                          className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          className="p-5 border border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                         >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-slate-900">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-slate-950">
                                 {customerName}
                               </span>
-                              <Badge variant="warning" size="sm">
+                              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold tracking-widest uppercase">
                                 {formatCurrency(remaining)}
-                              </Badge>
+                              </span>
                             </div>
                             <p className="text-xs text-slate-500 font-mono">
-                              {customerPhone ? customerPhone : "Nomor HP belum tercatat"}
+                              {customerPhone ? customerPhone : "Tanpa Nomor HP"}
                             </p>
-                            {debt.due_date && (
-                              <p className="text-[11px] text-amber-700">
-                                Jatuh Tempo: {new Date(debt.due_date).toLocaleDateString("id-ID")}
-                              </p>
-                            )}
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-3 shrink-0">
                             {customerPhone ? (
                               <a
                                 href={createWhatsAppLink(customerPhone, msg)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-slate-950 hover:bg-slate-800 transition-colors"
                               >
-                                <Send className="w-3.5 h-3.5" /> Kirim WhatsApp
+                                <Send className="w-3.5 h-3.5" /> Kirim Pesan
                               </a>
                             ) : (
                               <Button
                                 type="button"
                                 variant="outline"
-                                size="sm"
-                                className="text-xs"
+                                className="rounded-none border-slate-200 text-xs px-4"
                                 onClick={() => handleCopy(msg, debt.id)}
                               >
-                                <Copy className="w-3 h-3 mr-1" /> Salin Pesan
+                                <Copy className="w-3.5 h-3.5 mr-2" /> Salin Pesan
                               </Button>
                             )}
                           </div>
@@ -610,97 +569,76 @@ export default function WhatsAppHubPage() {
                   </div>
                 )}
               </div>
-
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between rounded-b-2xl">
-                <span className="text-xs text-slate-500">
-                  Otomasi mingguan berjalan setiap Senin pukul 09:00 WIB
-                </span>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setActiveModal(null)}
-                >
-                  Tutup Pratinjau
-                </Button>
-              </div>
             </div>
           </div>
         )}
 
         {/* MODAL 2: Daily Closing Report Preview */}
         {activeModal === "closing" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
-                    <DollarSign className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Rekap Tutup Toko Harian
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Format ringkasan penjualan otomatis yang dikirimkan ke nomor Owner
-                    </p>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white max-w-lg w-full border border-slate-200 shadow-2xl">
+              <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-5 h-5 text-slate-950" />
+                  <h3 className="text-lg font-medium text-slate-950 tracking-tight">
+                    Pratinjau Tutup Toko
+                  </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveModal(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+                  className="text-slate-400 hover:text-slate-950 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <p className="text-[11px] text-emerald-700 font-semibold">Total Omset</p>
-                    <p className="text-base font-bold text-emerald-900 mt-0.5">
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border border-slate-200 bg-white">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Omset</p>
+                    <p className="text-xl font-medium text-slate-950 mt-1 tracking-tight">
                       {formatCurrency(totalOmset)}
                     </p>
                   </div>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-[11px] text-blue-700 font-semibold">Total Transaksi</p>
-                    <p className="text-base font-bold text-blue-900 mt-0.5">
-                      {todaySales.length} Nota
+                  <div className="p-4 border border-slate-200 bg-white">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Transaksi</p>
+                    <p className="text-xl font-medium text-slate-950 mt-1 tracking-tight">
+                      {todaySales.length}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">
-                    Pratinjau Pesan WhatsApp ke Owner:
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-slate-950 uppercase tracking-wider">
+                    Format Pesan WhatsApp:
                   </label>
-                  <pre className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
+                  <pre className="p-5 border border-slate-200 bg-slate-50 text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed">
                     {closingMessage}
                   </pre>
                 </div>
               </div>
 
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2 rounded-b-2xl">
+              <div className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-end gap-3">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  className="rounded-none border-slate-200 text-xs px-4 h-10"
                   onClick={() => {
                     navigator.clipboard.writeText(closingMessage);
-                    alert("Format rekap tutup toko telah disalin ke clipboard!");
+                    alert("Disalin!");
                   }}
                 >
-                  <Copy className="w-3.5 h-3.5 mr-1" /> Salin Rekap
+                  <Copy className="w-3.5 h-3.5 mr-2" /> Salin Teks
                 </Button>
                 {phone && (
                   <a
                     href={createWhatsAppLink(phone, closingMessage)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
+                    className="inline-flex items-center gap-2 px-6 h-10 text-xs font-bold text-white bg-slate-950 hover:bg-slate-800 transition-colors"
                   >
-                    <Send className="w-3.5 h-3.5" /> Kirim ke WA Owner
+                    <Send className="w-3.5 h-3.5" /> Kirim
                   </a>
                 )}
               </div>
@@ -710,73 +648,57 @@ export default function WhatsAppHubPage() {
 
         {/* MODAL 3: Low Stock Warning Preview */}
         {activeModal === "stock" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200">
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-rose-100 text-rose-700 rounded-lg">
-                    <Package className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Peringatan Stok Menipis
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Daftar barang yang perlu dipesan ulang (restock) ke distributor
-                    </p>
-                  </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white max-w-lg w-full max-h-[85vh] flex flex-col border border-slate-200 shadow-2xl">
+              <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <Package className="w-5 h-5 text-slate-950" />
+                  <h3 className="text-lg font-medium text-slate-950 tracking-tight">
+                    Peringatan Stok Menipis
+                  </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveModal(null)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+                  className="text-slate-400 hover:text-slate-950 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-5 overflow-y-auto space-y-3 flex-1">
+              <div className="p-6 overflow-y-auto space-y-4 flex-1 bg-white">
                 {isLoadingModalData ? (
-                  <div className="py-12 text-center text-sm text-slate-500">
-                    Memeriksa stok barang...
+                  <div className="py-12 flex justify-center">
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
                   </div>
                 ) : lowStockProducts.length === 0 ? (
-                  <div className="py-10 text-center space-y-2">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-                    <p className="text-sm font-bold text-slate-800">
-                      Semua Stok Aman!
+                  <div className="py-12 text-center space-y-3">
+                    <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto" />
+                    <p className="text-base font-medium text-slate-950">
+                      Stok Aman!
                     </p>
-                    <p className="text-xs text-slate-500">
-                      Tidak ada barang dengan stok di bawah batas minimum (5 pcs) saat ini.
+                    <p className="text-sm text-slate-500">
+                      Tidak ada barang di bawah batas minimum (5 pcs).
                     </p>
                   </div>
                 ) : (
-                  lowStockProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      className="p-3 bg-rose-50/50 border border-rose-200 rounded-xl flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-xs font-bold text-slate-900">{p.name}</p>
-                        <p className="text-[11px] text-slate-500 font-mono">SKU: {p.sku}</p>
+                  <div className="space-y-3">
+                    {lowStockProducts.map((p) => (
+                      <div
+                        key={p.id}
+                        className="p-4 border border-slate-200 bg-white flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-slate-950">{p.name}</p>
+                          <p className="text-[11px] text-slate-500 font-mono mt-1">SKU: {p.sku}</p>
+                        </div>
+                        <span className="px-2 py-1 bg-rose-50 text-rose-700 text-[11px] font-bold tracking-widest uppercase">
+                          Sisa: {p.current_stock}
+                        </span>
                       </div>
-                      <Badge variant="danger" size="sm">
-                        Sisa: {p.current_stock} pcs
-                      </Badge>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
-              </div>
-
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end rounded-b-2xl">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setActiveModal(null)}
-                >
-                  Tutup
-                </Button>
               </div>
             </div>
           </div>

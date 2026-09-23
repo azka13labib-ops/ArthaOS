@@ -16,11 +16,9 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
-import { Card, CardContent } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
@@ -130,120 +128,114 @@ export default function ExpensesPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-              Pengeluaran & Biaya Operasional
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Catat dan pantau seluruh pos biaya outlet untuk perhitungan laba bersih yang presisi.
+            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1">
+              Pengeluaran
+            </h1>
+            <p className="text-sm text-slate-500">
+              Catat dan pantau seluruh pos biaya outlet untuk perhitungan laba bersih.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              size="sm"
+              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
               onClick={loadExpenses}
               disabled={isLoading}
               title="Perbarui daftar pengeluaran"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Segarkan
             </Button>
             <Button
               variant="primary"
-              size="sm"
+              className="rounded-none bg-slate-950 text-white hover:bg-slate-800 h-10 px-6"
               onClick={() => {
                 setError("");
                 setIsModalOpen(true);
               }}
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Catat Pengeluaran Baru
+              <Plus className="w-4 h-4 mr-2" /> Catat Pengeluaran
             </Button>
           </div>
         </div>
 
         {/* Total Expense KPI Card */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Total Biaya Operasional Tercatat
-                </p>
-                <div className="p-2 rounded-lg bg-rose-50 text-rose-600">
-                  <TrendingDown className="w-4 h-4" />
-                </div>
-              </div>
-              <h3 className="text-2xl font-extrabold text-rose-600 mt-2">
-                {formatIDR(totalExpenseAmount)}
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-1">
-                {expenses.length} transaksi pengeluaran
+          <div className="bg-slate-950 p-6 md:p-8 text-white">
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-[13px] font-medium text-white/70 uppercase tracking-wider">
+                Total Biaya Operasional
               </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search Bar */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Cari deskripsi pengeluaran..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-            />
+              <TrendingDown className="w-5 h-5 text-rose-400" />
+            </div>
+            <h3 className="text-4xl font-medium tracking-tight">
+              {formatIDR(totalExpenseAmount)}
+            </h3>
+            <p className="text-sm text-white/60 mt-3 font-mono">
+              {expenses.length} Transaksi Tercatat
+            </p>
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative w-full sm:w-96 group">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-slate-950 transition-colors" />
+          <input
+            type="text"
+            placeholder="Cari keterangan biaya..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-none focus-visible:outline-none focus-visible:border-slate-400 transition-colors placeholder:text-slate-400"
+          />
+        </div>
+
         {/* Expenses Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div className="bg-white border border-slate-200">
           {isLoading ? (
-            <div className="p-12">
-              <Spinner size="lg" label="Memuat catatan pengeluaran..." />
+            <div className="p-12 flex justify-center">
+              <Spinner size="md" />
             </div>
           ) : filteredExpenses.length === 0 ? (
             <EmptyState
-              icon={<Receipt className="w-8 h-8 text-slate-400" />}
-              title="Belum Ada Catatan Biaya"
+              icon={<Receipt className="w-8 h-8 text-slate-300" />}
+              title="Belum Ada Pengeluaran"
               description="Belum ada transaksi pengeluaran operasional yang dicatat di outlet ini."
               actionLabel="Catat Pengeluaran Baru"
               onAction={() => setIsModalOpen(true)}
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="text-slate-500 border-b border-slate-200 bg-slate-50">
                   <tr>
-                    <th className="px-4 py-3.5">ID / Waktu</th>
-                    <th className="px-4 py-3.5">Keterangan Biaya</th>
-                    <th className="px-4 py-3.5">Metode Bayar</th>
-                    <th className="px-4 py-3.5 text-right">Nominal Pengeluaran</th>
+                    <th className="px-6 py-4 font-semibold tracking-wide">ID & Waktu</th>
+                    <th className="px-6 py-4 font-semibold tracking-wide">Keterangan Biaya</th>
+                    <th className="px-6 py-4 font-semibold tracking-wide text-center">Metode</th>
+                    <th className="px-6 py-4 font-semibold tracking-wide text-right">Nominal Pengeluaran</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredExpenses.map((exp) => (
-                    <tr key={exp.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-4 py-3.5 font-medium text-slate-900">
-                        <div className="font-semibold">EXP-{exp.id.toString().padStart(5, "0")}</div>
-                        <div className="text-[10px] text-slate-400 font-normal">
+                    <tr key={exp.id} className="hover:bg-slate-50 transition-colors group">
+                      <td className="px-6 py-4 font-medium text-slate-950">
+                        <div className="font-semibold text-slate-950 tracking-wider">EXP-{exp.id.toString().padStart(5, "0")}</div>
+                        <div className="text-[11px] text-slate-500 font-mono mt-1">
                           {formatDate(exp.occurred_at)}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-800 font-medium">
+                      <td className="px-6 py-4 text-slate-600 font-medium whitespace-normal max-w-sm">
                         {exp.description || "Pengeluaran Operasional"}
                       </td>
-                      <td className="px-4 py-3.5">
-                        <Badge variant="neutral" size="sm">
-                          {exp.payments?.[0]?.payment_method?.toUpperCase() || "TUNAI"}
-                        </Badge>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold tracking-widest uppercase">
+                          {exp.payments?.[0]?.payment_method || "TUNAI"}
+                        </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-rose-600 text-sm">
+                      <td className="px-6 py-4 text-right font-medium text-rose-600 tracking-tight text-lg group-hover:text-rose-700">
                         -{formatIDR(exp.total_amount)}
                       </td>
                     </tr>
@@ -259,12 +251,12 @@ export default function ExpensesPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Catat Pengeluaran Operasional"
-        description="Masukkan rincian biaya yang dikeluarkan oleh toko."
+        title="Catat Pengeluaran"
+        description="Masukkan rincian biaya operasional outlet."
       >
-        <form onSubmit={handleCreateExpense} className="space-y-4">
+        <form onSubmit={handleCreateExpense} className="space-y-5 pt-2">
           {error && (
-            <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+            <div className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200">
               {error}
             </div>
           )}
@@ -280,13 +272,13 @@ export default function ExpensesPage() {
           />
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-950 uppercase tracking-wide mb-2">
               Kategori Pengeluaran
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="w-full p-3 border border-slate-200 bg-white text-sm text-slate-950 focus-visible:outline-none focus-visible:border-slate-400 transition-colors rounded-none"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -297,7 +289,7 @@ export default function ExpensesPage() {
           </div>
 
           <Input
-            label="Deskripsi / Keterangan"
+            label="Deskripsi / Keterangan Lengkap"
             placeholder="Contoh: Beli token listrik 50.000 / Beli kantong plastik 1 pack"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -306,44 +298,45 @@ export default function ExpensesPage() {
 
           {/* Payment Method */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1.5">
-              Dibayar Menggunakan
+            <label className="block text-xs font-semibold text-slate-950 uppercase tracking-wide mb-2">
+              Sumber Dana (Metode Bayar)
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-0 border border-slate-200">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-slate-200 flex items-center justify-center gap-2 ${
                   paymentMethod === "cash"
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-slate-50 text-slate-700 border-slate-200"
+                    ? "bg-slate-950 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-50"
                 }`}
               >
-                <Banknote className="w-4 h-4" /> Uang Kas Toko
+                <Banknote className="w-4 h-4" /> Uang Laci
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod("transfer")}
-                className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
                   paymentMethod === "transfer"
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-slate-50 text-slate-700 border-slate-200"
+                    ? "bg-slate-950 text-white"
+                    : "bg-white text-slate-500 hover:bg-slate-50"
                 }`}
               >
-                <CreditCard className="w-4 h-4" /> Rekening Bank
+                <CreditCard className="w-4 h-4" /> Bank/Transfer
               </button>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <Button
               type="button"
               variant="outline"
+              className="rounded-none px-6"
               onClick={() => setIsModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSubmitting}>
+            <Button type="submit" variant="primary" className="rounded-none px-6 bg-slate-950 text-white hover:bg-slate-800" isLoading={isSubmitting}>
               Simpan Pengeluaran
             </Button>
           </div>

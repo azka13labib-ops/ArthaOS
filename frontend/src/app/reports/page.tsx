@@ -16,10 +16,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
@@ -92,169 +89,177 @@ export default function ReportsPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto w-full">
+      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-              Laporan Keuangan & Valuasi Aset
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Laporan Laba Rugi real-time berdasarkan transaksi kasir dan mutasi inventori FIFO.
+            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1">
+              Laporan Keuangan
+            </h1>
+            <p className="text-sm text-slate-500">
+              Laporan Laba Rugi real-time berdasarkan transaksi kasir dan mutasi inventori.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="w-3.5 h-3.5 mr-1" /> Cetak Laporan
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
+              onClick={handlePrint}
+            >
+              <Printer className="w-4 h-4 mr-2" /> Cetak
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
               onClick={loadReports}
               disabled={isLoading}
               title="Perbarui laporan"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Segarkan
             </Button>
           </div>
         </div>
 
         {/* Date Filter Bar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 w-full sm:w-auto">
-            <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Periode Laporan:</span>
+        <div className="bg-white border border-slate-200 p-1 flex flex-col sm:flex-row items-center justify-between gap-0">
+          <div className="flex items-center gap-3 px-4 py-2 w-full sm:w-auto">
+            <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Periode:</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-0 w-full sm:w-auto">
+            <div className="flex items-center">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="p-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+                className="px-4 py-3 border-l border-slate-200 text-sm bg-white focus-visible:outline-none focus-visible:bg-slate-50 transition-colors"
               />
-              <span className="text-xs text-slate-400">s/d</span>
+              <div className="px-4 py-3 border-l border-slate-200 bg-slate-50 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                S/D
+              </div>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="p-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+                className="px-4 py-3 border-l border-r border-slate-200 text-sm bg-white focus-visible:outline-none focus-visible:bg-slate-50 transition-colors"
               />
             </div>
-            <Button variant="primary" size="sm" onClick={loadReports}>
-              Terapkan Filter
+            <Button 
+              variant="primary" 
+              className="rounded-none h-11 px-8 bg-slate-950 text-white hover:bg-slate-800"
+              onClick={loadReports}
+            >
+              Terapkan
             </Button>
           </div>
         </div>
 
         {/* 2 Main Sections: Income Statement & Stock Valuation */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-14">
           {/* Left 2 Cols: Income Statement (Laba Rugi) */}
-          <div className="lg:col-span-2 space-y-4">
-            <Card className="border-slate-300 shadow-sm">
-              <CardHeader className="bg-slate-900 text-white rounded-t-xl py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white text-base">
-                      Laporan Laba Rugi (Income Statement)
-                    </CardTitle>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Outlet: {activeStore?.name}
-                    </p>
-                  </div>
-                  <Badge variant="success" size="sm">
-                    Margin: {netMarginPercent}%
-                  </Badge>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="border border-slate-200 bg-white">
+              <div className="bg-slate-950 px-6 py-5 border-b border-slate-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-medium text-white tracking-tight">
+                    Laba Rugi (Income Statement)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 font-mono">
+                    OUTLET: {activeStore?.name}
+                  </p>
                 </div>
-              </CardHeader>
+                <div className="px-3 py-1 bg-white/10 text-white text-xs font-bold tracking-wider rounded-none">
+                  MARGIN: {netMarginPercent}%
+                </div>
+              </div>
 
-              <CardContent className="p-6 space-y-4 text-xs">
+              <div className="p-6 md:p-8">
                 {isLoading ? (
-                  <div className="py-12">
-                    <Spinner size="lg" label="Menghitung laporan laba rugi..." />
+                  <div className="py-12 flex justify-center">
+                    <Spinner size="md" />
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-0 text-sm">
                     {/* Item 1: Pendapatan Penjualan */}
-                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-slate-100 group hover:bg-slate-50 transition-colors">
+                      <div className="px-2">
+                        <p className="font-semibold text-slate-950">
                           1. Total Penjualan Kotor (Gross Sales)
                         </p>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500 mt-1">
                           Akumulasi penerimaan kas, transfer, dan piutang penjualan
                         </p>
                       </div>
-                      <span className="font-extrabold text-slate-900 text-sm">
+                      <span className="font-semibold text-slate-950 text-lg px-2 mt-2 sm:mt-0">
                         {formatIDR(grossSales)}
                       </span>
                     </div>
 
                     {/* Item 2: HPP */}
-                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                      <div>
-                        <p className="font-bold text-slate-700 text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-slate-100 group hover:bg-slate-50 transition-colors">
+                      <div className="px-2">
+                        <p className="font-semibold text-slate-950">
                           2. Harga Pokok Penjualan (HPP / COGS)
                         </p>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500 mt-1">
                           Harga modal beli barang yang terjual
                         </p>
                       </div>
-                      <span className="font-bold text-rose-600 text-sm">
+                      <span className="font-semibold text-rose-600 text-lg px-2 mt-2 sm:mt-0">
                         -{formatIDR(cogs)}
                       </span>
                     </div>
 
                     {/* Item 3: Laba Kotor */}
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 bg-slate-50 border-b border-slate-200 px-4 mt-2">
                       <div>
-                        <p className="font-bold text-slate-900 text-sm">
+                        <p className="font-semibold text-slate-950">
                           3. Laba Kotor (Gross Profit)
                         </p>
-                        <p className="text-[11px] text-slate-500">
-                          Margin Laba Kotor: {grossMarginPercent}%
+                        <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">
+                          Margin Kotor: {grossMarginPercent}%
                         </p>
                       </div>
-                      <span className="font-extrabold text-slate-900 text-base">
+                      <span className="font-medium text-slate-950 text-2xl mt-2 sm:mt-0 tracking-tight">
                         {formatIDR(grossProfit)}
                       </span>
                     </div>
 
                     {/* Item 4: Biaya Operasional */}
-                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                      <div>
-                        <p className="font-bold text-slate-700 text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-slate-100 group hover:bg-slate-50 transition-colors mt-2">
+                      <div className="px-2">
+                        <p className="font-semibold text-slate-950">
                           4. Beban Operasional (Expenses)
                         </p>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500 mt-1">
                           Listrik, gaji, sewa, dan pengeluaran harian
                         </p>
                       </div>
-                      <span className="font-bold text-rose-600 text-sm">
+                      <span className="font-semibold text-rose-600 text-lg px-2 mt-2 sm:mt-0">
                         -{formatIDR(expenses)}
                       </span>
                     </div>
 
                     {/* Final Net Profit */}
                     <div
-                      className={`flex items-center justify-between p-4 rounded-xl border ${
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-6 mt-6 border ${
                         netProfit >= 0
-                          ? "bg-emerald-50/80 border-emerald-300 text-emerald-950"
-                          : "bg-rose-50/80 border-rose-300 text-rose-950"
+                          ? "bg-emerald-50 border-emerald-200"
+                          : "bg-rose-50 border-rose-200"
                       }`}
                     >
                       <div>
-                        <p className="font-extrabold text-base uppercase tracking-wide">
-                          LABA BERSIH USAHA (NET PROFIT)
+                        <p className={`font-semibold text-sm uppercase tracking-widest ${netProfit >= 0 ? "text-emerald-950" : "text-rose-950"}`}>
+                          Laba Bersih (Net Profit)
                         </p>
-                        <p className="text-[11px] opacity-80">
-                          Keuntungan bersih setelah dikurangi HPP & seluruh biaya operasional
+                        <p className={`text-xs mt-1 ${netProfit >= 0 ? "text-emerald-700/80" : "text-rose-700/80"}`}>
+                          Setelah dikurangi HPP & seluruh biaya operasional
                         </p>
                       </div>
                       <span
-                        className={`text-xl sm:text-2xl font-black ${
+                        className={`text-3xl font-medium tracking-tight mt-3 sm:mt-0 ${
                           netProfit >= 0 ? "text-emerald-700" : "text-rose-700"
                         }`}
                       >
@@ -263,68 +268,69 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* Right 1 Col: Stock Valuation Asset Report */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Package className="w-5 h-5 text-emerald-600" />
-                  <CardTitle>Valuasi Aset Stok</CardTitle>
+          <div className="space-y-6">
+            <div className="border border-slate-200 bg-white">
+              <div className="px-6 py-5 border-b border-slate-200 bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <Package className="w-4 h-4 text-slate-950" />
+                  <h3 className="text-lg font-medium text-slate-950 tracking-tight">Valuasi Aset Stok</h3>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Audit nilai inventori fisik yang tersimpan di toko
+                <p className="text-xs text-slate-500 mt-1">
+                  Audit nilai inventori fisik saat ini
                 </p>
-              </CardHeader>
-              <CardContent className="p-5 space-y-4 text-xs">
+              </div>
+
+              <div className="p-6">
                 {isLoading ? (
-                  <div className="py-8">
-                    <Spinner size="md" label="Menghitung valuasi..." />
+                  <div className="py-12 flex justify-center">
+                    <Spinner size="md" />
                   </div>
                 ) : (
-                  <>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                  <div className="space-y-4">
+                    <div className="p-5 border border-slate-200 bg-white hover:border-slate-300 transition-colors group">
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider text-[11px] mb-2">
                         Total Fisik Produk
                       </p>
-                      <p className="text-lg font-bold text-slate-900 mt-1">
-                        {stockValuation?.total_inventory_items ?? 0} Unit Barang
+                      <p className="text-2xl font-medium text-slate-950 tracking-tight group-hover:text-emerald-700 transition-colors">
+                        {stockValuation?.total_inventory_items ?? 0} <span className="text-sm text-slate-500 font-normal lowercase tracking-normal">Unit</span>
                       </p>
                     </div>
 
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <p className="text-slate-500 font-semibold uppercase text-[10px]">
-                        Nilai Aset Berdasarkan Harga Modal (HPP)
+                    <div className="p-5 border border-slate-200 bg-white hover:border-slate-300 transition-colors group">
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider text-[11px] mb-2">
+                        Nilai Aset (Harga Beli/HPP)
                       </p>
-                      <p className="text-lg font-bold text-slate-900 mt-1">
+                      <p className="text-2xl font-medium text-slate-950 tracking-tight group-hover:text-emerald-700 transition-colors">
                         {formatIDR(stockValuation?.total_asset_cost ?? 0)}
                       </p>
                     </div>
 
-                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                      <p className="text-emerald-800 font-semibold uppercase text-[10px]">
-                        Nilai Aset Berdasarkan Harga Jual
+                    <div className="p-5 border border-slate-200 bg-slate-950 text-white">
+                      <p className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] mb-2">
+                        Nilai Aset (Harga Jual)
                       </p>
-                      <p className="text-lg font-bold text-emerald-700 mt-1">
+                      <p className="text-2xl font-medium text-white tracking-tight">
                         {formatIDR(stockValuation?.total_asset_retail ?? 0)}
                       </p>
                     </div>
 
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-blue-800 font-semibold uppercase text-[10px]">
-                        Proyeksi Potensi Laba Kotor Stok
+                    <div className="p-5 border border-slate-200 bg-emerald-50">
+                      <p className="text-emerald-800 font-semibold uppercase tracking-wider text-[11px] mb-2">
+                        Proyeksi Potensi Laba Kotor
                       </p>
-                      <p className="text-lg font-bold text-blue-700 mt-1">
+                      <p className="text-2xl font-medium text-emerald-700 tracking-tight">
                         {formatIDR(stockValuation?.potential_gross_profit ?? 0)}
                       </p>
                     </div>
-                  </>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>

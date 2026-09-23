@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, User as UserIcon, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
@@ -52,82 +52,77 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500 text-slate-950 font-extrabold text-2xl mb-4 shadow-lg shadow-emerald-500/20">
-          A
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-          Mulai Bersama ArthaOS
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400">
-          Daftarkan akun pemilik bisnis untuk mengelola inventori dan keuangan toko Anda.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md px-4">
+        <div className="bg-white border border-slate-200">
+          <div className="p-8 border-b border-slate-200 bg-slate-950 text-white">
+            <h1 className="text-2xl font-bold tracking-tight mb-2">
+              Mulai Bersama ArthaOS
+            </h1>
+            <p className="text-sm text-slate-400">
+              Daftarkan akun pemilik bisnis untuk mengelola inventori dan keuangan toko Anda.
+            </p>
+          </div>
+          
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div
+                  role="alert"
+                  className="p-4 text-sm font-medium text-rose-800 bg-rose-50 border border-rose-200"
+                >
+                  {error}
+                </div>
+              )}
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-2xl rounded-2xl border border-slate-200">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div
-                role="alert"
-                className="p-3.5 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2"
+              <Input
+                label="Nama Lengkap / Pemilik"
+                type="text"
+                placeholder="Contoh: Budi Santoso"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+              />
+
+              <Input
+                label="Alamat Email Bisnis"
+                type="email"
+                placeholder="nama@bisnisanda.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+              <Input
+                label="Kata Sandi"
+                type="password"
+                placeholder="Minimal 8 karakter"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                helperText="Gunakan kombinasi huruf dan angka yang aman"
+                required
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full rounded-none bg-slate-950 text-white hover:bg-slate-800 h-12 text-sm font-bold"
+                isLoading={isLoading}
               >
-                <span>{error}</span>
-              </div>
-            )}
+                Buat Akun Bisnis <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </form>
 
-            <Input
-              label="Nama Lengkap / Pemilik"
-              type="text"
-              placeholder="Contoh: Budi Santoso"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              leftIcon={<UserIcon className="w-4 h-4" />}
-              required
-              autoFocus
-            />
-
-            <Input
-              label="Alamat Email Bisnis"
-              type="email"
-              placeholder="budi@tokoberkah.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-              required
-            />
-
-            <Input
-              label="Kata Sandi"
-              type="password"
-              placeholder="Minimal 8 karakter"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              helperText="Gunakan kombinasi huruf dan angka yang aman"
-              required
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full text-sm font-semibold"
-              isLoading={isLoading}
-            >
-              Buat Akun Bisnis <ArrowRight className="w-4 h-4 ml-1.5" />
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-xs text-slate-500">
-            Sudah memiliki akun?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-            >
-              Masuk di sini
-            </Link>
+            <div className="mt-8 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
+              Sudah memiliki akun?{" "}
+              <Link
+                href="/login"
+                className="font-bold text-slate-950 hover:underline"
+              >
+                Masuk di sini
+              </Link>
+            </div>
           </div>
         </div>
       </div>

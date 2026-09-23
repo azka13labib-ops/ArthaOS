@@ -90,8 +90,10 @@ export default function PosPage() {
 
   useEffect(() => {
     let isMounted = true;
-    if (activeStore && isMounted) {
-      loadInitialData();
+    if (activeStore) {
+      loadInitialData().then(() => {
+        if (!isMounted) return;
+      });
     }
     return () => {
       isMounted = false;
@@ -288,13 +290,13 @@ export default function PosPage() {
 
   return (
     <AppLayout>
-      <div className="flex-1 flex flex-col lg:flex-row h-full overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col lg:flex-row h-full overflow-hidden">
         {/* Left Column: Product Catalog & Search (60%) */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-slate-200">
+        <div className="flex-1 flex flex-col min-w-0 border-r border-white/10">
           {/* Top Search Bar */}
-          <div className="p-4 border-b border-slate-200 bg-white flex items-center gap-3 shrink-0">
+          <div className="p-4 border-b border-white/10 bg-white/5 backdrop-blur-xl border-white/10 text-white flex items-center gap-3 shrink-0">
             <div className="relative flex-1 group">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-700 transition-colors" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-400 transition-colors" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -302,19 +304,19 @@ export default function PosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 hover:border-slate-300 rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-700 transition-all placeholder:text-slate-400"
+                className="w-full pl-9 pr-4 py-2.5 text-sm bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 hover:border-white/20 rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-700 transition-all placeholder:text-slate-400"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-950"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-            <div className="text-xs text-slate-500 font-medium whitespace-nowrap hidden sm:block">
+            <div className="text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block">
               {filteredProducts.length} Produk
             </div>
           </div>
@@ -327,7 +329,7 @@ export default function PosPage() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <EmptyState
-                icon={<Package className="w-8 h-8 text-slate-300" />}
+                icon={<Package className="w-8 h-8 text-slate-500" />}
                 title="Produk Tidak Ditemukan"
                 description={
                   searchQuery
@@ -340,7 +342,7 @@ export default function PosPage() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-0 border-t border-l border-slate-200">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-0 border-t border-l border-white/10">
                 {filteredProducts.map((p) => {
                   const isOutOfStock = p.current_stock <= 0;
                   const inCartItem = cart.find((c) => c.product.id === p.id);
@@ -351,12 +353,12 @@ export default function PosPage() {
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => addToCart(p)}
-                      className={`relative flex flex-col justify-between p-4 border-b border-r border-slate-200 text-left transition-all select-none ${
+                      className={`relative flex flex-col justify-between p-4 border-b border-r border-white/10 text-left transition-all select-none ${
                         isOutOfStock
-                          ? "bg-slate-50 opacity-60 cursor-not-allowed"
+                          ? "bg-white/5 opacity-60 cursor-not-allowed"
                           : inCartItem
-                          ? "bg-emerald-50/30 ring-1 ring-inset ring-emerald-600"
-                          : "bg-white hover:bg-slate-50 active:bg-slate-100"
+                          ? "bg-emerald-500/10 ring-1 ring-inset ring-emerald-500/50"
+                          : "bg-white/5 backdrop-blur-xl border-white/10 text-white hover:bg-white/5 active:bg-white/10"
                       }`}
                     >
                       {/* Product details */}
@@ -366,28 +368,28 @@ export default function PosPage() {
                             {p.sku}
                           </span>
                           {inCartItem && (
-                            <span className="w-5 h-5 bg-emerald-700 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 bg-emerald-500 text-slate-950 text-white font-bold text-[11px] flex items-center justify-center shrink-0">
                               {inCartItem.quantity}
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-semibold text-slate-950 line-clamp-2 leading-tight">
+                        <h4 className="text-sm font-semibold text-white line-clamp-2 leading-tight">
                           {p.name}
                         </h4>
                       </div>
 
                       {/* Price & Stock info */}
                       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <span className="text-sm font-bold text-emerald-700">
+                        <span className="text-sm font-bold text-emerald-400">
                           {formatIDR(p.sell_price)}
                         </span>
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide ${
                             isOutOfStock
-                              ? "bg-rose-100 text-rose-800"
+                              ? "bg-rose-100 text-rose-300"
                               : p.current_stock <= 5
                               ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-600"
+                              : "bg-white/10 text-slate-500"
                           }`}
                         >
                           {isOutOfStock ? "Habis" : `${p.current_stock} pcs`}
@@ -402,12 +404,12 @@ export default function PosPage() {
         </div>
 
         {/* Right Column: Dynamic Cart & Checkout Panel (40%) */}
-        <div className="w-full lg:w-96 xl:w-[420px] flex flex-col bg-white shrink-0 border-t lg:border-t-0">
+        <div className="w-full lg:w-96 xl:w-[420px] flex flex-col bg-white/5 backdrop-blur-xl border-white/10 text-white shrink-0 border-t lg:border-t-0">
           {/* Cart Header */}
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-slate-950" />
-              <h3 className="font-semibold text-sm text-slate-950 tracking-tight">Keranjang</h3>
+              <ShoppingCart className="w-4 h-4 text-white" />
+              <h3 className="font-semibold text-sm text-white tracking-tight">Keranjang</h3>
               <Badge variant="neutral" size="sm" className="rounded-none font-medium">
                 {totalItemsCount} item
               </Badge>
@@ -416,7 +418,7 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={clearCart}
-                className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold uppercase tracking-wider flex items-center gap-1"
+                className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold uppercase tracking-wider flex items-center gap-1"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Kosongkan
               </button>
@@ -427,50 +429,50 @@ export default function PosPage() {
           <div className="flex-1 overflow-y-auto p-4 space-y-0">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
-                <ShoppingCart className="w-10 h-10 stroke-1 mb-3 text-slate-300" />
-                <p className="text-sm font-medium text-slate-600">Belum ada pesanan</p>
+                <ShoppingCart className="w-10 h-10 stroke-1 mb-3 text-slate-500" />
+                <p className="text-sm font-medium text-slate-500">Belum ada pesanan</p>
                 <p className="text-xs text-slate-400 mt-1">
                   Pilih produk dari katalog untuk memulai.
                 </p>
               </div>
             ) : (
-              <div className="border border-slate-200 divide-y divide-slate-200">
+              <div className="border border-white/10 divide-y divide-slate-200">
                 {cart.map((item) => (
                   <div
                     key={item.product.id}
-                    className="p-3 bg-white flex flex-col gap-2"
+                    className="p-3 bg-white/5 backdrop-blur-xl border-white/10 text-white flex flex-col gap-2"
                   >
                     <div className="flex justify-between items-start gap-3">
-                      <p className="text-sm font-semibold text-slate-950 truncate flex-1 leading-snug">
+                      <p className="text-sm font-semibold text-white truncate flex-1 leading-snug">
                         {item.product.name}
                       </p>
-                      <p className="text-sm font-bold text-slate-950 text-right shrink-0">
+                      <p className="text-sm font-bold text-white text-right shrink-0">
                         {formatIDR(item.product.sell_price * item.quantity)}
                       </p>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-slate-500 font-medium">
+                      <p className="text-[11px] text-slate-400 font-medium">
                         {formatIDR(item.product.sell_price)} x {item.quantity}
                       </p>
                       
                       {/* Quantity Controller */}
-                      <div className="flex items-center gap-1 border border-slate-200 p-0.5">
+                      <div className="flex items-center gap-1 border border-white/10 p-0.5">
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, -1)}
-                          className="w-6 h-6 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
+                          className="w-6 h-6 text-slate-500 hover:bg-white/10 flex items-center justify-center"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-6 text-center text-xs font-bold text-slate-950">
+                        <span className="w-6 text-center text-xs font-bold text-white">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, 1)}
                           disabled={item.quantity >= item.product.current_stock}
-                          className="w-6 h-6 text-slate-600 hover:bg-slate-100 disabled:opacity-40 flex items-center justify-center"
+                          className="w-6 h-6 text-slate-500 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -478,7 +480,7 @@ export default function PosPage() {
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.product.id)}
-                          className="w-6 h-6 text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
+                          className="w-6 h-6 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -491,19 +493,19 @@ export default function PosPage() {
           </div>
 
           {/* Cart Bottom Summary & Checkout Button */}
-          <div className="p-5 bg-white border-t border-slate-200 space-y-4 shrink-0">
-            <div className="space-y-2 text-sm text-slate-600">
+          <div className="p-5 bg-white/5 backdrop-blur-xl border-white/10 text-white border-t border-white/10 space-y-4 shrink-0">
+            <div className="space-y-2 text-sm text-slate-500">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-semibold text-slate-950">{formatIDR(totalAmount)}</span>
+                <span className="font-semibold text-white">{formatIDR(totalAmount)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Pajak / Diskon</span>
                 <span className="font-medium text-slate-400">Rp 0</span>
               </div>
-              <div className="pt-3 border-t border-slate-200 flex justify-between items-end">
-                <span className="text-sm font-semibold text-slate-950">Total Tagihan</span>
-                <span className="text-2xl font-bold text-emerald-700 tracking-tight">
+              <div className="pt-3 border-t border-white/10 flex justify-between items-end">
+                <span className="text-sm font-semibold text-white">Total Tagihan</span>
+                <span className="text-2xl font-bold text-emerald-400 tracking-tight">
                   {formatIDR(totalAmount)}
                 </span>
               </div>
@@ -512,7 +514,7 @@ export default function PosPage() {
             <Button
               variant="primary"
               size="lg"
-              className="w-full font-bold tracking-wide rounded-none h-12 bg-slate-950 hover:bg-slate-800 text-white border-transparent"
+              className="w-full font-bold tracking-wide rounded-none h-12 bg-white/10 hover:bg-white/20 hover:bg-emerald-400 text-slate-950 border-transparent"
               disabled={cart.length === 0}
               onClick={() => {
                 setCashGiven(totalAmount.toString());
@@ -535,34 +537,34 @@ export default function PosPage() {
       >
         <div className="space-y-5 pt-2">
           {checkoutError && (
-            <div className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200">
+            <div className="p-3 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20">
               {checkoutError}
             </div>
           )}
 
           {/* Total Payable Banner */}
-          <div className="p-5 bg-slate-50 border border-slate-200 text-center">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+          <div className="p-5 bg-white/5 border border-white/10 text-center">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">
               Total Tagihan
             </p>
-            <p className="text-4xl font-light text-slate-950 tracking-tight">
+            <p className="text-4xl font-light text-white tracking-tight">
               {formatIDR(totalAmount)}
             </p>
           </div>
 
           {/* Payment Method Selector Grid */}
           <div>
-            <label className="block text-xs font-semibold text-slate-950 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-white uppercase tracking-wide mb-2">
               Pilih Metode Pembayaran
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-white/10">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`p-3 border-r border-b sm:border-b-0 border-slate-200 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border-r border-b sm:border-b-0 border-white/10 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "cash"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-500 hover:bg-white/5"
                 }`}
               >
                 <Banknote className="w-5 h-5" />
@@ -572,10 +574,10 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("transfer")}
-                className={`p-3 border-r border-b sm:border-b-0 border-slate-200 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border-r border-b sm:border-b-0 border-white/10 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "transfer"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-500 hover:bg-white/5"
                 }`}
               >
                 <CreditCard className="w-5 h-5" />
@@ -585,10 +587,10 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("qris")}
-                className={`p-3 border-r border-slate-200 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border-r border-white/10 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "qris"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-500 hover:bg-white/5"
                 }`}
               >
                 <QrCode className="w-5 h-5" />
@@ -600,8 +602,8 @@ export default function PosPage() {
                 onClick={() => setPaymentMethod("debt")}
                 className={`p-3 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "debt"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-500 hover:bg-white/5"
                 }`}
               >
                 <BookOpen className="w-5 h-5" />
@@ -635,7 +637,7 @@ export default function PosPage() {
                   <button
                     key={denom.label}
                     type="button"
-                    className="px-3 py-1.5 border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                    className="px-3 py-1.5 border border-white/10 text-xs font-medium text-slate-500 hover:bg-white/5 hover:border-white/20 transition-colors"
                     onClick={() => setCashGiven(denom.val.toString())}
                   >
                     {denom.label}
@@ -644,13 +646,13 @@ export default function PosPage() {
               </div>
 
               {/* Change calculation */}
-              <div className="pt-4 border-t border-slate-200 flex justify-between items-end">
-                <span className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Kembalian</span>
+              <div className="pt-4 border-t border-white/10 flex justify-between items-end">
+                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Kembalian</span>
                 <span
                   className={
                     parsedCashGiven >= totalAmount
-                      ? "text-3xl font-light text-slate-950"
-                      : "text-lg font-medium text-rose-600"
+                      ? "text-3xl font-light text-white"
+                      : "text-lg font-medium text-rose-400"
                   }
                 >
                   {parsedCashGiven >= totalAmount
@@ -663,13 +665,13 @@ export default function PosPage() {
 
           {/* Method 2: Transfer details */}
           {paymentMethod === "transfer" && (
-            <div className="p-5 bg-white border border-slate-200 space-y-3 text-sm text-slate-700 text-center">
-              <p className="font-medium text-slate-950 uppercase tracking-widest text-xs">Rekening Tujuan</p>
-              <div className="p-4 bg-slate-50 border border-slate-200">
-                <p className="font-mono text-xl text-slate-950 font-bold tracking-widest">BCA 8830 1928 392</p>
-                <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider">A/N {activeStore.name}</p>
+            <div className="p-5 bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 space-y-3 text-sm text-slate-500 text-center">
+              <p className="font-medium text-white uppercase tracking-widest text-xs">Rekening Tujuan</p>
+              <div className="p-4 bg-white/5 border border-white/10">
+                <p className="font-mono text-xl text-white font-bold tracking-widest">BCA 8830 1928 392</p>
+                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">A/N {activeStore.name}</p>
               </div>
-              <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
+              <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
                 Pastikan mutasi dana telah masuk sebelum menyelesaikan transaksi.
               </p>
             </div>
@@ -677,26 +679,26 @@ export default function PosPage() {
 
           {/* Method 3: QRIS View */}
           {paymentMethod === "qris" && (
-            <div className="p-6 bg-white border border-slate-200 flex flex-col items-center justify-center text-center">
-              <div className="w-40 h-40 bg-white p-3 border border-slate-200 flex items-center justify-center mb-4">
-                <QrCode className="w-32 h-32 text-slate-950" />
+            <div className="p-6 bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 flex flex-col items-center justify-center text-center">
+              <div className="w-40 h-40 bg-white/5 backdrop-blur-xl border-white/10 text-white p-3 border border-white/10 flex items-center justify-center mb-4">
+                <QrCode className="w-32 h-32 text-white" />
               </div>
-              <p className="text-sm font-semibold text-slate-950 uppercase tracking-wider">QRIS Standar Nasional</p>
-              <p className="text-[11px] text-slate-500 mt-1">Dukung pembayaran dari semua aplikasi E-Wallet & Mobile Banking</p>
+              <p className="text-sm font-semibold text-white uppercase tracking-wider">QRIS Standar Nasional</p>
+              <p className="text-[11px] text-slate-400 mt-1">Dukung pembayaran dari semua aplikasi E-Wallet & Mobile Banking</p>
             </div>
           )}
 
           {/* Method 4: Kasbon / Debt options */}
           {paymentMethod === "debt" && (
-            <div className="p-4 bg-slate-50 border border-slate-200 space-y-4">
+            <div className="p-4 bg-white/5 border border-white/10 space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-950 uppercase tracking-wide">
+                <label className="text-xs font-bold text-white uppercase tracking-wide">
                   Pilih Pelanggan Kasbon
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsAddCustomerOpen(true)}
-                  className="text-xs font-semibold text-emerald-700 flex items-center gap-1 hover:text-emerald-800"
+                  className="text-xs font-semibold text-emerald-400 flex items-center gap-1 hover:text-emerald-300"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> Tambah Baru
                 </button>
@@ -705,7 +707,7 @@ export default function PosPage() {
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(Number(e.target.value))}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 text-sm text-slate-900 focus-visible:outline-none focus-visible:border-slate-400 rounded-none"
+                className="w-full px-3 py-2.5 bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 text-sm text-white focus-visible:outline-none focus-visible:border-slate-400 rounded-none"
               >
                 <option value="">-- Pilih Pelanggan --</option>
                 {customers.map((c) => (
@@ -733,7 +735,7 @@ export default function PosPage() {
           />
 
           {/* Modal Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
             <Button
               type="button"
               variant="outline"
@@ -745,7 +747,7 @@ export default function PosPage() {
             <Button
               type="button"
               variant="primary"
-              className="rounded-none px-8 bg-slate-950 hover:bg-slate-800 text-white"
+              className="rounded-none px-8 bg-white/10 hover:bg-white/20 hover:bg-emerald-400 text-slate-950"
               isLoading={isSubmittingSale}
               onClick={handleProcessSale}
             >
@@ -777,7 +779,7 @@ export default function PosPage() {
             value={newCustPhone}
             onChange={(e) => setNewCustPhone(e.target.value)}
           />
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
             <Button
               type="button"
               variant="outline"
@@ -786,7 +788,7 @@ export default function PosPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" className="rounded-none bg-slate-950 text-white hover:bg-slate-800" isLoading={isCreatingCustomer}>
+            <Button type="submit" variant="primary" className="rounded-none bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800" isLoading={isCreatingCustomer}>
               Simpan Data
             </Button>
           </div>
@@ -801,21 +803,21 @@ export default function PosPage() {
         maxWidth="md"
       >
         <div className="space-y-6 text-center pt-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-50 border border-slate-200 text-slate-950 mb-2">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/5 border border-white/10 text-white mb-2">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <p className="text-sm text-slate-500 max-w-xs mx-auto">
+          <p className="text-sm text-slate-400 max-w-xs mx-auto">
             Transaksi telah tersimpan dan stok otomatis terpotong.
           </p>
 
           {/* Receipt Preview Box */}
           <div
             id="printable-receipt"
-            className="p-6 bg-white border border-slate-200 text-left text-xs space-y-4 font-mono text-slate-950 max-w-sm mx-auto"
+            className="p-6 bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 text-left text-xs space-y-4 font-mono text-white max-w-sm mx-auto"
           >
-            <div className="text-center pb-4 border-b border-dashed border-slate-300">
+            <div className="text-center pb-4 border-b border-dashed border-white/20">
               <p className="font-bold text-base tracking-widest uppercase mb-1">{activeStore.name}</p>
-              <p className="text-[10px] text-slate-500 uppercase">{activeStore.address || "Outlet Resmi"}</p>
+              <p className="text-[10px] text-slate-400 uppercase">{activeStore.address || "Outlet Resmi"}</p>
               <p className="text-[10px] text-slate-400 mt-2">
                 {formatDate(completedTransaction?.occurred_at || new Date())}
               </p>
@@ -825,7 +827,7 @@ export default function PosPage() {
             </div>
 
             {/* Receipt Items */}
-            <div className="space-y-2 py-3 border-b border-dashed border-slate-300">
+            <div className="space-y-2 py-3 border-b border-dashed border-white/20">
               {completedTransaction?.items?.map((it, idx) => (
                 <div key={idx} className="flex justify-between items-start gap-4">
                   <span className="flex-1">
@@ -842,7 +844,7 @@ export default function PosPage() {
                 <span>TOTAL</span>
                 <span>{formatIDR(completedTransaction?.total_amount)}</span>
               </div>
-              <div className="flex justify-between text-[10px] text-slate-500 uppercase tracking-widest">
+              <div className="flex justify-between text-[10px] text-slate-400 uppercase tracking-widest">
                 <span>Metode</span>
                 <span>
                   {completedTransaction?.payments?.[0]?.payment_method || "CASH"}
@@ -856,12 +858,12 @@ export default function PosPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-200">
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10">
             <Button
               type="button"
               variant="outline"
               onClick={handlePrintReceipt}
-              className="flex-1 rounded-none h-12 text-slate-950 border-slate-200"
+              className="flex-1 rounded-none h-12 text-white border-white/10"
             >
               <Printer className="w-4 h-4 mr-2" /> Cetak Struk
             </Button>
@@ -869,7 +871,7 @@ export default function PosPage() {
               type="button"
               variant="primary"
               onClick={() => setIsReceiptOpen(false)}
-              className="flex-1 rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+              className="flex-1 rounded-none h-12 bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800"
             >
               Transaksi Baru
             </Button>

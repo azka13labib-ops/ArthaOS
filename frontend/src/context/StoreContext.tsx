@@ -59,7 +59,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   useEffect(() => {
-    refreshStores();
+    let mounted = true;
+    refreshStores().then(() => {
+      if (!mounted) return;
+    });
+    return () => {
+      mounted = false;
+    };
   }, [refreshStores]);
 
   const setActiveStore = (store: Store) => {

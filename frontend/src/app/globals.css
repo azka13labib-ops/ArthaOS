@@ -1,44 +1,52 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: #020617; /* slate-950 */
+  --color-foreground: #f8fafc; /* slate-50 */
+  
+  --color-card: rgba(15, 23, 42, 0.4); /* glass slate-900 */
+  --color-card-hover: rgba(30, 41, 59, 0.6);
+  --color-card-border: rgba(255, 255, 255, 0.05);
+  
+  --color-primary: #10b981; /* emerald-500 */
+  --color-primary-dark: #047857; /* emerald-700 */
+  
+  --color-muted: #1e293b; /* slate-800 */
+  --color-muted-foreground: #94a3b8; /* slate-400 */
+  
+  /* Soft glass shadows */
+  --shadow-glass: 0 4px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
 @layer base {
-  :root {
-    --background: 248 250 252;
-    --foreground: 15 23 42;
-    --card: 255 255 255;
-    --card-foreground: 15 23 42;
-    --primary: 16 185 129;
-    --primary-foreground: 255 255 255;
-    --border: 226 232 240;
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139;
-  }
-
-  * {
-    border-color: #e2e8f0;
-  }
-
   body {
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Soft ambient background glow */
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
   }
 
   /* Custom Clean Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #334155;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #475569;
   }
 }
 
@@ -61,3 +69,4 @@
     color: black;
   }
 }
+

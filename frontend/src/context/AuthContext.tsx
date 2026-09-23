@@ -21,25 +21,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let mounted = true;
     const storedToken = localStorage.getItem("artha_token");
-    if (storedToken) {
-      setToken(storedToken);
-      api.auth
-        .me()
-        .then((userData) => {
-          setUser(userData);
-        })
-        .catch(() => {
-          localStorage.removeItem("artha_token");
-          setToken(null);
-          setUser(null);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      setIsLoading(false);
-    }
+    
+    Promise.resolve().then(() => {
+      if (!mounted) return;
+      if (storedToken) {
+        setToken(storedToken);
+        api.auth
+          .me()
+          .then((userData) => {
+            if (mounted) {
+              setUser(userData);
+            }
+          })
+          .catch(() => {
+            if (mounted) {
+              localStorage.removeItem("artha_token");
+              setToken(null);
+              setUser(null);
+            }
+          })
+          .finally(() => {
+            if (mounted) {
+              setIsLoading(false);
+            }
+          });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = async (newToken: string) => {

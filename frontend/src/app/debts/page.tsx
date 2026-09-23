@@ -144,12 +144,12 @@ export default function DebtsPage() {
     <AppLayout>
       <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-white/10">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1">
+            <h1 className="text-3xl font-medium tracking-tight text-white mb-1">
               Buku Kasbon
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               Pantau piutang pelanggan yang belum lunas, catat cicilan, dan cek riwayat pelunasan.
             </p>
           </div>
@@ -158,7 +158,7 @@ export default function DebtsPage() {
               variant="outline"
               onClick={loadDebts}
               disabled={isLoading}
-              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
+              className="rounded-none border-white/10 hover:bg-white/5 h-10 px-4"
               title="Perbarui data kasbon"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -168,25 +168,25 @@ export default function DebtsPage() {
         </div>
 
         {/* Quick Stats Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-slate-200 border border-slate-200">
-          <div className="bg-white p-6 md:p-8 flex flex-col justify-between hover:bg-slate-50 transition-colors">
-            <p className="text-[13px] font-medium text-slate-500 mb-6 uppercase tracking-wider">Total Piutang Berjalan</p>
-            <h3 className="text-3xl font-medium text-slate-950 tracking-tight">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-slate-200 border border-white/10">
+          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
+            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Total Piutang Berjalan</p>
+            <h3 className="text-3xl font-medium text-white tracking-tight">
               {formatIDR(totalOutstanding)}
             </h3>
           </div>
 
-          <div className="bg-white p-6 md:p-8 flex flex-col justify-between hover:bg-slate-50 transition-colors">
-            <p className="text-[13px] font-medium text-slate-500 mb-6 uppercase tracking-wider">Telah Terkumpul</p>
-            <h3 className="text-3xl font-medium text-emerald-700 tracking-tight">
+          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
+            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Telah Terkumpul</p>
+            <h3 className="text-3xl font-medium text-emerald-400 tracking-tight">
               {formatIDR(totalCollected)}
             </h3>
           </div>
 
-          <div className="bg-white p-6 md:p-8 flex flex-col justify-between hover:bg-slate-50 transition-colors">
-            <p className="text-[13px] font-medium text-slate-500 mb-6 uppercase tracking-wider">Pelanggan Kasbon</p>
-            <h3 className="text-3xl font-medium text-slate-950 tracking-tight">
-              {debts.filter((d) => d.status !== "paid").length} <span className="text-sm text-slate-500 font-normal tracking-normal lowercase">Debitur</span>
+          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
+            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Pelanggan Kasbon</p>
+            <h3 className="text-3xl font-medium text-white tracking-tight">
+              {debts.filter((d) => d.status !== "paid").length} <span className="text-sm text-slate-400 font-normal tracking-normal lowercase">Debitur</span>
             </h3>
           </div>
         </div>
@@ -194,25 +194,25 @@ export default function DebtsPage() {
         {/* Search & Filter Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="relative w-full sm:w-96 group">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-700 transition-colors" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-400 transition-colors" />
             <input
               type="text"
               placeholder="Cari nama pelanggan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-none focus-visible:outline-none focus-visible:border-slate-400 transition-colors placeholder:text-slate-400"
+              className="w-full pl-9 pr-4 py-2.5 text-sm bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 rounded-none focus-visible:outline-none focus-visible:border-slate-400 transition-colors placeholder:text-slate-400"
             />
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex items-center w-full sm:w-auto border border-slate-200 bg-slate-50">
+          <div className="flex items-center w-full sm:w-auto border border-white/10 bg-white/5">
             <button
               type="button"
               onClick={() => setStatusFilter("unpaid")}
               className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
                 statusFilter === "unpaid"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-600 hover:text-slate-950"
+                  ? "bg-white/10 hover:bg-white/20 text-white"
+                  : "text-slate-500 hover:text-white"
               }`}
             >
               Belum Lunas ({debts.filter((d) => d.status !== "paid").length})
@@ -220,10 +220,10 @@ export default function DebtsPage() {
             <button
               type="button"
               onClick={() => setStatusFilter("paid")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-slate-200 ${
+              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-white/10 ${
                 statusFilter === "paid"
-                  ? "bg-slate-950 text-white border-transparent"
-                  : "text-slate-600 hover:text-slate-950"
+                  ? "bg-white/10 hover:bg-white/20 text-white border-transparent"
+                  : "text-slate-500 hover:text-white"
               }`}
             >
               Lunas ({debts.filter((d) => d.status === "paid").length})
@@ -233,8 +233,8 @@ export default function DebtsPage() {
               onClick={() => setStatusFilter("all")}
               className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
                 statusFilter === "all"
-                  ? "bg-slate-950 text-white"
-                  : "text-slate-600 hover:text-slate-950"
+                  ? "bg-white/10 hover:bg-white/20 text-white"
+                  : "text-slate-500 hover:text-white"
               }`}
             >
               Semua ({debts.length})
@@ -243,14 +243,14 @@ export default function DebtsPage() {
         </div>
 
         {/* Debts Table */}
-        <div className="bg-white border border-slate-200">
+        <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10">
           {isLoading ? (
             <div className="p-12">
               <Spinner size="md" />
             </div>
           ) : filteredDebts.length === 0 ? (
             <EmptyState
-              icon={<BookOpen className="w-8 h-8 text-slate-300" />}
+              icon={<BookOpen className="w-8 h-8 text-slate-500" />}
               title="Tidak Ada Catatan Kasbon"
               description={
                 statusFilter === "unpaid"
@@ -261,7 +261,7 @@ export default function DebtsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="text-slate-500 border-b border-slate-200">
+                <thead className="text-slate-400 border-b border-white/10">
                   <tr>
                     <th className="px-6 py-4 font-medium">Pelanggan</th>
                     <th className="px-6 py-4 font-medium">Tanggal Kasbon</th>
@@ -279,41 +279,41 @@ export default function DebtsPage() {
                     const isPartial = d.status === "partial";
 
                     return (
-                      <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-slate-950">
-                          <div className="font-semibold text-slate-950">{cust?.name || "Pelanggan"}</div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                      <tr key={d.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-medium text-white">
+                          <div className="font-semibold text-white">{cust?.name || "Pelanggan"}</div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
                             {cust?.phone_number || cust?.phone || "Tanpa No HP"}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">
                           {formatShortDate(d.created_at)}
                         </td>
-                        <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">
                           {d.due_date ? (
-                            <span className="text-slate-950 font-medium">
+                            <span className="text-white font-medium">
                               {formatShortDate(d.due_date)}
                             </span>
                           ) : (
-                            <span className="text-slate-300">-</span>
+                            <span className="text-slate-500">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right text-slate-500">
+                        <td className="px-6 py-4 text-right text-slate-400">
                           {formatIDR(d.original_amount)}
                         </td>
-                        <td className="px-6 py-4 text-right font-semibold text-slate-950">
+                        <td className="px-6 py-4 text-right font-semibold text-white">
                           <span
                             className={
                               isPaid
-                                ? "text-slate-300 line-through"
-                                : "text-slate-950"
+                                ? "text-slate-500 line-through"
+                                : "text-white"
                             }
                           >
                             {formatIDR(d.remaining_amount)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-block px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase ${isPaid ? 'bg-emerald-50 text-emerald-700' : isPartial ? 'bg-slate-100 text-slate-700' : 'bg-slate-950 text-white'}`}>
+                          <span className={`inline-block px-2 py-0.5 text-[11px] font-bold tracking-wider uppercase ${isPaid ? 'bg-emerald-50 text-emerald-400' : isPartial ? 'bg-white/10 text-slate-500' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
                              {isPaid ? "Lunas" : isPartial ? "Dicicil" : "Belum Lunas"}
                           </span>
                         </td>
@@ -321,7 +321,7 @@ export default function DebtsPage() {
                           {!isPaid ? (
                             <Button
                               variant="primary"
-                              className="h-8 rounded-none px-4 text-xs bg-slate-950 text-white hover:bg-slate-800"
+                              className="h-8 rounded-none px-4 text-xs bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800"
                               onClick={() => {
                                 setSelectedDebt(d);
                                 setPayAmount(d.remaining_amount);
@@ -360,21 +360,21 @@ export default function DebtsPage() {
       >
         <form onSubmit={handlePayDebt} className="space-y-5 pt-2">
           {payError && (
-            <div className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200">
+            <div className="p-3 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20">
               {payError}
             </div>
           )}
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="block text-xs font-semibold text-slate-950 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-white uppercase tracking-wide">
                 Nominal Pembayaran (Rp)
               </label>
               {selectedDebt && (
                 <button
                   type="button"
                   onClick={() => setPayAmount(selectedDebt.remaining_amount)}
-                  className="text-xs text-slate-500 font-semibold hover:text-slate-950 uppercase tracking-wider"
+                  className="text-xs text-slate-400 font-semibold hover:text-white uppercase tracking-wider"
                 >
                   Bayar Penuh
                 </button>
@@ -392,17 +392,17 @@ export default function DebtsPage() {
 
           {/* Payment Method Switcher */}
           <div>
-            <label className="block text-xs font-semibold text-slate-950 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-white uppercase tracking-wide mb-2">
               Metode Pembayaran
             </label>
-            <div className="grid grid-cols-2 gap-0 border border-slate-200">
+            <div className="grid grid-cols-2 gap-0 border border-white/10">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-slate-200 flex items-center justify-center gap-2 ${
+                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-white/10 flex items-center justify-center gap-2 ${
                   paymentMethod === "cash"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-500 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-400 hover:bg-white/5"
                 }`}
               >
                 <Banknote className="w-4 h-4" /> Tunai
@@ -412,8 +412,8 @@ export default function DebtsPage() {
                 onClick={() => setPaymentMethod("transfer")}
                 className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
                   paymentMethod === "transfer"
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-500 hover:bg-slate-50"
+                    ? "bg-white/10 hover:bg-white/20 text-white"
+                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-400 hover:bg-white/5"
                 }`}
               >
                 <CreditCard className="w-4 h-4" /> Transfer
@@ -428,7 +428,7 @@ export default function DebtsPage() {
             onChange={(e) => setPaymentNotes(e.target.value)}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
             <Button
               type="button"
               variant="outline"
@@ -437,7 +437,7 @@ export default function DebtsPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" className="rounded-none px-6 bg-slate-950 text-white hover:bg-slate-800" isLoading={isSubmittingPayment}>
+            <Button type="submit" variant="primary" className="rounded-none px-6 bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800" isLoading={isSubmittingPayment}>
               Simpan Pembayaran
             </Button>
           </div>

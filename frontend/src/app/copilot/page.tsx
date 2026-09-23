@@ -29,8 +29,6 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
 import { Product, Transaction, Debt, Customer } from "@/lib/types";
@@ -145,7 +143,6 @@ export default function AICopilotPage() {
     }).format(val);
   };
 
-  // Helper to create clean wa.me link
   const createWhatsAppLink = (phone: string, text: string) => {
     let clean = phone.replace(/[^0-9]/g, "");
     if (clean.startsWith("0")) {
@@ -154,7 +151,6 @@ export default function AICopilotPage() {
     return `https://wa.me/${clean}?text=${encodeURIComponent(stripAllEmojis(text))}`;
   };
 
-  // Computed Business Insights
   const insights = useMemo(() => {
     const totalOmset = sales.reduce((sum, s) => sum + (s.total_amount || 0), 0);
     const totalCost = sales.reduce((sum, s) => sum + (s.total_cost || 0), 0);
@@ -175,7 +171,6 @@ export default function AICopilotPage() {
     };
   }, [products, sales, debts]);
 
-  // Tab 1 Action: Chat with AI Advisor
   const handleSendMessage = async (queryText?: string) => {
     const textToSend = queryText || inputQuery;
     if (!textToSend.trim() || isThinking || !activeStore) return;
@@ -231,7 +226,6 @@ export default function AICopilotPage() {
     }
   };
 
-  // Tab 2 Action: Parse WhatsApp Order
   const handleExtractOrder = async () => {
     if (!activeStore || !rawOrderText.trim() || isExtractingOrder) return;
     setIsExtractingOrder(true);
@@ -245,7 +239,6 @@ export default function AICopilotPage() {
     }
   };
 
-  // Tab 3 Action: CS Inquiry
   const handleInquiry = async () => {
     if (!activeStore || !inquiryText.trim() || isGeneratingInquiry) return;
     setIsGeneratingInquiry(true);
@@ -259,7 +252,6 @@ export default function AICopilotPage() {
     }
   };
 
-  // Tab 4 Action: Generate Promo
   const handleGeneratePromo = async () => {
     if (!activeStore || !promoPrompt.trim() || isGeneratingPromo) return;
     setIsGeneratingPromo(true);
@@ -281,7 +273,6 @@ export default function AICopilotPage() {
     setTimeout(() => setCopiedPromo(false), 2000);
   };
 
-  // Trigger simulated batch broadcast queue
   const handleSimulateBroadcast = () => {
     if (!generatedPromo) return;
     setIsBroadcasting(true);
@@ -299,7 +290,6 @@ export default function AICopilotPage() {
     "Produk apa yang stoknya perlu ditambah menjelang akhir pekan?",
   ];
 
-  // Customer debt map
   const customerDebtMap = useMemo(() => {
     const map = new Map<number, number>();
     debts.forEach((d) => {
@@ -311,7 +301,6 @@ export default function AICopilotPage() {
     return map;
   }, [debts]);
 
-  // Filtered customers for WhatsApp Hub
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
       const phone = c.phone_number || c.phone || "";
@@ -332,886 +321,630 @@ export default function AICopilotPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full">
+      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="pb-3 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-                Artha AI Copilot & LLM Workspace
-              </h2>
-              <Badge variant="success" size="sm">
-                Groq LPU Active
-              </Badge>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Kecerdasan buatan terintegrasi untuk konsultasi bisnis, ekstraksi order WhatsApp, dan CS cerdas 24/7 tanpa emoji.
+            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1 flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-slate-950" />
+              Artha AI Copilot
+            </h1>
+            <p className="text-sm text-slate-500">
+              Kecerdasan buatan terintegrasi untuk konsultasi bisnis, ekstraksi order WhatsApp, dan CS cerdas.
             </p>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadData}
-            isLoading={isLoading}
-            className="text-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Segarkan Data
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold tracking-widest uppercase">
+              <span className="w-2 h-2 rounded-full bg-slate-950 animate-pulse" />
+              LPU Active
+            </span>
+            <Button
+              variant="outline"
+              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
+              onClick={loadData}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Segarkan Data
+            </Button>
+          </div>
         </div>
 
         {/* SECTION 1: 4 Diagnostic KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-slate-200 hover:border-emerald-300 transition-all">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Kesehatan Bisnis Real-Time</span>
-                <div className="p-1.5 bg-emerald-50 text-emerald-700 rounded-lg">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">95</span>
-                <span className="text-xs text-slate-400">/ 100</span>
-                <Badge variant="success" size="sm" className="ml-auto">
-                  Sangat Prima
-                </Badge>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Likuiditas kas dan perputaran persediaan aman.
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-slate-200 bg-white">
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kesehatan Bisnis</span>
+              <ShieldCheck className="w-4 h-4 text-slate-950" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-medium text-slate-950">95</span>
+              <span className="text-sm text-slate-500">/ 100</span>
+            </div>
+            <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest uppercase">
+              Prima
+            </span>
+          </div>
 
-          <Card className="border-slate-200 hover:border-emerald-300 transition-all">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Rata-Rata Margin Kotor</span>
-                <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">
-                  {insights.grossMarginPct.toFixed(1)}%
-                </span>
-                <Badge variant="info" size="sm" className="ml-auto">
-                  Target: &gt;20%
-                </Badge>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Laba kotor: {formatCurrency(insights.grossProfit)}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6 border-b lg:border-b-0 lg:border-r border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Margin</span>
+              <TrendingUp className="w-4 h-4 text-slate-950" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-medium text-slate-950">
+                {insights.grossMarginPct.toFixed(1)}%
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono">
+              Laba: {formatCurrency(insights.grossProfit)}
+            </p>
+          </div>
 
-          <Card className="border-slate-200 hover:border-emerald-300 transition-all">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Kasbon Tertahan</span>
-                <div className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">
-                  {formatCurrency(insights.totalUnpaid)}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                {insights.unpaidCount} pelanggan dengan tagihan aktif.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kasbon Tertahan</span>
+              <Users className="w-4 h-4 text-slate-950" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-medium text-rose-600 tracking-tight">
+                {formatCurrency(insights.totalUnpaid)}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono">
+              {insights.unpaidCount} tagihan aktif
+            </p>
+          </div>
 
-          <Card className="border-slate-200 hover:border-emerald-300 transition-all">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Peringatan Restock</span>
-                <div className="p-1.5 bg-rose-50 text-rose-700 rounded-lg">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-900">
-                  {insights.lowStockCount} SKU
-                </span>
-                {insights.lowStockCount > 0 ? (
-                  <Badge variant="danger" size="sm" className="ml-auto">
-                    Perlu Restock
-                  </Badge>
-                ) : (
-                  <Badge variant="success" size="sm" className="ml-auto">
-                    Aman
-                  </Badge>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Stok &le; 5 pcs di etalase toko.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Peringatan Restock</span>
+              <AlertTriangle className="w-4 h-4 text-slate-950" />
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-medium text-slate-950">
+                {insights.lowStockCount} SKU
+              </span>
+            </div>
+            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.lowStockCount > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-700'}`}>
+              {insights.lowStockCount > 0 ? 'Perlu Restock' : 'Aman'}
+            </span>
+          </div>
         </div>
 
         {/* SECTION 2: Interactive AI Workspace Tabs */}
-        <div className="space-y-4">
-          {/* Tab Navigation Buttons */}
-          <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto select-none">
-            <button
-              type="button"
-              onClick={() => setActiveTab("promo")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                activeTab === "promo"
-                  ? "bg-purple-700 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Megaphone className="w-4 h-4" />
-              <span>1. Generator Promosi & WhatsApp Hub</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("advisor")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                activeTab === "advisor"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Bot className="w-4 h-4" />
-              <span>2. Konsultasi Bisnis AI</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("order_extractor")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                activeTab === "order_extractor"
-                  ? "bg-emerald-700 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>3. Ekstraktor Pesanan WhatsApp</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("cs_bot")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                activeTab === "cs_bot"
-                  ? "bg-blue-700 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>4. Bot CS WhatsApp 24/7</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("settings")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                activeTab === "settings"
-                  ? "bg-slate-700 text-white shadow-sm"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Sliders className="w-4 h-4" />
-              <span>5. Status Engine AI</span>
-            </button>
+        <div className="space-y-6">
+          {/* Tab Navigation */}
+          <div className="flex border-b border-slate-200 overflow-x-auto">
+            {[
+              { id: "promo", icon: Megaphone, label: "Generator Promosi" },
+              { id: "advisor", icon: Bot, label: "Konsultasi Bisnis AI" },
+              { id: "order_extractor", icon: ShoppingCart, label: "Ekstraktor Pesanan" },
+              { id: "cs_bot", icon: MessageSquare, label: "Bot CS 24/7" },
+              { id: "settings", icon: Sliders, label: "Status Engine" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "border-slate-950 text-slate-950"
+                    : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* TAB 1: Promo Broadcast Generator & WhatsApp Hub Integration */}
+          {/* TAB 1: Promo Generator */}
           {activeTab === "promo" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto">
-              {/* Left Column: Promo Generator Form */}
-              <div className="lg:col-span-6 space-y-4">
-                <Card className="border-slate-200">
-                  <CardHeader className="pb-3 border-b border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-purple-900">
-                        <div className="p-1.5 bg-purple-100 text-purple-700 rounded-lg">
-                          <Megaphone className="w-4 h-4" />
-                        </div>
-                        <CardTitle className="text-sm">Generator Pesan Promosi AI</CardTitle>
-                      </div>
-                      <Link
-                        href="/whatsapp"
-                        className="text-[11px] text-emerald-700 hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        <ExternalLink className="w-3 h-3" /> Buka WhatsApp Hub
-                      </Link>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      Buat teks penawaran promosi WhatsApp berbasis data toko tanpa emoji, siap disiarkan ke pelanggan.
-                    </p>
-                  </CardHeader>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column: Form */}
+              <div className="border border-slate-200 bg-white p-6 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h2 className="text-lg font-medium text-slate-950">Pengaturan Promosi</h2>
+                </div>
 
-                  <CardContent className="p-4 space-y-4">
-                    {/* Store WhatsApp Hub Number configuration */}
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Phone className="w-3.5 h-3.5 text-emerald-600" /> Nomor WhatsApp Resmi Toko
-                        </label>
-                        <span className="text-[10px] text-slate-400">Tersambung ke WhatsApp Hub</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={storeWhatsAppPhone}
-                          onChange={(e) => setStoreWhatsAppPhone(e.target.value)}
-                          placeholder="Contoh: 081234567890"
-                          className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:border-purple-500 outline-none font-mono"
-                        />
-                        <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={includeStorePhone}
-                            onChange={(e) => setIncludeStorePhone(e.target.checked)}
-                            className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
-                          />
-                          Sertakan link WA
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Quick Product Chips */}
-                    {products.length > 0 && (
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-semibold text-slate-600">
-                          Pilih Produk Toko untuk Promo:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {products.slice(0, 6).map((prod) => (
-                            <button
-                              key={prod.id}
-                              type="button"
-                              onClick={() => {
-                                setPromoPrompt(
-                                  `Buatkan promo spesial untuk produk ${prod.name} (Harga: ${formatCurrency(
-                                    prod.sell_price
-                                  )}) dengan diskon hemat untuk pelanggan setia.`
-                                );
-                              }}
-                              className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[11px] transition-colors text-left"
-                            >
-                              + {prod.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Instruction input */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Instruksi Promosi:</label>
-                      <textarea
-                        rows={3}
-                        value={promoPrompt}
-                        onChange={(e) => setPromoPrompt(e.target.value)}
-                        placeholder="Contoh: Buat promo diskon 10% untuk produk sembako dan cemilan akhir pekan"
-                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-purple-500 outline-none transition-all leading-relaxed font-sans"
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide block mb-2">
+                      Nomor WhatsApp Toko
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={storeWhatsAppPhone}
+                        onChange={(e) => setStoreWhatsAppPhone(e.target.value)}
+                        className="flex-1 bg-white border border-slate-200 p-3 text-sm text-slate-900 focus:outline-none focus:border-slate-950 font-mono"
                       />
+                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={includeStorePhone}
+                          onChange={(e) => setIncludeStorePhone(e.target.checked)}
+                          className="w-4 h-4 text-slate-950 border-slate-300 rounded-none focus:ring-slate-950"
+                        />
+                        Sertakan link
+                      </label>
                     </div>
+                  </div>
 
-                    <Button
-                      type="button"
-                      variant="primary"
-                      className="w-full text-xs font-bold h-10 bg-purple-600 hover:bg-purple-700"
-                      isLoading={isGeneratingPromo}
-                      onClick={handleGeneratePromo}
-                    >
-                      <Sparkles className="w-4 h-4 mr-1.5" /> Hasilkan Teks Promosi WhatsApp
-                    </Button>
-
-                    {/* Generated Result Container */}
-                    {generatedPromo && (
-                      <div className="p-4 bg-white border border-purple-200 rounded-2xl space-y-3 text-xs text-slate-900 shadow-xs animate-in fade-in">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                          <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Format Siap Kirim WhatsApp Toko:
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="text-xs h-7 px-2.5"
-                            onClick={handleCopyPromo}
-                          >
-                            {copiedPromo ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Tersalin
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5 mr-1" /> Salin Pesan
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl text-xs text-slate-900 font-sans whitespace-pre-wrap leading-relaxed">
-                          {generatedPromo}
-                        </div>
-
-                        <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
-                          {storeWhatsAppPhone && (
-                            <a
-                              href={createWhatsAppLink(storeWhatsAppPhone, generatedPromo)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full sm:w-auto flex-1 text-center py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-                            >
-                              <Phone className="w-3.5 h-3.5" /> Uji Kirim ke Nomor Toko
-                            </a>
-                          )}
+                  {products.length > 0 && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide">
+                        Pilih Produk:
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {products.slice(0, 6).map((prod) => (
                           <button
-                            type="button"
-                            onClick={handleSimulateBroadcast}
-                            disabled={isBroadcasting}
-                            className="w-full sm:w-auto py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                            key={prod.id}
+                            onClick={() => {
+                              setPromoPrompt(
+                                `Buatkan promo spesial untuk produk ${prod.name} (Harga: ${formatCurrency(
+                                  prod.sell_price
+                                )}) dengan diskon hemat untuk pelanggan setia.`
+                              );
+                            }}
+                            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs transition-colors"
                           >
-                            {isBroadcasting ? (
-                              <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Memproses Siaran...
-                              </>
-                            ) : broadcastDone ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 text-emerald-400" /> Siaran Terkirim ke Hub!
-                              </>
-                            ) : (
-                              <>
-                                <Zap className="w-3.5 h-3.5 text-amber-400" /> Siarkan ke Semua Kontak Terpilih
-                              </>
-                            )}
+                            + {prod.name}
                           </button>
-                        </div>
+                        ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide">
+                      Instruksi AI:
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={promoPrompt}
+                      onChange={(e) => setPromoPrompt(e.target.value)}
+                      className="w-full p-4 bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-slate-950 resize-none font-sans"
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+                    isLoading={isGeneratingPromo}
+                    onClick={handleGeneratePromo}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" /> Hasilkan Teks Promosi
+                  </Button>
+                </div>
+
+                {/* Generated Result */}
+                {generatedPromo && (
+                  <div className="p-6 border border-slate-200 bg-slate-50 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-950 text-sm">
+                        Hasil Generate
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-none border-slate-300 text-xs h-8 px-3 bg-white"
+                        onClick={handleCopyPromo}
+                      >
+                        {copiedPromo ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 mr-2 text-slate-950" /> Tersalin
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 mr-2" /> Salin Pesan
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <pre className="p-4 bg-white border border-slate-200 text-sm text-slate-700 font-sans whitespace-pre-wrap leading-relaxed">
+                      {generatedPromo}
+                    </pre>
+
+                    <div className="flex gap-3">
+                      {storeWhatsAppPhone && (
+                        <a
+                          href={createWhatsAppLink(storeWhatsAppPhone, generatedPromo)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-slate-200"
+                        >
+                          <Phone className="w-4 h-4" /> Uji Kirim
+                        </a>
+                      )}
+                      <button
+                        onClick={handleSimulateBroadcast}
+                        disabled={isBroadcasting}
+                        className="flex-1 py-3 px-4 bg-slate-950 hover:bg-slate-800 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        {isBroadcasting ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" /> Memproses...
+                          </>
+                        ) : broadcastDone ? (
+                          <>
+                            <Check className="w-4 h-4" /> Terkirim!
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" /> Siarkan Massal
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Right Column: WhatsApp Hub Direct Broadcast & Customer Targets */}
-              <div className="lg:col-span-6 space-y-4">
-                <Card className="border-slate-200 flex flex-col h-full">
-                  <CardHeader className="pb-3 border-b border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-emerald-900">
-                        <div className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg">
-                          <Users className="w-4 h-4" />
-                        </div>
-                        <CardTitle className="text-sm">Broadcast ke Kontak WhatsApp Toko</CardTitle>
-                      </div>
-                      <Badge variant="success" size="sm">
-                        {customers.length} Kontak Terdaftar
-                      </Badge>
+              {/* Right Column: Customer Targets */}
+              <div className="border border-slate-200 bg-white flex flex-col h-full">
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                  <h2 className="text-lg font-medium text-slate-950">Target Broadcast</h2>
+                  <span className="px-3 py-1 bg-slate-200 text-slate-800 text-xs font-bold tracking-widest uppercase">
+                    {customers.length} Kontak
+                  </span>
+                </div>
+
+                <div className="p-6 flex-1 flex flex-col space-y-4">
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Cari pelanggan..."
+                        value={customerSearch}
+                        onChange={(e) => setCustomerSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 text-sm focus:outline-none focus:border-slate-950"
+                      />
                     </div>
-                    <p className="text-xs text-slate-500">
-                      Kirim promo langsung ke nomor pelanggan terdaftar di WhatsApp Hub outlet {activeStore?.name}
-                    </p>
-                  </CardHeader>
+                    <select
+                      value={customerFilter}
+                      onChange={(e) => setCustomerFilter(e.target.value as any)}
+                      className="bg-white border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none"
+                    >
+                      <option value="all">Semua</option>
+                      <option value="has_phone">Ada WA</option>
+                      <option value="has_debt">Kasbon</option>
+                    </select>
+                  </div>
 
-                  <CardContent className="p-4 flex-1 flex flex-col space-y-3">
-                    {/* Search and Filters */}
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="text"
-                          placeholder="Cari nama atau nomor telepon pelanggan..."
-                          value={customerSearch}
-                          onChange={(e) => setCustomerSearch(e.target.value)}
-                          className="w-full pl-8.5 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:bg-white focus:border-emerald-500 outline-none"
-                        />
+                  <div className="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[500px]">
+                    {filteredCustomers.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400">
+                        Tidak ada pelanggan yang cocok.
                       </div>
-                      <div className="flex items-center gap-1 text-xs">
-                        <Filter className="w-3.5 h-3.5 text-slate-400" />
-                        <select
-                          value={customerFilter}
-                          onChange={(e) => setCustomerFilter(e.target.value as "all" | "has_phone" | "has_debt")}
-                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 outline-none"
-                        >
-                          <option value="all">Semua ({customers.length})</option>
-                          <option value="has_phone">Punya No. WA</option>
-                          <option value="has_debt">Ada Kasbon</option>
-                        </select>
-                      </div>
-                    </div>
+                    ) : (
+                      filteredCustomers.map((c) => {
+                        const phoneNum = c.phone_number || c.phone || "";
+                        const debtAmount = customerDebtMap.get(c.id) || 0;
+                        const promoMsg = generatedPromo || `Halo Kak ${c.name}! Ada promo spesial untukmu.`;
 
-                    {/* Customer List */}
-                    <div className="flex-1 overflow-y-auto space-y-2 max-h-125 pr-1">
-                      {filteredCustomers.length === 0 ? (
-                        <div className="py-12 text-center text-slate-400 space-y-1">
-                          <Users className="w-8 h-8 mx-auto opacity-40" />
-                          <p className="text-xs">Tidak ditemukan kontak pelanggan yang cocok.</p>
-                        </div>
-                      ) : (
-                        filteredCustomers.map((c) => {
-                          const phoneNum = c.phone_number || c.phone || "";
-                          const debtAmount = customerDebtMap.get(c.id) || 0;
-                          const promoMsg =
-                            generatedPromo ||
-                            `Halo Kak ${c.name}! Dapatkan penawaran promo spesial di outlet kami minggu ini. Kunjungi toko kami sekarang atau pesan via WhatsApp!`;
-
-                          return (
-                            <div
-                              key={c.id}
-                              className="p-3 bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-300 rounded-xl flex items-center justify-between gap-3 transition-all"
-                            >
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-bold text-slate-900 text-xs truncate">{c.name}</p>
-                                  {debtAmount > 0 && (
-                                    <Badge variant="warning" size="sm" className="text-[10px] py-0">
-                                      Kasbon: {formatCurrency(debtAmount)}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                  {phoneNum || "Belum ada nomor WA"}
-                                </p>
+                        return (
+                          <div
+                            key={c.id}
+                            className="p-4 border border-slate-200 bg-slate-50 flex items-center justify-between group hover:border-slate-300 transition-colors"
+                          >
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <p className="font-semibold text-slate-950 text-sm">{c.name}</p>
+                                {debtAmount > 0 && (
+                                  <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-bold tracking-widest uppercase">
+                                    Kasbon
+                                  </span>
+                                )}
                               </div>
-
-                              {phoneNum ? (
-                                <a
-                                  href={createWhatsAppLink(phoneNum, promoMsg)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="shrink-0 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] transition-colors flex items-center gap-1.5 shadow-2xs"
-                                >
-                                  <Send className="w-3 h-3" /> Kirim Promo
-                                </a>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 italic">No WA Kosong</span>
-                              )}
+                              <p className="text-xs text-slate-500 font-mono mt-1">
+                                {phoneNum || "Tanpa Nomor"}
+                              </p>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
-
-                    {/* Bottom Link to Hub */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Jadwal pengingat otomatis aktif</span>
-                      </div>
-                      <Link
-                        href="/whatsapp"
-                        className="text-xs text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1"
-                      >
-                        Buka WhatsApp Hub Lengkap <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                            {phoneNum && (
+                              <a
+                                href={createWhatsAppLink(phoneNum, promoMsg)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-slate-950 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+                              >
+                                Kirim
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: Real Groq LLM Business Advisor Chat */}
+          {/* TAB 2: AI Advisor */}
           {activeTab === "advisor" && (
-            <Card className="border-slate-200 flex flex-col h-150 shadow-sm">
-              <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm">Konsultasi Bisnis Interaktif (Groq LLM Powered)</CardTitle>
-                    <p className="text-[11px] text-slate-500">
-                      Tanyakan strategi penetapan harga, restock, atau analisis performa laba toko Anda
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="success" size="sm" className="hidden sm:inline-flex items-center gap-1">
-                    <Layers className="w-3 h-3 text-emerald-700" />
-                    <span>Memory Aktif ({messages.length} pesan)</span>
-                  </Badge>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setMessages([
-                        {
-                          id: "1",
-                          sender: "ai",
-                          text: "Halo, saya Artha AI Copilot. Saya siap membantu audit margin laba, analisis perputaran stok, dan perancangan strategi ritel berbasis data riil toko Anda. Silakan ketik pertanyaan Anda.",
-                          timestamp: "Baru saja",
-                        },
-                      ]);
-                    }}
-                    className="text-xs h-7 px-2.5 text-slate-600 hover:text-rose-600 hover:border-rose-300"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1" /> Reset Memory
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-4 flex-1 overflow-y-auto space-y-4">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-3 ${
-                      msg.sender === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    {msg.sender === "ai" && (
-                      <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0 mt-0.5 shadow-xs">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-
-                    <div
-                      className={`max-w-[90%] sm:max-w-[85%] rounded-2xl p-4 text-xs space-y-2 ${
-                        msg.sender === "user"
-                          ? "bg-slate-900 text-white rounded-br-none font-medium"
-                          : "bg-white border border-slate-200 text-slate-900 rounded-bl-none shadow-xs"
-                      }`}
-                    >
-                      {msg.sender === "user" ? (
-                        <div className="leading-relaxed whitespace-pre-wrap">{msg.text}</div>
-                      ) : (
-                        <MarkdownRenderer content={msg.text} />
-                      )}
-
-                      {msg.sender === "ai" && (
-                        <div className="pt-2 mt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] text-slate-400 gap-1.5 select-none">
-                          <span className="font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <Zap className="w-2.5 h-2.5 text-amber-500" />
-                            {msg.model || "openai/gpt-oss-120b"}
-                            {msg.request_id && (
-                              <span className="text-slate-500"> • ID: {msg.request_id.slice(0, 16)}...</span>
-                            )}
-                          </span>
-                          <span className="opacity-70">
-                            {msg.total_tokens ? `${msg.total_tokens} tokens • ` : ""}
-                            {msg.latency_ms ? `${msg.latency_ms}ms • ` : ""}
-                            {msg.timestamp}
-                          </span>
-                        </div>
-                      )}
-                      {msg.sender === "user" && (
-                        <div className="text-[10px] opacity-60 text-right pt-1">{msg.timestamp}</div>
-                      )}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto">
+              <div className="lg:col-span-8 flex flex-col h-[70vh] border border-slate-200 bg-white">
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Bot className="w-5 h-5 text-slate-950" />
+                    <div>
+                      <h3 className="font-semibold text-slate-950 text-sm">Asisten Analisis Bisnis</h3>
+                      <p className="text-[11px] text-slate-500">Tanya performa, margin, dan stok.</p>
                     </div>
                   </div>
-                ))}
+                </div>
 
-                {isThinking && (
-                  <div className="flex items-center gap-2 text-slate-500 text-xs italic pl-9">
-                    <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                    <span>Groq LLM sedang menganalisis data keuangan toko Anda...</span>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col max-w-[85%] ${
+                        msg.sender === "user" ? "ml-auto items-end" : "mr-auto items-start"
+                      }`}
+                    >
+                      <div
+                        className={`p-4 text-sm leading-relaxed ${
+                          msg.sender === "user"
+                            ? "bg-slate-950 text-white"
+                            : "bg-slate-50 border border-slate-200 text-slate-900"
+                        }`}
+                      >
+                        {msg.sender === "user" ? (
+                          msg.text
+                        ) : (
+                          <div className="prose prose-sm prose-slate prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0 prose-strong:text-slate-900">
+                            <MarkdownRenderer content={msg.text} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 font-mono">
+                        <span>{msg.timestamp}</span>
+                        {msg.model && <span>• Model: {msg.model}</span>}
+                        {msg.latency_ms && <span>• {msg.latency_ms}ms</span>}
+                      </div>
+                    </div>
+                  ))}
+                  {isThinking && (
+                    <div className="flex flex-col max-w-[85%] mr-auto items-start">
+                      <div className="p-4 bg-slate-50 border border-slate-200">
+                        <div className="flex gap-2">
+                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
+                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
+                          <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 bg-slate-50 border-t border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="Tanya soal laba bulan ini atau stok produk..."
+                      value={inputQuery}
+                      onChange={(e) => setInputQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                      className="flex-1 bg-white border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:border-slate-950 font-sans"
+                      disabled={isThinking}
+                    />
+                    <button
+                      onClick={() => handleSendMessage()}
+                      disabled={!inputQuery.trim() || isThinking}
+                      className="p-3 bg-slate-950 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
                   </div>
-                )}
-              </CardContent>
-
-              {/* Quick Suggestion Chips */}
-              <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto select-none">
-                <span className="text-[10px] text-slate-400 font-medium shrink-0">Tanya Cepat:</span>
-                {quickPrompts.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSendMessage(prompt)}
-                    className="shrink-0 px-2.5 py-1 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 rounded-full text-[11px] transition-colors"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+                </div>
               </div>
 
-              {/* Input Chat Field */}
-              <div className="p-3 border-t border-slate-200 bg-white">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <input
-                    type="text"
-                    placeholder="Tanyakan analisis bisnis, proyeksi laba, atau saran margin..."
-                    value={inputQuery}
-                    onChange={(e) => setInputQuery(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-200 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3.5 py-2 text-xs text-slate-900 outline-none transition-all"
-                  />
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={!inputQuery.trim() || isThinking}
-                    className="px-4 h-9 font-bold text-xs"
-                  >
-                    <Send className="w-3.5 h-3.5 mr-1" /> Tanya AI
-                  </Button>
-                </form>
+              <div className="lg:col-span-4 space-y-6">
+                <div className="border border-slate-200 bg-white p-6">
+                  <h4 className="font-semibold text-slate-950 text-sm mb-4">Prompt Saran</h4>
+                  <div className="space-y-3">
+                    {quickPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSendMessage(prompt)}
+                        className="w-full p-4 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left text-xs text-slate-700 transition-colors flex items-center justify-between group"
+                      >
+                        <span className="pr-4">{prompt}</span>
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-950 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </Card>
+            </div>
           )}
 
-          {/* TAB 3: WhatsApp Order Extractor */}
+          {/* TAB 3: Order Extractor */}
           {activeTab === "order_extractor" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column: Input text */}
-              <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 text-emerald-800">
-                    <ShoppingCart className="w-5 h-5 text-emerald-600" />
-                    <CardTitle className="text-sm">Input Pesan Chat WhatsApp</CardTitle>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Tempel pesan belanja pelanggan, LLM akan mengekstrak barang dan mencocokkannya ke katalog secara instan.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+              <div className="border border-slate-200 bg-white p-6 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" /> Teks Pesanan Kasar
+                  </h2>
+                </div>
+                <div className="space-y-4">
                   <textarea
                     rows={6}
                     value={rawOrderText}
                     onChange={(e) => setRawOrderText(e.target.value)}
-                    placeholder="Contoh: Pagi kak mau pesan kopi susu gula aren 2 botol sama croissant 1 pcs tolong catat buat bu siti rahma ya bayar via qris"
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-emerald-500 outline-none transition-all leading-relaxed font-sans"
+                    className="w-full p-4 bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-slate-950 resize-none font-sans leading-relaxed"
+                    placeholder="Paste pesan WhatsApp pelanggan di sini..."
                   />
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRawOrderText(
-                          "Pagi mas, kopi drip sachet 2 box sama croissant butter 2 biji kirim ke warung bu siti ya bayar transfer"
-                        )
-                      }
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px]"
-                    >
-                      Contoh 1: Kopi + Roti (Bu Siti)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRawOrderText(
-                          "Beli air mineral 600ml 1 karton (24 botol) sama keripik singkong 3 bks tolong catat kasbon atas nama pak hendra"
-                        )
-                      }
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px]"
-                    >
-                      Contoh 2: Air + Snack (Kasbon Pak Hendra)
-                    </button>
-                  </div>
-
                   <Button
                     type="button"
                     variant="primary"
-                    className="w-full text-xs font-bold h-10"
+                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
                     isLoading={isExtractingOrder}
                     onClick={handleExtractOrder}
                   >
-                    <Sparkles className="w-4 h-4 mr-1.5" /> Ekstrak Draf Nota Kasir via LLM
+                    <Layers className="w-4 h-4 mr-2" /> Proses Pesanan
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Right Column: Extracted Result */}
-              <Card className="border-slate-200">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-900">
-                      <Zap className="w-5 h-5 text-amber-500" />
-                      <CardTitle className="text-sm">Hasil Ekstraksi & Draf Nota</CardTitle>
-                    </div>
-                    {extractedOrder && (
-                      <Badge variant="success" size="sm">
-                        Akurasi: {Math.round((extractedOrder.confidence_score || 0.95) * 100)}%
-                      </Badge>
-                    )}
+              <div className="border border-slate-200 bg-slate-50 p-6 flex flex-col justify-center">
+                {!extractedOrder ? (
+                  <div className="text-center text-slate-400 space-y-3">
+                    <CheckCircle2 className="w-12 h-12 mx-auto opacity-30" />
+                    <p className="text-sm">Menunggu ekstraksi data pesanan.</p>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {!extractedOrder ? (
-                    <div className="py-16 text-center text-slate-400 space-y-2">
-                      <ShoppingCart className="w-10 h-10 mx-auto opacity-40" />
-                      <p className="text-xs">Klik tombol &quot;Ekstrak Draf Nota Kasir&quot; di sebelah kiri untuk melihat hasil ekstraksi LLM.</p>
+                ) : (
+                  <div className="bg-white border border-slate-200 p-6 space-y-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                      <h3 className="font-semibold text-slate-950">Draft Transaksi</h3>
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold tracking-widest uppercase">
+                        Skor: {(extractedOrder.confidence_score * 100).toFixed(0)}%
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-4 text-xs animate-in fade-in">
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-emerald-800">Pelanggan Terdeteksi:</span>
-                          <span className="font-bold text-emerald-950">{extractedOrder.customer_name || "Pelanggan Umum"}</span>
+
+                    <div className="space-y-4 text-sm">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Pelanggan</p>
+                          <p className="font-medium text-slate-950">{extractedOrder.customer_name || "Guest"}</p>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-emerald-800">Metode Pembayaran:</span>
-                          <Badge variant="info" size="sm" className="uppercase">
-                            {extractedOrder.payment_method || "cash"}
-                          </Badge>
+                        <div>
+                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Metode Bayar</p>
+                          <p className="font-medium text-slate-950 uppercase">{extractedOrder.payment_method}</p>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <span className="font-bold text-slate-700">Rincian Barang Terdeteksi:</span>
-                        <div className="space-y-1.5">
-                          {extractedOrder.items.map((it, idx) => (
-                            <div
-                              key={idx}
-                              className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between"
-                            >
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Item Dipesan</p>
+                        <div className="border border-slate-200 divide-y divide-slate-100">
+                          {extractedOrder.items.map((item, idx) => (
+                            <div key={idx} className="p-3 flex justify-between items-center bg-slate-50">
                               <div>
-                                <p className="font-bold text-slate-900">{it.product_name}</p>
-                                <p className="text-[11px] text-slate-500">
-                                  {it.quantity} unit &times; {formatCurrency(it.estimated_unit_price)}
+                                <p className="font-medium text-slate-950">{item.product_name}</p>
+                                <p className="text-xs text-slate-500 font-mono">
+                                  {item.quantity} x {formatCurrency(item.estimated_unit_price)}
                                 </p>
                               </div>
-                              <span className="font-bold text-slate-900">
-                                {formatCurrency(it.subtotal || it.quantity * it.estimated_unit_price)}
-                              </span>
+                              <p className="font-semibold text-slate-950 font-mono">
+                                {formatCurrency(item.subtotal)}
+                              </p>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      <div className="p-3 bg-slate-900 text-white rounded-xl flex items-center justify-between">
-                        <span className="font-bold">Total Tagihan:</span>
-                        <span className="text-base font-black text-emerald-400">
+                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                        <span className="font-bold text-slate-950">Total Estimasi</span>
+                        <span className="font-bold text-lg text-rose-600">
                           {formatCurrency(extractedOrder.total_estimated_amount)}
                         </span>
                       </div>
-
-                      <div className="pt-2 flex gap-2">
-                        <Link
-                          href="/pos"
-                          className="flex-1 text-center py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <ShoppingCart className="w-3.5 h-3.5" /> Buka Kasir POS untuk Checkout
-                        </Link>
-                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                    <div className="pt-4 flex gap-3">
+                      <Button className="flex-1 rounded-none bg-slate-950 text-white hover:bg-slate-800">
+                        Lanjut ke Kasir
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* TAB 4: CS WhatsApp Bot 24/7 Simulator */}
+          {/* TAB 4: CS Bot */}
           {activeTab === "cs_bot" && (
-            <Card className="border-slate-200 max-w-3xl mx-auto">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2 text-blue-800">
-                  <MessageSquare className="w-5 h-5 text-blue-600" />
-                  <CardTitle className="text-sm">Simulator Bot CS WhatsApp 24/7</CardTitle>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+              <div className="border border-slate-200 bg-white p-6 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" /> Simulasi Pertanyaan Pelanggan
+                  </h2>
                 </div>
-                <p className="text-xs text-slate-500">
-                  Uji bagaimana bot cerdas menjawab pertanyaan pembeli seputar stok, harga, dan layanan toko secara otomatis tanpa emoji.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">Pertanyaan Calon Pembeli:</label>
-                  <input
-                    type="text"
+                <div className="space-y-4">
+                  <textarea
+                    rows={4}
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
-                    placeholder="Contoh: Min ada croissant butter ga? Harganya berapaan ya?"
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                    className="w-full p-4 bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-slate-950 resize-none font-sans leading-relaxed"
                   />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
+                  <Button
                     type="button"
-                    onClick={() => setInquiryText("Halo, toko buka sampai jam berapa ya? Bisa bayar pakai QRIS?")}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px]"
+                    variant="primary"
+                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+                    isLoading={isGeneratingInquiry}
+                    onClick={handleInquiry}
                   >
-                    Tanya Jam & Pembayaran
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInquiryText("Ada stok croissant butter untuk 10 pcs?")}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px]"
-                  >
-                    Tanya Stok Jumlah Besar
-                  </button>
+                    <Bot className="w-4 h-4 mr-2" /> Hasilkan Balasan CS
+                  </Button>
                 </div>
+              </div>
 
-                <Button
-                  type="button"
-                  variant="primary"
-                  className="w-full text-xs font-bold h-10 bg-blue-600 hover:bg-blue-700"
-                  isLoading={isGeneratingInquiry}
-                  onClick={handleInquiry}
-                >
-                  <Bot className="w-4 h-4 mr-1.5" /> Dapatkan Balasan Cerdas Bot CS
-                </Button>
-
-                {botReply && (
-                  <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-2 text-xs text-slate-900 shadow-xs animate-in fade-in">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <span className="font-bold flex items-center gap-1.5 text-blue-900">
-                        <Bot className="w-4 h-4 text-blue-600" /> Balasan Otomatis WhatsApp Bot:
-                      </span>
+              <div className="border border-slate-200 bg-slate-50 p-6 flex flex-col justify-center">
+                {!botReply ? (
+                  <div className="text-center text-slate-400 space-y-3">
+                    <MessageSquare className="w-12 h-12 mx-auto opacity-30" />
+                    <p className="text-sm">Menunggu balasan AI.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 p-6 space-y-4">
+                    <h3 className="font-semibold text-slate-950 border-b border-slate-100 pb-3">Saran Balasan:</h3>
+                    <div className="prose prose-sm prose-slate prose-p:leading-relaxed">
+                      <MarkdownRenderer content={botReply} />
                     </div>
-                    <MarkdownRenderer content={botReply} />
+                    <div className="pt-4 border-t border-slate-100 flex justify-end">
+                      <Button
+                        variant="outline"
+                        className="rounded-none border-slate-300 text-xs px-4"
+                        onClick={() => navigator.clipboard.writeText(botReply)}
+                      >
+                        <Copy className="w-3 h-3 mr-2" /> Salin Balasan
+                      </Button>
+                    </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          {/* TAB 5: AI Engine & Provider Status */}
+          {/* TAB 5: Settings */}
           {activeTab === "settings" && (
-            <Card className="border-slate-200 max-w-2xl mx-auto">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-slate-700" />
-                  <CardTitle className="text-sm">Status & Konfigurasi Engine AI</CardTitle>
-                </div>
-                <p className="text-xs text-slate-500">
-                  ArthaOS terhubung langsung dengan engine inferensi LLM ultra-cepat
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4 text-xs">
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 text-emerald-950">
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Provider Aktif: Groq LPU (Ultra Low Latency)</span>
-                    </span>
-                    <Badge variant="success" size="sm">
-                      Terhubung
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-emerald-800">
-                    Model aktif: <span className="font-mono font-bold">openai/gpt-oss-120b</span> dengan latensi respons rata-rata &lt; 250ms.
-                  </p>
+            <div className="max-w-3xl mx-auto space-y-6">
+              <div className="border border-slate-200 bg-white p-6 space-y-6">
+                <div className="border-b border-slate-200 pb-4">
+                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+                    <Sliders className="w-5 h-5" /> Status Engine & Model
+                  </h2>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-slate-600" /> Keamanan Data & Privasi Multitenant
-                    </p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Konteks database hanya dikirim per-permintaan ke LLM dan diisolasi ketat sesuai outlet yang aktif. Tidak ada data pelanggan yang bocor antar toko.
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 border border-slate-200 bg-slate-50">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Model LLM Utama</p>
+                    <p className="font-bold text-slate-950">llama3-70b-8192 (Groq)</p>
+                  </div>
+                  <div className="p-4 border border-slate-200 bg-slate-50">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Hardware LPU</p>
+                    <p className="font-bold text-emerald-700 flex items-center gap-2">
+                      <Zap className="w-4 h-4" /> Active (Ultra-low latency)
                     </p>
                   </div>
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> ACID Deterministic Integrity
-                    </p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Semua pemotongan stok fisik dan pembukuan uang kas tetap diproses secara presisi oleh PostgreSQL & Go Fiber backend, menjamin bebas dari kesalahan matematis.
+                  <div className="p-4 border border-slate-200 bg-slate-50">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Konteks Data Toko</p>
+                    <p className="font-bold text-slate-950">Tersinkronisasi ({activeStore?.name})</p>
+                  </div>
+                  <div className="p-4 border border-slate-200 bg-slate-50">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Koneksi API</p>
+                    <p className="font-bold text-emerald-700 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" /> Online
                     </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 
@@ -19,124 +18,72 @@ export default function GatewayPage() {
   if (!mounted) return null;
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] opacity-70" />
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px]" />
-      </div>
-
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 flex flex-col items-center text-center max-w-lg px-6"
-      >
-        {/* Luxury Logo */}
-        <div className="mb-10 relative">
-          <motion.div 
-            initial={{ rotate: -10, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-            className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-glow flex items-center justify-center relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-white/20 blur-sm" />
-            <span className="font-serif italic text-3xl text-white relative z-10 tracking-tighter">A</span>
-          </motion.div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background">
+      <div className="w-full max-w-sm px-6 flex flex-col items-center text-center">
+        {/* Simple Clean Logo */}
+        <div className="mb-8 flex items-center justify-center w-12 h-12 rounded-lg bg-primary text-foreground font-serif italic text-2xl">
+          A
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          className="space-y-4"
-        >
-          <h1 className="text-4xl md:text-5xl font-medium tracking-tight text-white">
+        <div className="space-y-2 mb-10">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             ArthaOS
           </h1>
-          <p className="text-muted-foreground text-lg font-light tracking-wide">
+          <p className="text-muted-foreground text-sm">
             Enterprise Retail Engine
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-          className="mt-16 w-full"
-        >
+        <div className="w-full">
           {token ? (
-            <div className="p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent w-full">
-              <div className="bg-card backdrop-blur-xl border border-card-border rounded-2xl p-6 sm:p-8 w-full text-left shadow-glass">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                    <Lock className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Sesi Aktif</p>
-                    <p className="text-white font-medium">{user?.email}</p>
-                  </div>
+            <div className="bg-card border border-border rounded-none p-6 text-left shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-secondary-foreground" />
                 </div>
-
-                <Link href="/dashboard" className="block w-full">
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full relative group overflow-hidden bg-white text-black py-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all"
-                  >
-                    <span className="relative z-10">Masuk ke Ruang Kerja</span>
-                    <ArrowRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
-                  </motion.button>
-                </Link>
-                
-                {activeStore && (
-                  <div className="mt-4 text-center">
-                    <p className="text-xs text-muted-foreground">
-                      Toko terhubung: <span className="text-white/80">{activeStore.name}</span>
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-xs text-muted-foreground">Sesi Aktif</p>
+                  <p className="text-sm font-medium text-foreground">{user?.email}</p>
+                </div>
               </div>
+
+              <Link href="/dashboard" className="block w-full">
+                <button className="w-full bg-primary hover:bg-primary/90 text-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
+                  Masuk ke Ruang Kerja
+                </button>
+              </Link>
+              
+              {activeStore && (
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Toko terhubung: <span className="font-medium text-foreground">{activeStore.name}</span>
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
-              <Link href="/login" className="w-full sm:w-auto">
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto bg-white text-black px-8 py-3.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2"
-                >
+            <div className="flex flex-col gap-3 w-full">
+              <Link href="/login" className="w-full">
+                <button className="w-full bg-primary hover:bg-primary/90 text-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
                   Otorisasi Sistem
-                  <ArrowRight className="w-4 h-4" />
-                </motion.button>
+                </button>
               </Link>
-              <Link href="/register" className="w-full sm:w-auto">
-                <motion.button 
-                  whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.08)" }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto border border-white/10 bg-white/5 text-white px-8 py-3.5 rounded-xl font-medium text-sm transition-colors"
-                >
+              <Link href="/register" className="w-full">
+                <button className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
                   Registrasi Akses
-                </motion.button>
+                </button>
               </Link>
             </div>
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
-      {/* Luxury Minimal Footer */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1 }}
-        className="absolute bottom-8 left-0 right-0 text-center"
-      >
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50">
-          Secure Environment &bull; ArthaOS Core
+      {/* Honest Minimal Footer */}
+      <div className="absolute bottom-6 left-0 right-0 text-center">
+        <p className="text-xs text-muted-foreground">
+          ArthaOS Core
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
-

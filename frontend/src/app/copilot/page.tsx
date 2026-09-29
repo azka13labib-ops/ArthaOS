@@ -28,7 +28,7 @@ import {
   Layers,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
 import { Product, Transaction, Debt, Customer } from "@/lib/types";
@@ -323,24 +323,24 @@ export default function AICopilotPage() {
     <AppLayout>
       <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1 flex items-center gap-3">
-              <Sparkles className="w-6 h-6 text-slate-950" />
+            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1 flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-foreground" />
               Artha AI Copilot
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Kecerdasan buatan terintegrasi untuk konsultasi bisnis, ekstraksi order WhatsApp, dan CS cerdas.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold tracking-widest uppercase">
-              <span className="w-2 h-2 rounded-full bg-slate-950 animate-pulse" />
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted border border-border text-muted-foreground text-xs font-bold tracking-widest uppercase">
+              <span className="w-2 h-2 rounded-full bg-background animate-pulse" />
               LPU Active
             </span>
             <Button
               variant="outline"
-              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
+              className="rounded-none border-border hover:bg-muted h-10 px-4"
               onClick={loadData}
               disabled={isLoading}
             >
@@ -351,62 +351,62 @@ export default function AICopilotPage() {
         </div>
 
         {/* SECTION 1: 4 Diagnostic KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-slate-200 bg-white">
-          <div className="p-6 border-b sm:border-b-0 sm:border-r border-slate-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-border bg-card">
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kesehatan Bisnis</span>
-              <ShieldCheck className="w-4 h-4 text-slate-950" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kesehatan Bisnis</span>
+              <ShieldCheck className="w-4 h-4 text-foreground" />
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-medium text-slate-950">95</span>
-              <span className="text-sm text-slate-500">/ 100</span>
+              <span className="text-3xl font-medium text-foreground">95</span>
+              <span className="text-sm text-muted-foreground">/ 100</span>
             </div>
-            <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold tracking-widest uppercase">
+            <span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold tracking-widest uppercase">
               Prima
             </span>
           </div>
 
-          <div className="p-6 border-b lg:border-b-0 lg:border-r border-slate-200">
+          <div className="p-6 border-b lg:border-b-0 lg:border-r border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Margin</span>
-              <TrendingUp className="w-4 h-4 text-slate-950" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Rata-Rata Margin</span>
+              <TrendingUp className="w-4 h-4 text-foreground" />
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-medium text-slate-950">
+              <span className="text-3xl font-medium text-foreground">
                 {insights.grossMarginPct.toFixed(1)}%
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-mono">
+            <p className="text-[11px] text-muted-foreground font-mono">
               Laba: {formatCurrency(insights.grossProfit)}
             </p>
           </div>
 
-          <div className="p-6 border-b sm:border-b-0 sm:border-r border-slate-200">
+          <div className="p-6 border-b sm:border-b-0 sm:border-r border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kasbon Tertahan</span>
-              <Users className="w-4 h-4 text-slate-950" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kasbon Tertahan</span>
+              <Users className="w-4 h-4 text-foreground" />
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-medium text-rose-600 tracking-tight">
+              <span className="text-3xl font-medium text-rose-500 tracking-tight">
                 {formatCurrency(insights.totalUnpaid)}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-mono">
+            <p className="text-[11px] text-muted-foreground font-mono">
               {insights.unpaidCount} tagihan aktif
             </p>
           </div>
 
           <div className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Peringatan Restock</span>
-              <AlertTriangle className="w-4 h-4 text-slate-950" />
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Peringatan Restock</span>
+              <AlertTriangle className="w-4 h-4 text-foreground" />
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-medium text-slate-950">
+              <span className="text-3xl font-medium text-foreground">
                 {insights.lowStockCount} SKU
               </span>
             </div>
-            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.lowStockCount > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-700'}`}>
+            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.lowStockCount > 0 ? 'bg-rose-500/10 text-rose-700' : 'bg-slate-100 text-muted-foreground'}`}>
               {insights.lowStockCount > 0 ? 'Perlu Restock' : 'Aman'}
             </span>
           </div>
@@ -415,7 +415,7 @@ export default function AICopilotPage() {
         {/* SECTION 2: Interactive AI Workspace Tabs */}
         <div className="space-y-6">
           {/* Tab Navigation */}
-          <div className="flex border-b border-slate-200 overflow-x-auto">
+          <div className="flex border-b border-border overflow-x-auto">
             {[
               { id: "promo", icon: Megaphone, label: "Generator Promosi" },
               { id: "advisor", icon: Bot, label: "Konsultasi Bisnis AI" },
@@ -428,8 +428,8 @@ export default function AICopilotPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "border-slate-950 text-slate-950"
-                    : "border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                    ? "border-border text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
                 <tab.icon className="w-4 h-4" />
@@ -442,14 +442,14 @@ export default function AICopilotPage() {
           {activeTab === "promo" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Column: Form */}
-              <div className="border border-slate-200 bg-white p-6 space-y-6">
+              <div className="border border-border bg-card p-6 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-medium text-slate-950">Pengaturan Promosi</h2>
+                  <h2 className="text-lg font-medium text-foreground">Pengaturan Promosi</h2>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide block mb-2">
+                    <label className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-2">
                       Nomor WhatsApp Toko
                     </label>
                     <div className="flex items-center gap-3">
@@ -457,14 +457,14 @@ export default function AICopilotPage() {
                         type="text"
                         value={storeWhatsAppPhone}
                         onChange={(e) => setStoreWhatsAppPhone(e.target.value)}
-                        className="flex-1 bg-white border border-slate-200 p-3 text-sm text-slate-900 focus:outline-none focus:border-slate-950 font-mono"
+                        className="flex-1 bg-card border border-border p-3 text-sm text-foreground focus:outline-none focus:border-border font-mono"
                       />
-                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={includeStorePhone}
                           onChange={(e) => setIncludeStorePhone(e.target.checked)}
-                          className="w-4 h-4 text-slate-950 border-slate-300 rounded-none focus:ring-slate-950"
+                          className="w-4 h-4 text-foreground border-border rounded-none focus:ring-slate-950"
                         />
                         Sertakan link
                       </label>
@@ -473,7 +473,7 @@ export default function AICopilotPage() {
 
                   {products.length > 0 && (
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wide">
                         Pilih Produk:
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -487,7 +487,7 @@ export default function AICopilotPage() {
                                 )}) dengan diskon hemat untuk pelanggan setia.`
                               );
                             }}
-                            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs transition-colors"
+                            className="px-3 py-1.5 bg-muted hover:bg-slate-100 text-muted-foreground border border-border text-xs transition-colors"
                           >
                             + {prod.name}
                           </button>
@@ -497,21 +497,21 @@ export default function AICopilotPage() {
                   )}
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-slate-950 uppercase tracking-wide">
+                    <label className="text-xs font-semibold text-foreground uppercase tracking-wide">
                       Instruksi AI:
                     </label>
                     <textarea
                       rows={4}
                       value={promoPrompt}
                       onChange={(e) => setPromoPrompt(e.target.value)}
-                      className="w-full p-4 bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-slate-950 resize-none font-sans"
+                      className="w-full p-4 bg-muted border border-border text-sm text-foreground focus:outline-none focus:border-border resize-none font-sans"
                     />
                   </div>
 
                   <Button
                     type="button"
-                    variant="primary"
-                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+                    variant="default"
+                    className="w-full rounded-none h-12 bg-background text-foreground hover:bg-muted"
                     isLoading={isGeneratingPromo}
                     onClick={handleGeneratePromo}
                   >
@@ -521,20 +521,20 @@ export default function AICopilotPage() {
 
                 {/* Generated Result */}
                 {generatedPromo && (
-                  <div className="p-6 border border-slate-200 bg-slate-50 space-y-4">
+                  <div className="p-6 border border-border bg-muted space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-950 text-sm">
+                      <span className="font-semibold text-foreground text-sm">
                         Hasil Generate
                       </span>
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-none border-slate-300 text-xs h-8 px-3 bg-white"
+                        className="rounded-none border-border text-xs h-8 px-3 bg-card"
                         onClick={handleCopyPromo}
                       >
                         {copiedPromo ? (
                           <>
-                            <Check className="w-3.5 h-3.5 mr-2 text-slate-950" /> Tersalin
+                            <Check className="w-3.5 h-3.5 mr-2 text-foreground" /> Tersalin
                           </>
                         ) : (
                           <>
@@ -543,7 +543,7 @@ export default function AICopilotPage() {
                         )}
                       </Button>
                     </div>
-                    <pre className="p-4 bg-white border border-slate-200 text-sm text-slate-700 font-sans whitespace-pre-wrap leading-relaxed">
+                    <pre className="p-4 bg-card border border-border text-sm text-muted-foreground font-sans whitespace-pre-wrap leading-relaxed">
                       {generatedPromo}
                     </pre>
 
@@ -553,7 +553,7 @@ export default function AICopilotPage() {
                           href={createWhatsAppLink(storeWhatsAppPhone, generatedPromo)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-slate-200"
+                          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-border text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-border"
                         >
                           <Phone className="w-4 h-4" /> Uji Kirim
                         </a>
@@ -561,7 +561,7 @@ export default function AICopilotPage() {
                       <button
                         onClick={handleSimulateBroadcast}
                         disabled={isBroadcasting}
-                        className="flex-1 py-3 px-4 bg-slate-950 hover:bg-slate-800 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-3 px-4 bg-background hover:bg-muted text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                       >
                         {isBroadcasting ? (
                           <>
@@ -583,10 +583,10 @@ export default function AICopilotPage() {
               </div>
 
               {/* Right Column: Customer Targets */}
-              <div className="border border-slate-200 bg-white flex flex-col h-full">
-                <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-                  <h2 className="text-lg font-medium text-slate-950">Target Broadcast</h2>
-                  <span className="px-3 py-1 bg-slate-200 text-slate-800 text-xs font-bold tracking-widest uppercase">
+              <div className="border border-border bg-card flex flex-col h-full">
+                <div className="p-6 border-b border-border flex items-center justify-between bg-muted">
+                  <h2 className="text-lg font-medium text-foreground">Target Broadcast</h2>
+                  <span className="px-3 py-1 bg-border text-slate-800 text-xs font-bold tracking-widest uppercase">
                     {customers.length} Kontak
                   </span>
                 </div>
@@ -594,19 +594,19 @@ export default function AICopilotPage() {
                 <div className="p-6 flex-1 flex flex-col space-y-4">
                   <div className="flex gap-3">
                     <div className="relative flex-1">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="Cari pelanggan..."
                         value={customerSearch}
                         onChange={(e) => setCustomerSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 text-sm focus:outline-none focus:border-slate-950"
+                        className="w-full pl-9 pr-4 py-2.5 bg-card border border-border text-sm focus:outline-none focus:border-border"
                       />
                     </div>
                     <select
                       value={customerFilter}
                       onChange={(e) => setCustomerFilter(e.target.value as any)}
-                      className="bg-white border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none"
+                      className="bg-card border border-border px-3 py-2.5 text-sm text-muted-foreground outline-none"
                     >
                       <option value="all">Semua</option>
                       <option value="has_phone">Ada WA</option>
@@ -616,7 +616,7 @@ export default function AICopilotPage() {
 
                   <div className="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[500px]">
                     {filteredCustomers.length === 0 ? (
-                      <div className="py-12 text-center text-slate-400">
+                      <div className="py-12 text-center text-muted-foreground">
                         Tidak ada pelanggan yang cocok.
                       </div>
                     ) : (
@@ -628,18 +628,18 @@ export default function AICopilotPage() {
                         return (
                           <div
                             key={c.id}
-                            className="p-4 border border-slate-200 bg-slate-50 flex items-center justify-between group hover:border-slate-300 transition-colors"
+                            className="p-4 border border-border bg-muted flex items-center justify-between group hover:border-border transition-colors"
                           >
                             <div>
                               <div className="flex items-center gap-3">
-                                <p className="font-semibold text-slate-950 text-sm">{c.name}</p>
+                                <p className="font-semibold text-foreground text-sm">{c.name}</p>
                                 {debtAmount > 0 && (
-                                  <span className="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-bold tracking-widest uppercase">
+                                  <span className="px-2 py-0.5 bg-rose-100 text-rose-500 text-[10px] font-bold tracking-widest uppercase">
                                     Kasbon
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-500 font-mono mt-1">
+                              <p className="text-xs text-muted-foreground font-mono mt-1">
                                 {phoneNum || "Tanpa Nomor"}
                               </p>
                             </div>
@@ -648,7 +648,7 @@ export default function AICopilotPage() {
                                 href={createWhatsAppLink(phoneNum, promoMsg)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-4 py-2 bg-slate-950 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+                                className="px-4 py-2 bg-background text-foreground text-xs font-bold hover:bg-muted transition-colors"
                               >
                                 Kirim
                               </a>
@@ -666,18 +666,18 @@ export default function AICopilotPage() {
           {/* TAB 2: AI Advisor */}
           {activeTab === "advisor" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto">
-              <div className="lg:col-span-8 flex flex-col h-[70vh] border border-slate-200 bg-white">
-                <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="lg:col-span-8 flex flex-col h-[70vh] border border-border bg-card">
+                <div className="p-4 border-b border-border bg-muted flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Bot className="w-5 h-5 text-slate-950" />
+                    <Bot className="w-5 h-5 text-foreground" />
                     <div>
-                      <h3 className="font-semibold text-slate-950 text-sm">Asisten Analisis Bisnis</h3>
-                      <p className="text-[11px] text-slate-500">Tanya performa, margin, dan stok.</p>
+                      <h3 className="font-semibold text-foreground text-sm">Asisten Analisis Bisnis</h3>
+                      <p className="text-[11px] text-muted-foreground">Tanya performa, margin, dan stok.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-card">
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
@@ -688,19 +688,19 @@ export default function AICopilotPage() {
                       <div
                         className={`p-4 text-sm leading-relaxed ${
                           msg.sender === "user"
-                            ? "bg-slate-950 text-white"
-                            : "bg-slate-50 border border-slate-200 text-slate-900"
+                            ? "bg-background text-foreground"
+                            : "bg-muted border border-border text-foreground"
                         }`}
                       >
                         {msg.sender === "user" ? (
                           msg.text
                         ) : (
-                          <div className="prose prose-sm prose-slate prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0 prose-strong:text-slate-900">
+                          <div className="prose prose-sm prose-slate prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0 prose-strong:text-foreground">
                             <MarkdownRenderer content={msg.text} />
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400 font-mono">
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground font-mono">
                         <span>{msg.timestamp}</span>
                         {msg.model && <span>• Model: {msg.model}</span>}
                         {msg.latency_ms && <span>• {msg.latency_ms}ms</span>}
@@ -709,7 +709,7 @@ export default function AICopilotPage() {
                   ))}
                   {isThinking && (
                     <div className="flex flex-col max-w-[85%] mr-auto items-start">
-                      <div className="p-4 bg-slate-50 border border-slate-200">
+                      <div className="p-4 bg-muted border border-border">
                         <div className="flex gap-2">
                           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></span>
                           <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce delay-75"></span>
@@ -720,7 +720,7 @@ export default function AICopilotPage() {
                   )}
                 </div>
 
-                <div className="p-4 bg-slate-50 border-t border-slate-200">
+                <div className="p-4 bg-muted border-t border-border">
                   <div className="flex items-center gap-3">
                     <input
                       type="text"
@@ -728,13 +728,13 @@ export default function AICopilotPage() {
                       value={inputQuery}
                       onChange={(e) => setInputQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      className="flex-1 bg-white border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:border-slate-950 font-sans"
+                      className="flex-1 bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-border font-sans"
                       disabled={isThinking}
                     />
                     <button
                       onClick={() => handleSendMessage()}
                       disabled={!inputQuery.trim() || isThinking}
-                      className="p-3 bg-slate-950 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                      className="p-3 bg-background text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
                     >
                       <Send className="w-5 h-5" />
                     </button>
@@ -743,17 +743,17 @@ export default function AICopilotPage() {
               </div>
 
               <div className="lg:col-span-4 space-y-6">
-                <div className="border border-slate-200 bg-white p-6">
-                  <h4 className="font-semibold text-slate-950 text-sm mb-4">Prompt Saran</h4>
+                <div className="border border-border bg-card p-6">
+                  <h4 className="font-semibold text-foreground text-sm mb-4">Prompt Saran</h4>
                   <div className="space-y-3">
                     {quickPrompts.map((prompt, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(prompt)}
-                        className="w-full p-4 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left text-xs text-slate-700 transition-colors flex items-center justify-between group"
+                        className="w-full p-4 border border-border bg-muted hover:bg-slate-100 text-left text-xs text-muted-foreground transition-colors flex items-center justify-between group"
                       >
                         <span className="pr-4">{prompt}</span>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-950 shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -765,9 +765,9 @@ export default function AICopilotPage() {
           {/* TAB 3: Order Extractor */}
           {activeTab === "order_extractor" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-              <div className="border border-slate-200 bg-white p-6 space-y-6">
+              <div className="border border-border bg-card p-6 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+                  <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5" /> Teks Pesanan Kasar
                   </h2>
                 </div>
@@ -776,13 +776,13 @@ export default function AICopilotPage() {
                     rows={6}
                     value={rawOrderText}
                     onChange={(e) => setRawOrderText(e.target.value)}
-                    className="w-full p-4 bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-slate-950 resize-none font-sans leading-relaxed"
+                    className="w-full p-4 bg-muted border border-border text-sm focus:outline-none focus:border-border resize-none font-sans leading-relaxed"
                     placeholder="Paste pesan WhatsApp pelanggan di sini..."
                   />
                   <Button
                     type="button"
-                    variant="primary"
-                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+                    variant="default"
+                    className="w-full rounded-none h-12 bg-background text-foreground hover:bg-muted"
                     isLoading={isExtractingOrder}
                     onClick={handleExtractOrder}
                   >
@@ -791,17 +791,17 @@ export default function AICopilotPage() {
                 </div>
               </div>
 
-              <div className="border border-slate-200 bg-slate-50 p-6 flex flex-col justify-center">
+              <div className="border border-border bg-muted p-6 flex flex-col justify-center">
                 {!extractedOrder ? (
-                  <div className="text-center text-slate-400 space-y-3">
+                  <div className="text-center text-muted-foreground space-y-3">
                     <CheckCircle2 className="w-12 h-12 mx-auto opacity-30" />
                     <p className="text-sm">Menunggu ekstraksi data pesanan.</p>
                   </div>
                 ) : (
-                  <div className="bg-white border border-slate-200 p-6 space-y-6">
+                  <div className="bg-card border border-border p-6 space-y-6">
                     <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                      <h3 className="font-semibold text-slate-950">Draft Transaksi</h3>
-                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold tracking-widest uppercase">
+                      <h3 className="font-semibold text-foreground">Draft Transaksi</h3>
+                      <span className="px-2 py-1 bg-slate-100 text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                         Skor: {(extractedOrder.confidence_score * 100).toFixed(0)}%
                       </span>
                     </div>
@@ -809,27 +809,27 @@ export default function AICopilotPage() {
                     <div className="space-y-4 text-sm">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Pelanggan</p>
-                          <p className="font-medium text-slate-950">{extractedOrder.customer_name || "Guest"}</p>
+                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Pelanggan</p>
+                          <p className="font-medium text-foreground">{extractedOrder.customer_name || "Guest"}</p>
                         </div>
                         <div>
-                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Metode Bayar</p>
-                          <p className="font-medium text-slate-950 uppercase">{extractedOrder.payment_method}</p>
+                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Metode Bayar</p>
+                          <p className="font-medium text-foreground uppercase">{extractedOrder.payment_method}</p>
                         </div>
                       </div>
 
                       <div>
-                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Item Dipesan</p>
-                        <div className="border border-slate-200 divide-y divide-slate-100">
+                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Item Dipesan</p>
+                        <div className="border border-border divide-y divide-slate-100">
                           {extractedOrder.items.map((item, idx) => (
-                            <div key={idx} className="p-3 flex justify-between items-center bg-slate-50">
+                            <div key={idx} className="p-3 flex justify-between items-center bg-muted">
                               <div>
-                                <p className="font-medium text-slate-950">{item.product_name}</p>
-                                <p className="text-xs text-slate-500 font-mono">
+                                <p className="font-medium text-foreground">{item.product_name}</p>
+                                <p className="text-xs text-muted-foreground font-mono">
                                   {item.quantity} x {formatCurrency(item.estimated_unit_price)}
                                 </p>
                               </div>
-                              <p className="font-semibold text-slate-950 font-mono">
+                              <p className="font-semibold text-foreground font-mono">
                                 {formatCurrency(item.subtotal)}
                               </p>
                             </div>
@@ -837,16 +837,16 @@ export default function AICopilotPage() {
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                        <span className="font-bold text-slate-950">Total Estimasi</span>
-                        <span className="font-bold text-lg text-rose-600">
+                      <div className="flex justify-between items-center pt-4 border-t border-border">
+                        <span className="font-bold text-foreground">Total Estimasi</span>
+                        <span className="font-bold text-lg text-rose-500">
                           {formatCurrency(extractedOrder.total_estimated_amount)}
                         </span>
                       </div>
                     </div>
 
                     <div className="pt-4 flex gap-3">
-                      <Button className="flex-1 rounded-none bg-slate-950 text-white hover:bg-slate-800">
+                      <Button className="flex-1 rounded-none bg-background text-foreground hover:bg-muted">
                         Lanjut ke Kasir
                       </Button>
                     </div>
@@ -859,9 +859,9 @@ export default function AICopilotPage() {
           {/* TAB 4: CS Bot */}
           {activeTab === "cs_bot" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-              <div className="border border-slate-200 bg-white p-6 space-y-6">
+              <div className="border border-border bg-card p-6 space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+                  <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
                     <MessageSquare className="w-5 h-5" /> Simulasi Pertanyaan Pelanggan
                   </h2>
                 </div>
@@ -870,12 +870,12 @@ export default function AICopilotPage() {
                     rows={4}
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
-                    className="w-full p-4 bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-slate-950 resize-none font-sans leading-relaxed"
+                    className="w-full p-4 bg-muted border border-border text-sm focus:outline-none focus:border-border resize-none font-sans leading-relaxed"
                   />
                   <Button
                     type="button"
-                    variant="primary"
-                    className="w-full rounded-none h-12 bg-slate-950 text-white hover:bg-slate-800"
+                    variant="default"
+                    className="w-full rounded-none h-12 bg-background text-foreground hover:bg-muted"
                     isLoading={isGeneratingInquiry}
                     onClick={handleInquiry}
                   >
@@ -884,22 +884,22 @@ export default function AICopilotPage() {
                 </div>
               </div>
 
-              <div className="border border-slate-200 bg-slate-50 p-6 flex flex-col justify-center">
+              <div className="border border-border bg-muted p-6 flex flex-col justify-center">
                 {!botReply ? (
-                  <div className="text-center text-slate-400 space-y-3">
+                  <div className="text-center text-muted-foreground space-y-3">
                     <MessageSquare className="w-12 h-12 mx-auto opacity-30" />
                     <p className="text-sm">Menunggu balasan AI.</p>
                   </div>
                 ) : (
-                  <div className="bg-white border border-slate-200 p-6 space-y-4">
-                    <h3 className="font-semibold text-slate-950 border-b border-slate-100 pb-3">Saran Balasan:</h3>
+                  <div className="bg-card border border-border p-6 space-y-4">
+                    <h3 className="font-semibold text-foreground border-b border-slate-100 pb-3">Saran Balasan:</h3>
                     <div className="prose prose-sm prose-slate prose-p:leading-relaxed">
                       <MarkdownRenderer content={botReply} />
                     </div>
                     <div className="pt-4 border-t border-slate-100 flex justify-end">
                       <Button
                         variant="outline"
-                        className="rounded-none border-slate-300 text-xs px-4"
+                        className="rounded-none border-border text-xs px-4"
                         onClick={() => navigator.clipboard.writeText(botReply)}
                       >
                         <Copy className="w-3 h-3 mr-2" /> Salin Balasan
@@ -914,31 +914,31 @@ export default function AICopilotPage() {
           {/* TAB 5: Settings */}
           {activeTab === "settings" && (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="border border-slate-200 bg-white p-6 space-y-6">
-                <div className="border-b border-slate-200 pb-4">
-                  <h2 className="text-lg font-medium text-slate-950 flex items-center gap-2">
+              <div className="border border-border bg-card p-6 space-y-6">
+                <div className="border-b border-border pb-4">
+                  <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
                     <Sliders className="w-5 h-5" /> Status Engine & Model
                   </h2>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 border border-slate-200 bg-slate-50">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Model LLM Utama</p>
-                    <p className="font-bold text-slate-950">llama3-70b-8192 (Groq)</p>
+                  <div className="p-4 border border-border bg-muted">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Model LLM Utama</p>
+                    <p className="font-bold text-foreground">llama3-70b-8192 (Groq)</p>
                   </div>
-                  <div className="p-4 border border-slate-200 bg-slate-50">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Hardware LPU</p>
-                    <p className="font-bold text-emerald-700 flex items-center gap-2">
+                  <div className="p-4 border border-border bg-muted">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Hardware LPU</p>
+                    <p className="font-bold text-emerald-500 flex items-center gap-2">
                       <Zap className="w-4 h-4" /> Active (Ultra-low latency)
                     </p>
                   </div>
-                  <div className="p-4 border border-slate-200 bg-slate-50">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Konteks Data Toko</p>
-                    <p className="font-bold text-slate-950">Tersinkronisasi ({activeStore?.name})</p>
+                  <div className="p-4 border border-border bg-muted">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Konteks Data Toko</p>
+                    <p className="font-bold text-foreground">Tersinkronisasi ({activeStore?.name})</p>
                   </div>
-                  <div className="p-4 border border-slate-200 bg-slate-50">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Koneksi API</p>
-                    <p className="font-bold text-emerald-700 flex items-center gap-2">
+                  <div className="p-4 border border-border bg-muted">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Koneksi API</p>
+                    <p className="font-bold text-emerald-500 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" /> Online
                     </p>
                   </div>
@@ -951,3 +951,5 @@ export default function AICopilotPage() {
     </AppLayout>
   );
 }
+
+

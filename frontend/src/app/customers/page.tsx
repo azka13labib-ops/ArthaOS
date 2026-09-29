@@ -13,8 +13,8 @@ import {
   BookOpen,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
@@ -132,19 +132,19 @@ export default function CustomersPage() {
     <AppLayout>
       <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-slate-950 mb-1">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1">
               Direktori Pelanggan
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Kelola basis data pelanggan toko, nomor kontak WhatsApp, dan status kasbon.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="rounded-none border-slate-200 hover:bg-slate-50 h-10 px-4"
+              className="rounded-none border-border hover:bg-muted h-10 px-4"
               onClick={loadCustomersData}
               disabled={isLoading}
               title="Perbarui daftar pelanggan"
@@ -153,8 +153,8 @@ export default function CustomersPage() {
               Segarkan
             </Button>
             <Button
-              variant="primary"
-              className="rounded-none bg-slate-950 text-white hover:bg-slate-800 h-10 px-6"
+              variant="default"
+              className="rounded-none bg-background text-foreground hover:bg-muted h-10 px-6"
               onClick={() => {
                 setError("");
                 setIsModalOpen(true);
@@ -166,20 +166,20 @@ export default function CustomersPage() {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-slate-200 bg-white">
-          <div className="p-6 md:p-8 border-b sm:border-b-0 sm:border-r border-slate-200">
-            <p className="text-[13px] font-medium text-slate-500 uppercase tracking-wider mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-border bg-card">
+          <div className="p-6 md:p-8 border-b sm:border-b-0 sm:border-r border-border">
+            <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Total Pelanggan Terdaftar
             </p>
-            <h3 className="text-4xl font-medium tracking-tight text-slate-950">
+            <h3 className="text-4xl font-medium tracking-tight text-foreground">
               {customers.length}
             </h3>
           </div>
           <div className="p-6 md:p-8">
-            <p className="text-[13px] font-medium text-slate-500 uppercase tracking-wider mb-2">
+            <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Pelanggan Kasbon Aktif
             </p>
-            <h3 className="text-4xl font-medium tracking-tight text-slate-950">
+            <h3 className="text-4xl font-medium tracking-tight text-foreground">
               {customerDebtMap.size}
             </h3>
           </div>
@@ -187,25 +187,25 @@ export default function CustomersPage() {
 
         {/* Search */}
         <div className="relative w-full sm:w-96 group">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-slate-950 transition-colors" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-foreground transition-colors" />
           <input
             type="text"
             placeholder="Cari nama atau nomor telepon..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-none focus-visible:outline-none focus-visible:border-slate-400 transition-colors placeholder:text-slate-400"
+            className="w-full pl-9 pr-4 py-3 text-sm bg-card border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
           />
         </div>
 
         {/* Customer Table */}
-        <div className="bg-white border border-slate-200 overflow-hidden">
+        <div className="bg-card border border-border overflow-hidden">
           {isLoading ? (
             <div className="p-12 flex justify-center">
               <Spinner size="md" />
             </div>
           ) : filteredCustomers.length === 0 ? (
             <EmptyState
-              icon={<Users className="w-8 h-8 text-slate-300" />}
+              icon={<Users className="w-8 h-8 text-muted-foreground" />}
               title="Belum Ada Pelanggan"
               description={
                 searchQuery
@@ -218,7 +218,7 @@ export default function CustomersPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                <thead className="bg-muted text-muted-foreground border-b border-border">
                   <tr>
                     <th className="px-6 py-4 font-semibold tracking-wide">Nama Pelanggan</th>
                     <th className="px-6 py-4 font-semibold tracking-wide">Nomor Kontak</th>
@@ -232,24 +232,24 @@ export default function CustomersPage() {
                     const phone = c.phone_number || c.phone || "";
 
                     return (
-                      <tr key={c.id} className="hover:bg-slate-50 transition-colors group">
-                        <td className="px-6 py-4 font-medium text-slate-950">
+                      <tr key={c.id} className="hover:bg-muted transition-colors group">
+                        <td className="px-6 py-4 font-medium text-foreground">
                           {c.name}
                         </td>
-                        <td className="px-6 py-4 text-slate-600">
+                        <td className="px-6 py-4 text-muted-foreground">
                           {phone ? (
                             <span className="font-mono">{phone}</span>
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
                           {debtAmount > 0 ? (
-                            <span className="font-medium text-rose-600 tracking-tight text-lg">
+                            <span className="font-medium text-rose-500 tracking-tight text-lg">
                               {formatIDR(debtAmount)}
                             </span>
                           ) : (
-                            <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Nihil</span>
+                            <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Nihil</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -262,13 +262,13 @@ export default function CustomersPage() {
                               >
                                 <Button
                                   variant="outline"
-                                  className="rounded-none border-emerald-200 text-emerald-700 hover:bg-emerald-50 h-8 px-3 text-xs"
+                                  className="rounded-none border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3 text-xs"
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Hubungi
                                 </Button>
                               </a>
                             ) : (
-                              <span className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Tanpa Kontak</span>
+                              <span className="text-[11px] text-muted-foreground uppercase tracking-widest font-semibold">Tanpa Kontak</span>
                             )}
                           </div>
                         </td>
@@ -291,7 +291,7 @@ export default function CustomersPage() {
       >
         <form onSubmit={handleCreateCustomer} className="space-y-5 pt-2">
           {error && (
-            <div className="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200">
+            <div className="p-3 text-xs text-rose-500 bg-rose-500/10 border border-rose-500/30">
               {error}
             </div>
           )}
@@ -313,7 +313,7 @@ export default function CustomersPage() {
             helperText="Digunakan untuk kirim pengingat kasbon & bukti bayar"
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -322,7 +322,7 @@ export default function CustomersPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" className="rounded-none px-6 bg-slate-950 text-white hover:bg-slate-800" isLoading={isSubmitting}>
+            <Button type="submit" variant="default" className="rounded-none px-6 bg-background text-foreground hover:bg-muted" isLoading={isSubmitting}>
               Simpan Pelanggan
             </Button>
           </div>
@@ -331,3 +331,5 @@ export default function CustomersPage() {
     </AppLayout>
   );
 }
+
+

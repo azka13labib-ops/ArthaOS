@@ -21,39 +21,80 @@ import {
   ChevronDown,
   Building2,
   Sparkles,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
-import { Modal } from "@/components/ui/Modal";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+// Navigation items — every href must have a real destination (R-24)
+const navigation = [
+  { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard, group: "Utama" },
+  { name: "Kasir POS", href: "/pos", icon: ShoppingCart, group: "Utama" },
+  { name: "Stok & Katalog", href: "/inventory", icon: Package, group: "Operasional" },
+  { name: "Buku Kasbon", href: "/debts", icon: BookOpen, group: "Operasional" },
+  { name: "Pengeluaran", href: "/expenses", icon: Receipt, group: "Operasional" },
+  { name: "Pelanggan", href: "/customers", icon: Users, group: "Operasional" },
+  { name: "Laporan", href: "/reports", icon: BarChart3, group: "Analitik" },
+  { name: "WhatsApp", href: "/whatsapp", icon: MessageSquare, group: "Analitik" },
+  {
+    name: "AI Copilot",
+    href: "/copilot",
+    icon: Sparkles,
+    group: "Analitik",
+    badge: "Baru",
+  },
+];
+
+const navGroups = ["Utama", "Operasional", "Analitik"];
+
+function AppSidebarInner({ pathname }: { pathname: string }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { stores, activeStore, setActiveStore, refreshStores } = useStore();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
-  const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
+  const [createStoreOpen, setCreateStoreOpen] = useState(false);
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreAddress, setNewStoreAddress] = useState("");
-  const [isSubmittingStore, setIsSubmittingStore] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [storeError, setStoreError] = useState("");
-
-  const navigation = [
-    { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Kasir POS", href: "/pos", icon: ShoppingCart },
-    { name: "Stok & Katalog", href: "/inventory", icon: Package },
-    { name: "Buku Kasbon", href: "/debts", icon: BookOpen },
-    { name: "Pengeluaran", href: "/expenses", icon: Receipt },
-    { name: "Pelanggan", href: "/customers", icon: Users },
-    { name: "Laporan Keuangan", href: "/reports", icon: BarChart3 },
-    { name: "WhatsApp Hub", href: "/whatsapp", icon: MessageSquare },
-    { name: "AI Copilot", href: "/copilot", icon: Sparkles, badge: "AI" },
-  ];
 
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,20 +103,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       return;
     }
     setStoreError("");
-    setIsSubmittingStore(true);
+    setIsSubmitting(true);
     try {
       const res = await api.stores.create(newStoreName.trim(), newStoreAddress.trim());
       await refreshStores();
-      if (res.store) {
-        setActiveStore(res.store);
-      }
+      if (res.store) setActiveStore(res.store);
       setNewStoreName("");
       setNewStoreAddress("");
-      setCreateStoreModalOpen(false);
+      setCreateStoreOpen(false);
     } catch (err: unknown) {
       setStoreError(err instanceof Error ? err.message : "Gagal membuat toko");
     } finally {
-      setIsSubmittingStore(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -84,332 +123,468 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const userInitial = user?.name?.[0]?.toUpperCase() ?? "U";
+
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground font-sans relative overflow-hidden">
-      {/* Subtle Background Glows */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
-      </div>
-
-      {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between px-4 h-16 bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-gradient-to-br from-primary to-primary-dark text-white font-serif italic text-base flex items-center justify-center shadow-glow">
-            A
-          </div>
-          <div>
-            <span className="font-medium text-sm tracking-tight block text-white">ArthaOS</span>
-            <span className="text-[11px] text-slate-400 block truncate max-w-35 font-medium">
-              {activeStore?.name || "Pilih Toko"}
-            </span>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </header>
-
-      {/* Desktop Sidebar (Floating Glass) */}
-      <aside className="hidden md:flex flex-col w-72 bg-black/20 backdrop-blur-2xl border-r border-white/5 shrink-0 h-screen sticky top-0 z-30">
-        {/* Brand Header */}
-        <div className="h-20 px-6 border-b border-white/5 flex items-center">
-          <Link href="/dashboard" className="flex items-center gap-3 w-full group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white font-serif italic text-base flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
+    <>
+      <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+        {/* Brand */}
+        <SidebarHeader className="h-14 border-b border-sidebar-border px-3">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2.5 h-full"
+            aria-label="ArthaOS beranda"
+          >
+            {/* Logo mark — product name as text, no generated asset (R-23) */}
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0 text-primary-foreground font-bold text-sm">
               A
             </div>
-            <span className="font-medium text-lg tracking-tight text-white">
-              ArthaOS.
-            </span>
-          </Link>
-        </div>
-
-        {/* Tenant Store Selector */}
-        <div className="p-4 border-b border-white/5 relative">
-          <button
-            type="button"
-            onClick={() => setStoreDropdownOpen(!storeDropdownOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-left transition-all group"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <StoreIcon className="w-4 h-4 text-primary shrink-0" />
-              <div className="truncate">
-                <p className="text-sm font-medium text-white truncate">
-                  {activeStore ? activeStore.name : "Pilih Toko"}
-                </p>
-              </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
-          </button>
-
-          {/* Store Dropdown Menu */}
-          <AnimatePresence>
-            {storeDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="absolute top-full left-4 right-4 mt-2 bg-slate-900 shadow-glass border border-white/10 py-2 z-50 rounded-xl overflow-hidden"
-              >
-                <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                  {stores.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveStore(s);
-                        setStoreDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
-                        activeStore?.id === s.id
-                          ? "bg-white/10 text-white font-medium"
-                          : "text-slate-400 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <Building2 className={`w-4 h-4 shrink-0 ${activeStore?.id === s.id ? "text-primary" : "text-slate-500"}`} />
-                      <span className="truncate">{s.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t border-white/5 mt-1 pt-1 px-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStoreDropdownOpen(false);
-                      setCreateStoreModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white font-medium hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4 text-primary" />
-                    <span>Toko Baru</span>
-                  </button>
-                </div>
-              </motion.div>
+            {!isCollapsed && (
+              <span className="font-semibold text-sm text-foreground tracking-tight">
+                ArthaOS
+              </span>
             )}
-          </AnimatePresence>
-        </div>
+          </Link>
+        </SidebarHeader>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1 custom-scrollbar">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+        <SidebarContent className="py-2">
+          {/* Store Selector */}
+          <div className="px-2 mb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring" aria-label="Ganti toko aktif">
+                  <StoreIcon className="w-4 h-4 text-primary shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1 text-left truncate text-xs font-medium">
+                        {activeStore?.name ?? "Pilih toko"}
+                      </span>
+                      <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    </>
+                  )}
+                </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Toko Anda
+                </div>
+                <DropdownMenuSeparator />
+                {stores.map((s) => (
+                  <DropdownMenuItem
+                    key={s.id}
+                    onSelect={() => setActiveStore(s)}
+                    className="flex items-center gap-2"
+                  >
+                    <Building2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="flex-1 truncate">{s.name}</span>
+                    {activeStore?.id === s.id && (
+                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => setCreateStoreOpen(true)}
+                  className="text-primary focus:text-primary"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  Toko baru
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Nav Groups */}
+          {navGroups.map((group) => {
+            const items = navigation.filter((n) => n.group === group);
             return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all relative group ${
-                  isActive
-                    ? "text-white font-medium bg-white/10 border border-white/5 shadow-sm"
-                    : "text-slate-400 hover:bg-white/5 hover:text-white border border-transparent"
-                }`}
-              >
-                {isActive && (
-                  <motion.div 
-                    layoutId="activeNavIndicator"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full shadow-glow"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
+              <SidebarGroup key={group} className="px-2 py-1">
+                {!isCollapsed && (
+                  <SidebarGroupLabel className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-2 mb-1">
+                    {group}
+                  </SidebarGroupLabel>
                 )}
-                <item.icon
-                  className={`w-5 h-5 shrink-0 transition-colors ${
-                    isActive ? "text-primary" : "text-slate-500 group-hover:text-slate-300"
-                  }`}
-                />
-                <span className="flex-1">{item.name}</span>
-                {"badge" in item && item.badge && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? 'bg-primary/20 text-primary' : 'bg-white/10 text-slate-300'}`}>
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {items.map((item) => {
+                      const isActive =
+                        pathname === item.href ||
+                        pathname?.startsWith(`${item.href}/`);
+                      return (
+                        <SidebarMenuItem key={item.name}>
+                          <SidebarMenuButton isActive={isActive} tooltip={item.name} render={<Link href={item.href} className="relative" />}>
+                              <item.icon className="w-4 h-4 shrink-0" />
+                              {!isCollapsed && (
+                                <>
+                                  <span className="flex-1">{item.name}</span>
+                                  {"badge" in item && item.badge && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px] h-4 px-1.5 font-semibold"
+                                    >
+                                      {item.badge}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                              {isActive && (
+                                <motion.div
+                                  layoutId="sidebarActiveIndicator"
+                                  className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full"
+                                  transition={{
+                                    type: "spring",
+                                    stiffness: 400,
+                                    damping: 30,
+                                  }}
+                                />
+                              )}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
             );
           })}
-        </nav>
+        </SidebarContent>
 
-        {/* User Profile & Logout */}
-        <div className="p-4 border-t border-white/5">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-            <div className="truncate mr-2">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.name || "Pengguna"}
+        {/* User footer */}
+        <SidebarFooter className="border-t border-sidebar-border p-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="w-full flex items-center gap-2.5 px-2 py-2 rounded-md text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
+                <Avatar className="w-6 h-6 shrink-0">
+                  <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-bold">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                {!isCollapsed && (
+                  <>
+                    <div className="flex-1 text-left overflow-hidden">
+                      <p className="text-xs font-medium text-foreground truncate leading-tight">
+                        {user?.name ?? "Pengguna"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  </>
+                )}
+              </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                {user?.email}
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={handleLogout}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-2" />
+                Keluar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      {/* Create Store Dialog */}
+      <Dialog open={createStoreOpen} onOpenChange={setCreateStoreOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Buka Toko Baru</DialogTitle>
+            <DialogDescription>
+              Daftarkan cabang atau outlet bisnis untuk stok dan transaksi terpisah.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateStore} className="space-y-4 pt-2">
+            {storeError && (
+              <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                {storeError}
               </p>
-              <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="store-name">Nama Toko</Label>
+              <Input
+                id="store-name"
+                value={newStoreName}
+                onChange={(e) => setNewStoreName(e.target.value)}
+                placeholder="Contoh: Toko Berkah Jaya"
+                required
+                autoFocus
+              />
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              title="Keluar"
-              className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Drawer */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col"
-          >
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-4/5 max-w-sm bg-slate-950 border-r border-white/10 h-full shadow-2xl flex flex-col"
-            >
-              <div className="flex items-center justify-between px-6 h-16 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark text-white font-serif italic text-sm flex items-center justify-center">
-                    A
-                  </div>
-                  <span className="font-medium text-base text-white">ArthaOS.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 -mr-2 text-slate-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="p-6 border-b border-white/5">
-                <div className="text-xs font-medium text-slate-500 mb-1">Toko Aktif:</div>
-                <div className="font-medium text-white text-base mb-4">
-                  {activeStore?.name || "Belum ada toko"}
-                </div>
-                <button
-                  className="w-full flex items-center justify-center gap-2 text-sm min-h-[44px] rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setCreateStoreModalOpen(true);
-                  }}
-                >
-                  <Plus className="w-4 h-4" /> Buat Toko Baru
-                </button>
-              </div>
-
-              <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm transition-colors ${
-                        isActive
-                          ? "text-white font-medium bg-white/10"
-                          : "text-slate-400 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <item.icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-slate-500"}`} />
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              <div className="p-6 border-t border-white/5 flex items-center justify-between">
-                <div className="truncate pr-2">
-                  <div className="text-sm font-medium text-white truncate">{user?.name}</div>
-                  <div className="text-xs text-slate-500 truncate">{user?.email}</div>
-                </div>
-                <button 
-                  onClick={handleLogout}
-                  className="p-2.5 text-slate-400 hover:text-rose-400 rounded-lg bg-white/5 border border-white/10"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 flex flex-col p-4 md:p-8"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {/* Create Store Modal */}
-      <Modal
-        isOpen={createStoreModalOpen}
-        onClose={() => setCreateStoreModalOpen(false)}
-        title="Buka Toko Baru"
-        description="Daftarkan cabang atau outlet bisnis baru untuk mengelola transaksi & stok terpisah."
-      >
-        {/* We will style Modal later or assume it uses a dark theme inside */}
-        <form onSubmit={handleCreateStore} className="space-y-4 pt-2">
-          {storeError && (
-            <div className="p-3 text-xs text-rose-200 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-              {storeError}
+            <div className="space-y-1.5">
+              <Label htmlFor="store-address">Alamat (Opsional)</Label>
+              <Input
+                id="store-address"
+                value={newStoreAddress}
+                onChange={(e) => setNewStoreAddress(e.target.value)}
+                placeholder="Contoh: Jl. Sudirman No. 42"
+              />
             </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Nama Toko / Outlet</label>
-            <input
-              type="text"
-              value={newStoreName}
-              onChange={(e) => setNewStoreName(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
-              placeholder="Contoh: Toko Berkah Jaya"
-              required
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Alamat / Lokasi (Opsional)</label>
-            <input
-              type="text"
-              value={newStoreAddress}
-              onChange={(e) => setNewStoreAddress(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
-              placeholder="Contoh: Jl. Sudirman No. 42"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-6">
-            <button
-              type="button"
-              onClick={() => setCreateStoreModalOpen(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium text-white hover:bg-white/10 transition-colors"
-            >
-              Batal
-            </button>
-            <button 
-              type="submit" 
-              disabled={isSubmittingStore}
-              className="px-5 py-2.5 rounded-xl text-sm font-medium bg-white text-black hover:bg-slate-200 transition-colors disabled:opacity-50"
-            >
-              {isSubmittingStore ? "Menyimpan..." : "Simpan & Buka Toko"}
-            </button>
-          </div>
-        </form>
-      </Modal>
-    </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setCreateStoreOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Menyimpan..." : "Simpan Toko"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
+// Mobile top bar — shown only on small screens
+function MobileHeader({
+  onMenuOpen,
+}: {
+  onMenuOpen: () => void;
+}) {
+  const { activeStore } = useStore();
+  return (
+    <header className="md:hidden sticky top-0 z-40 flex items-center justify-between px-4 h-14 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="flex items-center gap-2.5">
+        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+          A
+        </div>
+        <span className="font-semibold text-sm text-foreground">ArthaOS</span>
+        {activeStore && (
+          <span className="text-xs text-muted-foreground truncate max-w-32">
+            / {activeStore.name}
+          </span>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onMenuOpen}
+        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Buka menu navigasi"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+    </header>
+  );
+}
+
+// Mobile drawer overlay
+function MobileDrawer({
+  open,
+  onClose,
+  pathname,
+}: {
+  open: boolean;
+  onClose: () => void;
+  pathname: string;
+}) {
+  const { user, logout } = useAuth();
+  const { activeStore, stores, setActiveStore } = useStore();
+  const router = useRouter();
+  const [createStoreOpen, setCreateStoreOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.nav
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-sidebar-border flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-sidebar-border shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                  A
+                </div>
+                <span className="font-semibold text-sm text-foreground">ArthaOS</span>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label="Tutup menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Active store */}
+            <div className="px-4 py-3 border-b border-sidebar-border shrink-0">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Toko Aktif
+              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="w-full flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors">
+                    <StoreIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="flex-1 text-left truncate font-medium">
+                      {activeStore?.name ?? "Pilih toko"}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                  </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-60">
+                  {stores.map((s) => (
+                    <DropdownMenuItem
+                      key={s.id}
+                      onSelect={() => setActiveStore(s)}
+                      className="flex items-center gap-2"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span className="flex-1 truncate">{s.name}</span>
+                      {activeStore?.id === s.id && (
+                        <Check className="w-3.5 h-3.5 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setCreateStoreOpen(true)}
+                    className="text-primary"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Toko baru
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Nav */}
+            <div className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+              {navGroups.map((group) => {
+                const items = navigation.filter((n) => n.group === group);
+                return (
+                  <div key={group}>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-1">
+                      {group}
+                    </p>
+                    <div className="space-y-0.5">
+                      {items.map((item) => {
+                        const isActive =
+                          pathname === item.href ||
+                          pathname?.startsWith(`${item.href}/`);
+                        return (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            onClick={onClose}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors min-h-[44px] ${
+                              isActive
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            }`}
+                          >
+                            <item.icon
+                              className={`w-4 h-4 shrink-0 ${
+                                isActive ? "text-primary" : ""
+                              }`}
+                            />
+                            <span className="flex-1">{item.name}</span>
+                            {"badge" in item && item.badge && (
+                              <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-4 border-t border-sidebar-border shrink-0 flex items-center gap-3">
+              <Avatar className="w-7 h-7 shrink-0">
+                <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+                  {user?.name?.[0]?.toUpperCase() ?? "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {user?.name ?? "Pengguna"}
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {user?.email}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                aria-label="Keluar dari akun"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.nav>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground w-full">
+        {/* Desktop sidebar */}
+        <div className="hidden md:flex">
+          <AppSidebarInner pathname={pathname ?? ""} />
+        </div>
+
+        {/* Right: header + main */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Mobile header */}
+          <MobileHeader onMenuOpen={() => setMobileMenuOpen(true)} />
+
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="p-4 md:p-6 lg:p-8 max-w-screen-xl mx-auto w-full"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        </div>
+
+        {/* Mobile drawer */}
+        <MobileDrawer
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          pathname={pathname ?? ""}
+        />
+      </div>
+    </SidebarProvider>
+  );
+}

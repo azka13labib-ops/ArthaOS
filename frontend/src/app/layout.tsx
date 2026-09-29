@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { StoreProvider } from "@/context/StoreContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ArthaOS - Sistem Kasir & Manajemen Bisnis Terintegrasi",
+  title: "ArthaOS — Sistem Kasir & Manajemen Bisnis",
   description:
-    "Sistem Operasi Bisnis Ritel Modern: Point of Sale, Manajemen Inventori FIFO, Buku Kasbon, dan Laporan Keuangan Real-Time.",
+    "Point of Sale, Inventori FIFO, Buku Kasbon, dan Laporan Keuangan untuk UMKM Indonesia.",
 };
 
 export default function RootLayout({
@@ -21,10 +22,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${inter.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground selection:bg-primary/30">
+    <html lang="id" className={`${inter.variable} dark`} suppressHydrationWarning>
+      <body className="min-h-screen font-sans bg-background text-foreground selection:bg-primary/20 selection:text-primary" suppressHydrationWarning>
         <AuthProvider>
-          <StoreProvider>{children}</StoreProvider>
+          <StoreProvider>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </StoreProvider>
         </AuthProvider>
       </body>
     </html>

@@ -53,7 +53,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-background/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -64,7 +64,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative w-full rounded-xl bg-white p-6 text-left shadow-2xl transition-all border border-slate-200 z-10 my-8",
+          "relative w-full rounded-none bg-card p-6 text-left shadow-2xl transition-all border border-border z-10 my-8",
           maxWidthStyles[maxWidth],
           className
         )}
@@ -73,19 +73,19 @@ export function Modal({
         <div className="flex items-start justify-between pb-4 mb-4 border-b border-slate-100">
           <div>
             {title && (
-              <h3 id="modal-title" className="text-lg font-bold text-slate-900 leading-6">
+              <h3 id="modal-title" className="text-lg font-bold text-foreground leading-6">
                 {title}
               </h3>
             )}
             {description && (
-              <p className="mt-1 text-xs text-slate-500">{description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup dialog"
-            className="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-muted-foreground hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="w-5 h-5" />
           </button>

@@ -18,14 +18,14 @@ export function Spinner({ size = "md", className, label }: SpinnerProps) {
     <div className="flex flex-col items-center justify-center gap-2 py-4">
       <div
         className={cn(
-          "animate-spin rounded-full border-slate-200 border-t-emerald-600",
+          "animate-spin rounded-full border-border border-t-emerald-600",
           sizeStyles[size],
           className
         )}
         role="status"
         aria-label="Loading"
       />
-      {label && <p className="text-xs text-slate-500">{label}</p>}
+      {label && <p className="text-xs text-muted-foreground">{label}</p>}
     </div>
   );
 }

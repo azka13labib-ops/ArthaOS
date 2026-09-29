@@ -15,8 +15,8 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
@@ -211,12 +211,12 @@ export default function InventoryPage() {
     <AppLayout>
       <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
         {/* Header Title & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-white mb-1">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1">
               Stok & Katalog Produk
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               Kelola daftar SKU, penetapan harga jual, mutasi stok, dan audit pergerakan barang.
             </p>
           </div>
@@ -225,15 +225,15 @@ export default function InventoryPage() {
               variant="outline"
               onClick={loadProducts}
               disabled={isLoading}
-              className="rounded-none border-white/10 hover:bg-white/5 h-10 px-4"
+              className="rounded-none border-border hover:bg-card h-10 px-4"
               title="Segarkan daftar produk"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Segarkan
             </Button>
             <Button
-              variant="primary"
-              className="rounded-none bg-white/10 hover:bg-white/20 hover:bg-emerald-400 text-slate-950 h-10 px-6"
+              variant="default"
+              className="rounded-none bg-muted hover:bg-card/20 hover:bg-emerald-400 text-foreground h-10 px-6"
               onClick={() => {
                 setProductError("");
                 setIsAddModalOpen(true);
@@ -245,24 +245,24 @@ export default function InventoryPage() {
         </div>
 
         {/* 3 Overview Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-slate-200 border border-white/10">
-          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
-            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Total Variasi SKU</p>
-            <h3 className="text-3xl font-medium text-white tracking-tight">
-              {products.length} <span className="text-sm text-slate-400 font-normal tracking-normal lowercase">Item</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border border border-border">
+          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Variasi SKU</p>
+            <h3 className="text-3xl font-medium text-foreground tracking-tight">
+              {products.length} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Item</span>
             </h3>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
-            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Total Unit Tersedia</p>
-            <h3 className="text-3xl font-medium text-white tracking-tight">
-              {totalStockCount} <span className="text-sm text-slate-400 font-normal tracking-normal lowercase">Pcs</span>
+          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Unit Tersedia</p>
+            <h3 className="text-3xl font-medium text-foreground tracking-tight">
+              {totalStockCount} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Pcs</span>
             </h3>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white p-6 md:p-8 flex flex-col justify-between hover:bg-white/5 transition-colors">
-            <p className="text-[13px] font-medium text-slate-400 mb-6 uppercase tracking-wider">Nilai Aset Tersimpan</p>
-            <h3 className="text-3xl font-medium text-emerald-400 tracking-tight">
+          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Nilai Aset Tersimpan</p>
+            <h3 className="text-3xl font-medium text-primary tracking-tight">
               {formatIDR(totalValuation)}
             </h3>
           </div>
@@ -271,19 +271,19 @@ export default function InventoryPage() {
         {/* Search & Stock Filter Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="relative w-full sm:w-96 group">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-400 transition-colors" />
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
               placeholder="Cari nama produk, SKU, barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 text-sm bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10 rounded-none focus-visible:outline-none focus-visible:border-slate-400 transition-colors placeholder:text-slate-400"
+              className="w-full pl-9 pr-8 py-2.5 text-sm bg-card  border-border text-foreground border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -291,14 +291,14 @@ export default function InventoryPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center w-full sm:w-auto border border-white/10 bg-white/5">
+          <div className="flex items-center w-full sm:w-auto border border-border bg-card">
             <button
               type="button"
               onClick={() => setStockFilter("all")}
               className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
                 stockFilter === "all"
-                  ? "bg-white/10 hover:bg-white/20 text-white"
-                  : "text-slate-500 hover:text-white"
+                  ? "bg-muted hover:bg-card/20 text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Semua ({products.length})
@@ -306,10 +306,10 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setStockFilter("low")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-white/10 ${
+              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-border ${
                 stockFilter === "low"
-                  ? "bg-white/10 hover:bg-white/20 text-white border-transparent"
-                  : "text-slate-500 hover:text-white"
+                  ? "bg-muted hover:bg-card/20 text-foreground border-transparent"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Menipis (≤5)
@@ -319,8 +319,8 @@ export default function InventoryPage() {
               onClick={() => setStockFilter("out")}
               className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
                 stockFilter === "out"
-                  ? "bg-white/10 hover:bg-white/20 text-white"
-                  : "text-slate-500 hover:text-white"
+                  ? "bg-muted hover:bg-card/20 text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Habis (0)
@@ -329,14 +329,14 @@ export default function InventoryPage() {
         </div>
 
         {/* Products Table */}
-        <div className="bg-white/5 backdrop-blur-xl border-white/10 text-white border border-white/10">
+        <div className="bg-card  border-border text-foreground border border-border">
           {isLoading ? (
             <div className="p-12">
               <Spinner size="md" />
             </div>
           ) : filteredProducts.length === 0 ? (
             <EmptyState
-              icon={<Package className="w-8 h-8 text-slate-500" />}
+              icon={<Package className="w-8 h-8 text-muted-foreground" />}
               title="Tidak Ada Produk"
               description={
                 searchQuery || stockFilter !== "all"
@@ -360,7 +360,7 @@ export default function InventoryPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="text-slate-400 border-b border-white/10">
+                <thead className="text-muted-foreground border-b border-border">
                   <tr>
                     <th className="px-6 py-4 font-medium">SKU & Barcode</th>
                     <th className="px-6 py-4 font-medium">Nama Produk</th>
@@ -379,29 +379,29 @@ export default function InventoryPage() {
                         : 0;
 
                     return (
-                      <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                      <tr key={p.id} className="hover:bg-card transition-colors">
                         <td className="px-6 py-4 font-mono">
-                          <span className="font-semibold text-white block">{p.sku}</span>
-                          <span className="text-[11px] text-slate-400 block tracking-wider mt-0.5">
+                          <span className="font-semibold text-foreground block">{p.sku}</span>
+                          <span className="text-[11px] text-muted-foreground block tracking-wider mt-0.5">
                             {p.barcode || "-"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-medium text-white max-w-[200px] truncate">
+                        <td className="px-6 py-4 font-medium text-foreground max-w-[200px] truncate">
                           {p.name}
                         </td>
-                        <td className="px-6 py-4 text-right text-slate-400">
+                        <td className="px-6 py-4 text-right text-muted-foreground">
                           {formatIDR(p.buy_price)}
                         </td>
-                        <td className="px-6 py-4 text-right font-semibold text-white">
+                        <td className="px-6 py-4 text-right font-semibold text-foreground">
                           {formatIDR(p.sell_price)}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span
                             className={`inline-block px-2 py-0.5 text-[11px] font-bold tracking-wider ${
                               margin >= 30
-                                ? "bg-emerald-50 text-emerald-400"
+                                ? "bg-emerald-500/10 text-primary"
                                 : margin > 0
-                                ? "bg-white/10 text-slate-500"
+                                ? "bg-muted text-muted-foreground"
                                 : "bg-rose-500/10 text-rose-700"
                             }`}
                           >
@@ -415,7 +415,7 @@ export default function InventoryPage() {
                                 ? "bg-rose-100 text-rose-300"
                                 : p.current_stock <= 5
                                 ? "bg-amber-100 text-amber-800"
-                                : "bg-white/10 text-slate-200"
+                                : "bg-muted text-foreground"
                             }`}
                           >
                             {p.current_stock}
@@ -425,7 +425,7 @@ export default function InventoryPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="h-8 rounded-none border-white/10 text-xs px-3"
+                              className="h-8 rounded-none border-border text-xs px-3"
                               onClick={() => {
                                 setSelectedProduct(p);
                                 setAdjustmentType("add");
@@ -439,7 +439,7 @@ export default function InventoryPage() {
                             </Button>
                             <button
                               type="button"
-                              className="h-8 w-8 flex items-center justify-center border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                              className="h-8 w-8 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
                               onClick={() => handleViewMovements(p)}
                               title="Riwayat mutasi stok"
                             >
@@ -524,7 +524,7 @@ export default function InventoryPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -533,7 +533,7 @@ export default function InventoryPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" className="rounded-none px-6 bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800" isLoading={isSubmittingProduct}>
+            <Button type="submit" variant="default" className="rounded-none px-6 bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isSubmittingProduct}>
               Simpan Produk
             </Button>
           </div>
@@ -556,17 +556,17 @@ export default function InventoryPage() {
 
           {/* Type Switcher */}
           <div>
-            <label className="block text-xs font-semibold text-white uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
               Tipe Penyesuaian
             </label>
-            <div className="grid grid-cols-2 gap-0 border border-white/10">
+            <div className="grid grid-cols-2 gap-0 border border-border">
               <button
                 type="button"
                 onClick={() => setAdjustmentType("add")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-white/10 ${
+                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-border ${
                   adjustmentType === "add"
-                    ? "bg-white/10 hover:bg-white/20 text-white"
-                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-400 hover:bg-white/5"
+                    ? "bg-muted hover:bg-card/20 text-foreground"
+                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
                 }`}
               >
                 (+) Masuk
@@ -576,8 +576,8 @@ export default function InventoryPage() {
                 onClick={() => setAdjustmentType("reduce")}
                 className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors ${
                   adjustmentType === "reduce"
-                    ? "bg-white/10 hover:bg-white/20 text-white"
-                    : "bg-white/5 backdrop-blur-xl border-white/10 text-white text-slate-400 hover:bg-white/5"
+                    ? "bg-muted hover:bg-card/20 text-foreground"
+                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
                 }`}
               >
                 (-) Keluar
@@ -602,7 +602,7 @@ export default function InventoryPage() {
             onChange={(e) => setAdjustmentNotes(e.target.value)}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -611,7 +611,7 @@ export default function InventoryPage() {
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" className="rounded-none px-6 bg-white/10 hover:bg-white/20 text-white hover:bg-slate-800" isLoading={isSubmittingAdjust}>
+            <Button type="submit" variant="default" className="rounded-none px-6 bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isSubmittingAdjust}>
               Konfirmasi
             </Button>
           </div>
@@ -632,16 +632,16 @@ export default function InventoryPage() {
               <Spinner size="md" />
             </div>
           ) : movements.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-400 bg-white/5 border border-dashed border-white/10">
+            <div className="p-8 text-center text-sm text-muted-foreground bg-card border border-solid border-border">
               Belum ada riwayat mutasi stok untuk produk ini.
             </div>
           ) : (
-            <div className="max-h-80 overflow-y-auto border border-white/10 divide-y divide-slate-100">
+            <div className="max-h-80 overflow-y-auto border border-border divide-y divide-slate-100">
               {movements.map((m) => (
-                <div key={m.id} className="p-4 flex items-center justify-between text-sm bg-white/5 backdrop-blur-xl border-white/10 text-white">
+                <div key={m.id} className="p-4 flex items-center justify-between text-sm bg-card  border-border text-foreground">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-white uppercase text-xs tracking-wider">
+                      <span className="font-semibold text-foreground uppercase text-xs tracking-wider">
                         {m.movement_type === "sale"
                           ? "Penjualan Kasir"
                           : m.movement_type === "restock"
@@ -650,17 +650,17 @@ export default function InventoryPage() {
                           ? "Penyesuaian Manual"
                           : m.movement_type}
                       </span>
-                      <span className="text-[11px] text-slate-400 font-mono">
+                      <span className="text-[11px] text-muted-foreground font-mono">
                         {formatDate(m.created_at)}
                       </span>
                     </div>
-                    {m.notes && <p className="text-xs text-slate-400">{m.notes}</p>}
+                    {m.notes && <p className="text-xs text-muted-foreground">{m.notes}</p>}
                   </div>
                   <div className="text-right shrink-0">
                     <span
                       className={`inline-block px-2 py-1 font-mono text-xs font-bold ${
                         m.quantity_delta > 0
-                          ? "bg-emerald-50 text-emerald-400"
+                          ? "bg-emerald-500/10 text-primary"
                           : "bg-rose-500/10 text-rose-700"
                       }`}
                     >
@@ -672,7 +672,7 @@ export default function InventoryPage() {
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t border-white/10">
+          <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -687,3 +687,5 @@ export default function InventoryPage() {
     </AppLayout>
   );
 }
+
+

@@ -1,63 +1,157 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-@theme {
-  --color-background: #020617; /* slate-950 */
-  --color-foreground: #f8fafc; /* slate-50 */
-  
-  --color-card: rgba(15, 23, 42, 0.4); /* glass slate-900 */
-  --color-card-hover: rgba(30, 41, 59, 0.6);
-  --color-card-border: rgba(255, 255, 255, 0.05);
-  
-  --color-primary: #10b981; /* emerald-500 */
-  --color-primary-dark: #047857; /* emerald-700 */
-  
-  --color-muted: #1e293b; /* slate-800 */
-  --color-muted-foreground: #94a3b8; /* slate-400 */
-  
-  /* Soft glass shadows */
-  --shadow-glass: 0 4px 30px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.15);
+@custom-variant dark (&:is(.dark *));
+
+/*
+  ArthaOS Design System
+  Design Read: Business management app for Indonesian SMEs.
+  Tone: Minimalist, clean, focused. Linear/Vercel inspired.
+  Dials: ENERGY 1 / RHYTHM 1 / MOTION 1
+  Palette:
+    - Background: Pure or near-black
+    - Primary accent: High-contrast white
+    - Destructive: Rose-500
+    - Text: Crisp white and neutral grays
+  Rationale: Monochrome reduces cognitive load and looks extremely professional.
+*/
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+
+  /* Sidebar tokens */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  /* Chart tokens */
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  /* Core tokens */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Radius system — slightly rounded, not pill-shaped */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
 }
 
+/* ArthaOS dark theme — only mode shipped */
+:root, .dark {
+  --radius: 0.5rem;
+
+  /* === ArthaOS Dark Monochrome Palette === */
+  /* Background: pure minimalist dark */
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.98 0 0);
+
+  /* Card: slight elevation */
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+
+  /* Primary: High contrast white for a bold, clean look */
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+
+  /* Secondary: Neutral gray */
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  /* Muted: for helper text, labels */
+  --muted: oklch(0.20 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+
+  /* Accent: for hover states */
+  --accent: oklch(0.20 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+
+  /* Destructive: Rose-500 for critical actions */
+  --destructive: oklch(0.637 0.237 25.331);
+
+  /* Borders: subtle neutral borders */
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(1 0 0 / 30%);
+
+  /* Charts: Monochrome scale */
+  --chart-1: oklch(0.98 0 0);
+  --chart-2: oklch(0.80 0 0);
+  --chart-3: oklch(0.60 0 0);
+  --chart-4: oklch(0.40 0 0);
+  --chart-5: oklch(0.30 0 0);
+
+  /* Sidebar: minimal contrast separation */
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.98 0 0);
+  --sidebar-primary-foreground: oklch(0.12 0 0);
+  --sidebar-accent: oklch(0.20 0 0);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(1 0 0 / 30%);
+}
+
+/* No separate .dark needed — this IS the only theme */
+
 @layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    @apply bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Soft ambient background glow */
-    background-image: 
-      radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.03) 0%, transparent 50%);
-    background-attachment: fixed;
   }
 
-  /* Custom Clean Scrollbar */
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
-  }
+  /* Thin, unobtrusive scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(0.3 0 0); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(0.4 0 0); }
 }
 
-/* Print Styles for POS Thermal Receipt */
+/* Print: POS thermal receipt */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  #printable-receipt, #printable-receipt * {
-    visibility: visible;
-  }
+  body * { visibility: hidden; }
+  #printable-receipt,
+  #printable-receipt * { visibility: visible; }
   #printable-receipt {
     position: absolute;
     left: 0;
@@ -69,4 +163,3 @@
     color: black;
   }
 }
-

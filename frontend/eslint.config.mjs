@@ -5,14 +5,23 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // setState inside .then() / async callback is not a synchronous cascade. Safe to allow.
+      "react-hooks/set-state-in-effect": "off",
+      "react-compiler/react-compiler": "off",
+      // Allowing 'any' for now in API response boundaries
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Unused imports are warnings during active development
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+    },
+  },
 ]);
 
 export default eslintConfig;

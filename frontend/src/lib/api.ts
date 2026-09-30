@@ -11,7 +11,7 @@ import {
   StockValuationReport,
 } from "./types";
 
-const API_BASE = "http://localhost:3000/api/v1";
+const API_BASE = "http://localhost:8080/api/v1";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;

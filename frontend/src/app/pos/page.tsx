@@ -304,7 +304,7 @@ export default function PosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="w-full pl-9 pr-4 py-2.5 text-sm bg-card  border-border text-foreground border border-border hover:border-border rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary transition-all placeholder:text-muted-foreground"
+                className="w-full pl-9 pr-4 py-2.5 text-sm bg-background text-foreground border border-border hover:border-primary/50 rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary transition-all placeholder:text-muted-foreground shadow-sm"
               />
               {searchQuery && (
                 <button
@@ -342,7 +342,7 @@ export default function PosPage() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-0 border-t border-l border-border">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredProducts.map((p) => {
                   const isOutOfStock = p.current_stock <= 0;
                   const inCartItem = cart.find((c) => c.product.id === p.id);
@@ -353,12 +353,12 @@ export default function PosPage() {
                       type="button"
                       disabled={isOutOfStock}
                       onClick={() => addToCart(p)}
-                      className={`relative flex flex-col justify-between p-4 border-b border-r border-border text-left transition-all select-none ${
+                      className={`relative flex flex-col justify-between p-4 border border-transparent rounded-lg text-left transition-all select-none ${
                         isOutOfStock
-                          ? "bg-card opacity-60 cursor-not-allowed"
+                          ? "bg-card/50 opacity-60 cursor-not-allowed"
                           : inCartItem
-                          ? "bg-primary/10 ring-1 ring-inset ring-primary/50"
-                          : "bg-card  border-border text-foreground hover:bg-card active:bg-muted"
+                          ? "bg-primary/5 border-primary/50 ring-1 ring-primary/20 shadow-sm"
+                          : "bg-card hover:border-border hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0"
                       }`}
                     >
                       {/* Product details */}
@@ -404,13 +404,13 @@ export default function PosPage() {
         </div>
 
         {/* Right Column: Dynamic Cart & Checkout Panel (40%) */}
-        <div className="w-full lg:w-96 xl:w-[420px] flex flex-col bg-card  border-border text-foreground shrink-0 border-t lg:border-t-0">
+        <div className="w-full lg:w-96 xl:w-[420px] flex flex-col bg-background shrink-0 border-t lg:border-t-0 lg:border-l border-border">
           {/* Cart Header */}
           <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-foreground" />
+              <ShoppingCart className="w-4 h-4 text-primary" />
               <h3 className="font-semibold text-sm text-foreground tracking-tight">Keranjang</h3>
-              <Badge variant="outline" className="rounded-none font-medium">
+              <Badge variant="secondary" className="font-medium">
                 {totalItemsCount} item
               </Badge>
             </div>
@@ -440,7 +440,7 @@ export default function PosPage() {
                 {cart.map((item) => (
                   <div
                     key={item.product.id}
-                    className="p-3 bg-card  border-border text-foreground flex flex-col gap-2"
+                    className="p-3 bg-card flex flex-col gap-2 rounded-md hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex justify-between items-start gap-3">
                       <p className="text-sm font-semibold text-foreground truncate flex-1 leading-snug">
@@ -493,7 +493,7 @@ export default function PosPage() {
           </div>
 
           {/* Cart Bottom Summary & Checkout Button */}
-          <div className="p-5 bg-card  border-border text-foreground border-t border-border space-y-4 shrink-0">
+          <div className="p-5 bg-card border-t border-border space-y-4 shrink-0 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]">
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex justify-between">
                 <span>Subtotal</span>
@@ -514,7 +514,7 @@ export default function PosPage() {
             <Button
               variant="default"
               size="lg"
-              className="w-full font-bold tracking-wide rounded-none h-12 bg-muted hover:bg-card/20 hover:bg-emerald-400 text-foreground border-transparent"
+              className="w-full font-bold tracking-wide h-12 shadow-sm"
               disabled={cart.length === 0}
               onClick={() => {
                 setCashGiven(totalAmount.toString());
@@ -557,14 +557,14 @@ export default function PosPage() {
             <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
               Pilih Metode Pembayaran
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-0 border border-border">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`p-3 border-r border-b sm:border-b-0 border-border flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border rounded-md flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "cash"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <Banknote className="w-5 h-5" />
@@ -574,10 +574,10 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("transfer")}
-                className={`p-3 border-r border-b sm:border-b-0 border-border flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border rounded-md flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "transfer"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <CreditCard className="w-5 h-5" />
@@ -587,10 +587,10 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("qris")}
-                className={`p-3 border-r border-border flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border rounded-md flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "qris"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <QrCode className="w-5 h-5" />
@@ -600,10 +600,10 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("debt")}
-                className={`p-3 flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
+                className={`p-3 border rounded-md flex flex-col items-center justify-center gap-2 text-xs font-medium transition-all ${
                   paymentMethod === "debt"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <BookOpen className="w-5 h-5" />
@@ -637,7 +637,7 @@ export default function PosPage() {
                   <button
                     key={denom.label}
                     type="button"
-                    className="px-3 py-1.5 border border-border text-xs font-medium text-muted-foreground hover:bg-card hover:border-border transition-colors"
+                    className="px-3 py-1.5 border border-border rounded-md text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     onClick={() => setCashGiven(denom.val.toString())}
                   >
                     {denom.label}
@@ -665,9 +665,9 @@ export default function PosPage() {
 
           {/* Method 2: Transfer details */}
           {paymentMethod === "transfer" && (
-            <div className="p-5 bg-card  border-border text-foreground border border-border space-y-3 text-sm text-muted-foreground text-center">
+            <div className="p-5 bg-card border border-border rounded-lg space-y-3 text-sm text-muted-foreground text-center">
               <p className="font-medium text-foreground uppercase tracking-widest text-xs">Rekening Tujuan</p>
-              <div className="p-4 bg-card border border-border">
+              <div className="p-4 bg-muted/30 border border-border rounded-md">
                 <p className="font-mono text-xl text-foreground font-bold tracking-widest">BCA 8830 1928 392</p>
                 <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">A/N {activeStore.name}</p>
               </div>
@@ -679,9 +679,9 @@ export default function PosPage() {
 
           {/* Method 3: QRIS View */}
           {paymentMethod === "qris" && (
-            <div className="p-6 bg-card  border-border text-foreground border border-border flex flex-col items-center justify-center text-center">
-              <div className="w-40 h-40 bg-card  border-border text-foreground p-3 border border-border flex items-center justify-center mb-4">
-                <QrCode className="w-32 h-32 text-foreground" />
+            <div className="p-6 bg-card border border-border rounded-lg flex flex-col items-center justify-center text-center">
+              <div className="w-40 h-40 bg-white p-3 border border-border rounded-xl flex items-center justify-center mb-4">
+                <QrCode className="w-32 h-32 text-black" />
               </div>
               <p className="text-sm font-semibold text-foreground uppercase tracking-wider">QRIS Standar Nasional</p>
               <p className="text-[11px] text-muted-foreground mt-1">Dukung pembayaran dari semua aplikasi E-Wallet & Mobile Banking</p>
@@ -690,7 +690,7 @@ export default function PosPage() {
 
           {/* Method 4: Kasbon / Debt options */}
           {paymentMethod === "debt" && (
-            <div className="p-4 bg-card border border-border space-y-4">
+            <div className="p-4 bg-card border border-border rounded-lg space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-foreground uppercase tracking-wide">
                   Pilih Pelanggan Kasbon
@@ -739,7 +739,7 @@ export default function PosPage() {
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsCheckoutOpen(false)}
             >
               Batal
@@ -747,7 +747,7 @@ export default function PosPage() {
             <Button
               type="button"
               variant="default"
-              className="rounded-none px-8 bg-muted hover:bg-card/20 hover:bg-emerald-400 text-foreground"
+              className="px-8 shadow-sm"
               isLoading={isSubmittingSale}
               onClick={handleProcessSale}
             >
@@ -783,12 +783,11 @@ export default function PosPage() {
             <Button
               type="button"
               variant="outline"
-              className="rounded-none"
               onClick={() => setIsAddCustomerOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isCreatingCustomer}>
+            <Button type="submit" variant="default" isLoading={isCreatingCustomer} className="shadow-sm">
               Simpan Data
             </Button>
           </div>

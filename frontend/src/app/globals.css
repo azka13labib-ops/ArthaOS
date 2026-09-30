@@ -7,14 +7,7 @@
 /*
   ArthaOS Design System
   Design Read: Business management app for Indonesian SMEs.
-  Tone: Minimalist, clean, focused. Linear/Vercel inspired.
-  Dials: ENERGY 1 / RHYTHM 1 / MOTION 1
-  Palette:
-    - Background: Pure or near-black
-    - Primary accent: High-contrast white
-    - Destructive: Rose-500
-    - Text: Crisp white and neutral grays
-  Rationale: Monochrome reduces cognitive load and looks extremely professional.
+  Tone: Kalibra-inspired, light, clean, with purple accents.
 */
 
 @theme inline {
@@ -58,7 +51,7 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
 
-  /* Radius system — slightly rounded, not pill-shaped */
+  /* Radius system */
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -66,65 +59,97 @@
   --radius-2xl: calc(var(--radius) * 2);
 }
 
-/* ArthaOS dark theme — only mode shipped */
-:root, .dark {
+:root {
   --radius: 0.5rem;
 
-  /* === ArthaOS Dark Monochrome Palette === */
-  /* Background: pure minimalist dark */
-  --background: oklch(0.12 0 0);
-  --foreground: oklch(0.98 0 0);
-
-  /* Card: slight elevation */
-  --card: oklch(0.16 0 0);
-  --card-foreground: oklch(0.98 0 0);
-
-  --popover: oklch(0.16 0 0);
-  --popover-foreground: oklch(0.98 0 0);
-
-  /* Primary: High contrast white for a bold, clean look */
-  --primary: oklch(0.98 0 0);
-  --primary-foreground: oklch(0.12 0 0);
-
-  /* Secondary: Neutral gray */
-  --secondary: oklch(0.25 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
-
-  /* Muted: for helper text, labels */
-  --muted: oklch(0.20 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-
-  /* Accent: for hover states */
-  --accent: oklch(0.20 0 0);
-  --accent-foreground: oklch(0.98 0 0);
-
-  /* Destructive: Rose-500 for critical actions */
-  --destructive: oklch(0.637 0.237 25.331);
-
-  /* Borders: subtle neutral borders */
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 12%);
-  --ring: oklch(1 0 0 / 30%);
-
-  /* Charts: Monochrome scale */
-  --chart-1: oklch(0.98 0 0);
-  --chart-2: oklch(0.80 0 0);
-  --chart-3: oklch(0.60 0 0);
-  --chart-4: oklch(0.40 0 0);
-  --chart-5: oklch(0.30 0 0);
-
-  /* Sidebar: minimal contrast separation */
-  --sidebar: oklch(0.14 0 0);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.98 0 0);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.20 0 0);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(1 0 0 / 30%);
+  /* Kalibra Light Theme */
+  --background: oklch(0.98 0 0); /* very pale gray */
+  --foreground: oklch(0.14 0 0);
+  
+  --card: oklch(1 0 0); /* pure white */
+  --card-foreground: oklch(0.14 0 0);
+  
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0 0);
+  
+  --primary: oklch(0.6 0.2 290); /* Kalibra Purple #A855F7 */
+  --primary-foreground: oklch(0.98 0 0);
+  
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.20 0 0);
+  
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  
+  --accent: oklch(0.95 0.05 290); /* Pale purple hover bg */
+  --accent-foreground: oklch(0.40 0.2 290); /* Dark purple text */
+  
+  --destructive: oklch(0.6 0.2 25);
+  
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.6 0.2 290);
+  
+  --chart-1: oklch(0.6 0.2 290);
+  --chart-2: oklch(0.7 0.1 270);
+  --chart-3: oklch(0.5 0.15 310);
+  --chart-4: oklch(0.8 0.05 290);
+  --chart-5: oklch(0.4 0.25 290);
+  
+  --sidebar: oklch(0.99 0 0); /* Almost white */
+  --sidebar-foreground: oklch(0.14 0 0);
+  --sidebar-primary: oklch(0.6 0.2 290);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.95 0.05 290);
+  --sidebar-accent-foreground: oklch(0.40 0.2 290);
+  --sidebar-border: oklch(0.92 0 0);
+  --sidebar-ring: oklch(0.6 0.2 290);
 }
 
-/* No separate .dark needed — this IS the only theme */
+.dark {
+  /* Dark Mode support */
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.98 0 0);
+  
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  
+  --primary: oklch(0.6 0.2 290); /* keep purple */
+  --primary-foreground: oklch(0.98 0 0);
+  
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  
+  --muted: oklch(0.20 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  
+  --accent: oklch(0.25 0.05 290);
+  --accent-foreground: oklch(0.98 0 0);
+  
+  --destructive: oklch(0.637 0.237 25.331);
+  
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.6 0.2 290);
+  
+  --chart-1: oklch(0.6 0.2 290);
+  --chart-2: oklch(0.7 0.1 270);
+  --chart-3: oklch(0.5 0.15 310);
+  --chart-4: oklch(0.8 0.05 290);
+  --chart-5: oklch(0.4 0.25 290);
+  
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.6 0.2 290);
+  --sidebar-primary-foreground: oklch(0.12 0 0);
+  --sidebar-accent: oklch(0.25 0.05 290);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.6 0.2 290);
+}
 
 @layer base {
   * {
@@ -141,10 +166,12 @@
   }
 
   /* Thin, unobtrusive scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: oklch(0.3 0 0); border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: oklch(0.4 0 0); }
+  ::-webkit-scrollbar-thumb { background: oklch(0.8 0 0); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(0.7 0 0); }
+  .dark ::-webkit-scrollbar-thumb { background: oklch(0.3 0 0); }
+  .dark ::-webkit-scrollbar-thumb:hover { background: oklch(0.4 0 0); }
 }
 
 /* Print: POS thermal receipt */

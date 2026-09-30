@@ -109,14 +109,14 @@ export default function ReportsPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="rounded-none border-border hover:bg-card h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               onClick={handlePrint}
             >
               <Printer className="w-4 h-4 mr-2" /> Cetak
             </Button>
             <Button
               variant="outline"
-              className="rounded-none border-border hover:bg-card h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               onClick={loadReports}
               disabled={isLoading}
               title="Perbarui laporan"
@@ -128,33 +128,33 @@ export default function ReportsPage() {
         </div>
 
         {/* Date Filter Bar */}
-        <div className="bg-card  border-border text-foreground border border-border p-1 flex flex-col sm:flex-row items-center justify-between gap-0">
+        <div className="bg-card border border-border rounded-xl shadow-sm p-1 flex flex-col sm:flex-row items-center justify-between gap-2 overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-2 w-full sm:w-auto">
             <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Periode:</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-0 w-full sm:w-auto">
-            <div className="flex items-center">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto p-1">
+            <div className="flex items-center bg-background rounded-md border border-border shadow-sm overflow-hidden">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-4 py-3 border-l border-border text-sm bg-card  border-border text-foreground focus-visible:outline-none focus-visible:bg-card transition-colors"
+                className="px-4 py-2.5 text-sm bg-transparent text-foreground focus-visible:outline-none transition-colors"
               />
-              <div className="px-4 py-3 border-l border-border bg-card text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+              <div className="px-3 py-2.5 border-l border-border bg-muted/30 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 S/D
               </div>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-4 py-3 border-l border-r border-border text-sm bg-card  border-border text-foreground focus-visible:outline-none focus-visible:bg-card transition-colors"
+                className="px-4 py-2.5 border-l border-border text-sm bg-transparent text-foreground focus-visible:outline-none transition-colors"
               />
             </div>
             <Button 
               variant="default" 
-              className="rounded-none h-11 px-8 bg-muted hover:bg-card/20 text-foreground hover:bg-muted"
+              className="h-[42px] px-8 shadow-sm"
               onClick={loadReports}
             >
               Terapkan
@@ -166,8 +166,8 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-14">
           {/* Left 2 Cols: Income Statement (Laba Rugi) */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="border border-border bg-card  border-border text-foreground">
-              <div className="bg-muted hover:bg-card/20 px-6 py-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="border border-border bg-card rounded-xl shadow-sm overflow-hidden">
+              <div className="bg-muted/50 px-6 py-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-medium text-foreground tracking-tight">
                     Laba Rugi (Income Statement)
@@ -176,7 +176,7 @@ export default function ReportsPage() {
                     OUTLET: {activeStore?.name}
                   </p>
                 </div>
-                <div className="px-3 py-1 bg-muted text-foreground text-xs font-bold tracking-wider rounded-none">
+                <div className="px-3 py-1.5 bg-background border border-border shadow-sm text-foreground text-xs font-bold tracking-wider rounded-md">
                   MARGIN: {netMarginPercent}%
                 </div>
               </div>
@@ -250,23 +250,23 @@ export default function ReportsPage() {
 
                     {/* Final Net Profit */}
                     <div
-                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-6 mt-6 border ${
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-6 mt-6 border rounded-xl shadow-sm ${
                         netProfit >= 0
-                          ? "bg-emerald-500/10 border-emerald-500/30"
-                          : "bg-rose-500/10 border-rose-500/20"
+                          ? "bg-primary/5 border-primary/20"
+                          : "bg-destructive/5 border-destructive/20"
                       }`}
                     >
                       <div>
-                        <p className={`font-semibold text-sm uppercase tracking-widest ${netProfit >= 0 ? "text-emerald-950" : "text-rose-950"}`}>
+                        <p className={`font-semibold text-sm uppercase tracking-widest ${netProfit >= 0 ? "text-primary" : "text-destructive"}`}>
                           Laba Bersih (Net Profit)
                         </p>
-                        <p className={`text-xs mt-1 ${netProfit >= 0 ? "text-primary/80" : "text-rose-700/80"}`}>
+                        <p className={`text-xs mt-1 ${netProfit >= 0 ? "text-primary/80" : "text-destructive/80"}`}>
                           Setelah dikurangi HPP & seluruh biaya operasional
                         </p>
                       </div>
                       <span
                         className={`text-3xl font-medium tracking-tight mt-3 sm:mt-0 ${
-                          netProfit >= 0 ? "text-primary" : "text-rose-700"
+                          netProfit >= 0 ? "text-primary" : "text-destructive"
                         }`}
                       >
                         {formatIDR(netProfit)}
@@ -280,8 +280,8 @@ export default function ReportsPage() {
 
           {/* Right 1 Col: Stock Valuation Asset Report */}
           <div className="space-y-6">
-            <div className="border border-border bg-card  border-border text-foreground">
-              <div className="px-6 py-5 border-b border-border bg-card">
+            <div className="border border-border bg-card rounded-xl shadow-sm overflow-hidden">
+              <div className="px-6 py-5 border-b border-border bg-muted/50">
                 <div className="flex items-center gap-3">
                   <Package className="w-4 h-4 text-foreground" />
                   <h3 className="text-lg font-medium text-foreground tracking-tight">Valuasi Aset Stok</h3>
@@ -298,7 +298,7 @@ export default function ReportsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="p-5 border border-border bg-card  border-border text-foreground hover:border-border transition-colors group">
+                    <div className="p-5 border border-border rounded-xl bg-background hover:border-primary/50 transition-colors shadow-sm group">
                       <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[11px] mb-2">
                         Total Fisik Produk
                       </p>
@@ -307,7 +307,7 @@ export default function ReportsPage() {
                       </p>
                     </div>
 
-                    <div className="p-5 border border-border bg-card  border-border text-foreground hover:border-border transition-colors group">
+                    <div className="p-5 border border-border rounded-xl bg-background hover:border-primary/50 transition-colors shadow-sm group">
                       <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[11px] mb-2">
                         Nilai Aset (Harga Beli/HPP)
                       </p>
@@ -316,7 +316,7 @@ export default function ReportsPage() {
                       </p>
                     </div>
 
-                    <div className="p-5 border border-border bg-muted hover:bg-card/20 text-foreground">
+                    <div className="p-5 border border-border rounded-xl bg-muted/50 shadow-sm">
                       <p className="text-muted-foreground font-semibold uppercase tracking-wider text-[11px] mb-2">
                         Nilai Aset (Harga Jual)
                       </p>
@@ -325,8 +325,8 @@ export default function ReportsPage() {
                       </p>
                     </div>
 
-                    <div className="p-5 border border-border bg-emerald-500/10">
-                      <p className="text-emerald-300 font-semibold uppercase tracking-wider text-[11px] mb-2">
+                    <div className="p-5 border border-primary/20 rounded-xl bg-primary/5 shadow-sm">
+                      <p className="text-primary font-semibold uppercase tracking-wider text-[11px] mb-2">
                         Proyeksi Potensi Laba Kotor
                       </p>
                       <p className="text-2xl font-medium text-primary tracking-tight">

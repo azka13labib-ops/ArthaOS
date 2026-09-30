@@ -158,7 +158,7 @@ export default function DebtsPage() {
               variant="outline"
               onClick={loadDebts}
               disabled={isLoading}
-              className="rounded-none border-border hover:bg-card h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               title="Perbarui data kasbon"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -168,22 +168,22 @@ export default function DebtsPage() {
         </div>
 
         {/* Quick Stats Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border border border-border">
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Piutang Berjalan</p>
             <h3 className="text-3xl font-medium text-foreground tracking-tight">
               {formatIDR(totalOutstanding)}
             </h3>
           </div>
 
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Telah Terkumpul</p>
             <h3 className="text-3xl font-medium text-primary tracking-tight">
               {formatIDR(totalCollected)}
             </h3>
           </div>
 
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Pelanggan Kasbon</p>
             <h3 className="text-3xl font-medium text-foreground tracking-tight">
               {debts.filter((d) => d.status !== "paid").length} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Debitur</span>
@@ -200,19 +200,19 @@ export default function DebtsPage() {
               placeholder="Cari nama pelanggan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm bg-card  border-border text-foreground border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
+              className="w-full pl-9 pr-4 py-2.5 text-sm bg-background text-foreground border border-border rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors placeholder:text-muted-foreground"
             />
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex items-center w-full sm:w-auto border border-border bg-card">
+          <div className="flex items-center w-full sm:w-auto border border-border bg-card rounded-md shadow-sm overflow-hidden p-1 gap-1">
             <button
               type="button"
               onClick={() => setStatusFilter("unpaid")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 statusFilter === "unpaid"
-                  ? "bg-muted hover:bg-card/20 text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Belum Lunas ({debts.filter((d) => d.status !== "paid").length})
@@ -220,10 +220,10 @@ export default function DebtsPage() {
             <button
               type="button"
               onClick={() => setStatusFilter("paid")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-border ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 statusFilter === "paid"
-                  ? "bg-muted hover:bg-card/20 text-foreground border-transparent"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Lunas ({debts.filter((d) => d.status === "paid").length})
@@ -231,10 +231,10 @@ export default function DebtsPage() {
             <button
               type="button"
               onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 statusFilter === "all"
-                  ? "bg-muted hover:bg-card/20 text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Semua ({debts.length})
@@ -243,7 +243,7 @@ export default function DebtsPage() {
         </div>
 
         {/* Debts Table */}
-        <div className="bg-card  border-border text-foreground border border-border">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12">
               <Spinner size="md" />
@@ -321,7 +321,7 @@ export default function DebtsPage() {
                           {!isPaid ? (
                             <Button
                               variant="default"
-                              className="h-8 rounded-none px-4 text-xs bg-muted hover:bg-card/20 text-foreground hover:bg-muted"
+                              className="h-8 px-4 text-xs shadow-sm"
                               onClick={() => {
                                 setSelectedDebt(d);
                                 setPayAmount(d.remaining_amount);
@@ -395,14 +395,14 @@ export default function DebtsPage() {
             <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
               Metode Pembayaran
             </label>
-            <div className="grid grid-cols-2 gap-0 border border-border">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-border flex items-center justify-center gap-2 ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border flex items-center justify-center gap-2 ${
                   paymentMethod === "cash"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <Banknote className="w-4 h-4" /> Tunai
@@ -410,10 +410,10 @@ export default function DebtsPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("transfer")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border flex items-center justify-center gap-2 ${
                   paymentMethod === "transfer"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <CreditCard className="w-4 h-4" /> Transfer
@@ -428,16 +428,16 @@ export default function DebtsPage() {
             onChange={(e) => setPaymentNotes(e.target.value)}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsPayModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none px-6 bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isSubmittingPayment}>
+            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmittingPayment}>
               Simpan Pembayaran
             </Button>
           </div>

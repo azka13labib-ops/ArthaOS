@@ -142,7 +142,7 @@ export default function ExpensesPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="rounded-none border-border hover:bg-muted h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               onClick={loadExpenses}
               disabled={isLoading}
               title="Perbarui daftar pengeluaran"
@@ -152,7 +152,7 @@ export default function ExpensesPage() {
             </Button>
             <Button
               variant="default"
-              className="rounded-none bg-background text-foreground hover:bg-muted h-10 px-6"
+              className="h-10 px-6 shadow-sm"
               onClick={() => {
                 setError("");
                 setIsModalOpen(true);
@@ -165,7 +165,7 @@ export default function ExpensesPage() {
 
         {/* Total Expense KPI Card */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-background p-6 md:p-8 text-foreground">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 text-foreground hover:border-primary/50 transition-colors">
             <div className="flex items-center justify-between mb-6">
               <p className="text-[13px] font-medium text-foreground/70 uppercase tracking-wider">
                 Total Biaya Operasional
@@ -189,12 +189,12 @@ export default function ExpensesPage() {
             placeholder="Cari keterangan biaya..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-3 text-sm bg-card border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
+            className="w-full pl-9 pr-4 py-3 text-sm bg-background border border-border rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors placeholder:text-muted-foreground"
           />
         </div>
 
         {/* Expenses Table */}
-        <div className="bg-card border border-border">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12 flex justify-center">
               <Spinner size="md" />
@@ -278,7 +278,7 @@ export default function ExpensesPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-3 border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:border-ring transition-colors rounded-none"
+              className="w-full p-3 border border-border bg-background rounded-md shadow-sm text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -301,14 +301,14 @@ export default function ExpensesPage() {
             <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
               Sumber Dana (Metode Bayar)
             </label>
-            <div className="grid grid-cols-2 gap-0 border border-border">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("cash")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-border flex items-center justify-center gap-2 ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border flex items-center justify-center gap-2 ${
                   paymentMethod === "cash"
-                    ? "bg-background text-foreground"
-                    : "bg-card text-muted-foreground hover:bg-muted"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <Banknote className="w-4 h-4" /> Uang Laci
@@ -316,10 +316,10 @@ export default function ExpensesPage() {
               <button
                 type="button"
                 onClick={() => setPaymentMethod("transfer")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border flex items-center justify-center gap-2 ${
                   paymentMethod === "transfer"
-                    ? "bg-background text-foreground"
-                    : "bg-card text-muted-foreground hover:bg-muted"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <CreditCard className="w-4 h-4" /> Bank/Transfer
@@ -327,16 +327,16 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none px-6 bg-background text-foreground hover:bg-muted" isLoading={isSubmitting}>
+            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmitting}>
               Simpan Pengeluaran
             </Button>
           </div>

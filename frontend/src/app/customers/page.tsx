@@ -144,7 +144,7 @@ export default function CustomersPage() {
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              className="rounded-none border-border hover:bg-muted h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               onClick={loadCustomersData}
               disabled={isLoading}
               title="Perbarui daftar pelanggan"
@@ -154,7 +154,7 @@ export default function CustomersPage() {
             </Button>
             <Button
               variant="default"
-              className="rounded-none bg-background text-foreground hover:bg-muted h-10 px-6"
+              className="h-10 px-6 shadow-sm"
               onClick={() => {
                 setError("");
                 setIsModalOpen(true);
@@ -166,8 +166,8 @@ export default function CustomersPage() {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 border border-border bg-card">
-          <div className="p-6 md:p-8 border-b sm:border-b-0 sm:border-r border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Total Pelanggan Terdaftar
             </p>
@@ -175,7 +175,7 @@ export default function CustomersPage() {
               {customers.length}
             </h3>
           </div>
-          <div className="p-6 md:p-8">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
               Pelanggan Kasbon Aktif
             </p>
@@ -193,12 +193,12 @@ export default function CustomersPage() {
             placeholder="Cari nama atau nomor telepon..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-3 text-sm bg-card border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
+            className="w-full pl-9 pr-4 py-3 text-sm bg-background border border-border rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors placeholder:text-muted-foreground"
           />
         </div>
 
         {/* Customer Table */}
-        <div className="bg-card border border-border overflow-hidden">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12 flex justify-center">
               <Spinner size="md" />
@@ -262,7 +262,7 @@ export default function CustomersPage() {
                               >
                                 <Button
                                   variant="outline"
-                                  className="rounded-none border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3 text-xs"
+                                  className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3 text-xs shadow-sm"
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Hubungi
                                 </Button>
@@ -313,16 +313,16 @@ export default function CustomersPage() {
             helperText="Digunakan untuk kirim pengingat kasbon & bukti bayar"
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none px-6 bg-background text-foreground hover:bg-muted" isLoading={isSubmitting}>
+            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmitting}>
               Simpan Pelanggan
             </Button>
           </div>

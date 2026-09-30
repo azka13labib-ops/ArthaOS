@@ -15,7 +15,9 @@ import {
   RefreshCw,
   TrendingDown,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
+import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
@@ -66,23 +68,44 @@ interface KpiCardProps {
   icon: React.ElementType;
   accent: string;
   iconColor: string;
+  chartData?: { value: number }[];
+  chartColor?: string;
 }
 
-function KpiCard({ title, value, sub, icon: Icon, accent, iconColor }: KpiCardProps) {
+function KpiCard({ title, value, sub, icon: Icon, accent, iconColor, chartData, chartColor = "#A855F7" }: KpiCardProps) {
   return (
-    <Card className={`relative overflow-hidden border-l-2 ${accent}`}>
-      <CardContent className="pt-5 pb-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground mb-1.5">{title}</p>
-            <p className="text-2xl font-semibold text-foreground tracking-tight truncate">
+    <Card className={`relative overflow-hidden border-t-4 border-t-transparent hover:border-t-primary transition-colors ${accent}`}>
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${iconColor}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            </div>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate mb-1">
               {value}
             </p>
-            <p className="text-xs text-muted-foreground mt-1 truncate">{sub}</p>
+            <p className="text-xs text-muted-foreground truncate">{sub}</p>
           </div>
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconColor}`}>
-            <Icon className="w-4 h-4" />
-          </div>
+          {chartData && chartData.length > 0 && (
+            <div className="w-20 h-12 sm:w-24 sm:h-16 shrink-0 mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <YAxis domain={['dataMin', 'dataMax']} hide />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke={chartColor} 
+                    strokeWidth={2} 
+                    dot={false}
+                    isAnimationActive={true}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -197,38 +220,52 @@ export default function DashboardPage() {
     .reduce((sum, d) => sum + Number(d.remaining_amount), 0);
   const unpaidCount = debts.filter((d) => d.status !== "paid").length;
 
+// Mock data for sparklines
+const mockChartData1 = [{value: 50}, {value: 70}, {value: 65}, {value: 85}, {value: 80}, {value: 95}, {value: 100}];
+const mockChartData2 = [{value: 20}, {value: 30}, {value: 25}, {value: 40}, {value: 35}, {value: 45}, {value: 50}];
+const mockChartData3 = [{value: 100}, {value: 110}, {value: 105}, {value: 130}, {value: 120}, {value: 150}, {value: 160}];
+const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {value: 85}, {value: 70}, {value: 60}];
+
   const kpis: KpiCardProps[] = [
     {
       title: "Omzet Kotor",
       value: formatIDR(profitLoss?.gross_sales ?? 0),
       sub: `HPP: ${formatIDR(profitLoss?.cogs ?? 0)}`,
       icon: TrendingUp,
-      accent: "border-l-foreground/20",
-      iconColor: "bg-muted text-muted-foreground",
+      accent: "border-t-primary/20",
+      iconColor: "bg-primary/10 text-primary",
+      chartData: mockChartData1,
+      chartColor: "var(--color-primary)",
     },
     {
       title: "Laba Bersih",
       value: formatIDR(profitLoss?.net_profit ?? 0),
       sub: `Beban: ${formatIDR(profitLoss?.expenses ?? 0)}`,
       icon: TrendingUp,
-      accent: "border-l-primary",
-      iconColor: "bg-primary/10 text-primary",
+      accent: "border-t-green-500/50",
+      iconColor: "bg-green-500/10 text-green-600 dark:text-green-400",
+      chartData: mockChartData2,
+      chartColor: "#22c55e",
     },
     {
       title: "Nilai Stok",
       value: formatIDR(stockValuation?.total_asset_retail ?? 0),
       sub: `${products.length} SKU terdaftar`,
       icon: Package,
-      accent: "border-l-blue-500/50",
-      iconColor: "bg-blue-500/10 text-blue-400",
+      accent: "border-t-blue-500/50",
+      iconColor: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      chartData: mockChartData3,
+      chartColor: "#3b82f6",
     },
     {
       title: "Kasbon Tertunda",
       value: formatIDR(totalUnpaidDebt),
       sub: `${unpaidCount} tagihan aktif`,
       icon: TrendingDown,
-      accent: unpaidCount > 0 ? "border-l-destructive" : "border-l-foreground/10",
+      accent: unpaidCount > 0 ? "border-t-destructive" : "border-t-foreground/10",
       iconColor: unpaidCount > 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground",
+      chartData: mockChartData4,
+      chartColor: unpaidCount > 0 ? "var(--color-destructive)" : "#94a3b8",
     },
   ];
 
@@ -246,28 +283,74 @@ export default function DashboardPage() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Ringkasan
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {activeStore.name}
+              Pantau kinerja {activeStore.name} hari ini.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 bg-card border border-border rounded-md px-3 py-1.5 text-sm text-muted-foreground font-medium shadow-sm">
+              <Calendar className="w-4 h-4 text-primary" />
+              {formatDate(new Date().toISOString())}
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => loadDashboardData(activeStore.id)}
               disabled={isLoadingData}
+              className="bg-card shadow-sm"
             >
-              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isLoadingData ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 mr-2 text-primary ${isLoadingData ? "animate-spin" : ""}`} />
               Perbarui
             </Button>
-            <Button size="sm" render={<Link href="/pos" />}><ShoppingCart className="w-3.5 h-3.5 mr-2" />
+            <Button size="sm" className="shadow-sm" render={<Link href="/pos" />}><ShoppingCart className="w-3.5 h-3.5 mr-2" />
                 Buka Kasir
               </Button>
           </div>
         </motion.div>
+
+        {/* Pusat Perhatian (Action Center) */}
+        {!isLoadingData && (lowStockProducts.length > 0 || totalUnpaidDebt > 0) && (
+          <motion.div variants={itemVariants} className="space-y-3">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pusat Perhatian</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {lowStockProducts.length > 0 && (
+                <Link href="/inventory" className="block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+                  <Card className="bg-orange-50/80 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/50 hover:bg-orange-100/80 dark:hover:bg-orange-950/40 transition-colors shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Stok Kritis</p>
+                        <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">{lowStockProducts.length} produk menipis atau habis.</p>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-orange-400 dark:text-orange-600 shrink-0" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              {totalUnpaidDebt > 0 && (
+                <Link href="/debts" className="block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg">
+                  <Card className="bg-rose-50/80 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50 hover:bg-rose-100/80 dark:hover:bg-rose-950/40 transition-colors shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0">
+                        <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-rose-900 dark:text-rose-100">Tagihan Kasbon</p>
+                        <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5">{unpaidCount} kasbon belum lunas ({formatIDR(totalUnpaidDebt)}).</p>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-rose-400 dark:text-rose-600 shrink-0" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* Error state (R-27) */}
         {error && (

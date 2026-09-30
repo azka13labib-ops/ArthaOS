@@ -225,7 +225,7 @@ export default function InventoryPage() {
               variant="outline"
               onClick={loadProducts}
               disabled={isLoading}
-              className="rounded-none border-border hover:bg-card h-10 px-4"
+              className="h-10 px-4 shadow-sm"
               title="Segarkan daftar produk"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -233,7 +233,7 @@ export default function InventoryPage() {
             </Button>
             <Button
               variant="default"
-              className="rounded-none bg-muted hover:bg-card/20 hover:bg-emerald-400 text-foreground h-10 px-6"
+              className="h-10 px-6 shadow-sm"
               onClick={() => {
                 setProductError("");
                 setIsAddModalOpen(true);
@@ -245,22 +245,22 @@ export default function InventoryPage() {
         </div>
 
         {/* 3 Overview Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border border border-border">
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Variasi SKU</p>
             <h3 className="text-3xl font-medium text-foreground tracking-tight">
               {products.length} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Item</span>
             </h3>
           </div>
 
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Unit Tersedia</p>
             <h3 className="text-3xl font-medium text-foreground tracking-tight">
               {totalStockCount} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Pcs</span>
             </h3>
           </div>
 
-          <div className="bg-card  border-border text-foreground p-6 md:p-8 flex flex-col justify-between hover:bg-card transition-colors">
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
             <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Nilai Aset Tersimpan</p>
             <h3 className="text-3xl font-medium text-primary tracking-tight">
               {formatIDR(totalValuation)}
@@ -277,7 +277,7 @@ export default function InventoryPage() {
               placeholder="Cari nama produk, SKU, barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 text-sm bg-card  border-border text-foreground border border-border rounded-none focus-visible:outline-none focus-visible:border-ring transition-colors placeholder:text-muted-foreground"
+              className="w-full pl-9 pr-8 py-2.5 text-sm bg-background text-foreground border border-border rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors placeholder:text-muted-foreground"
             />
             {searchQuery && (
               <button
@@ -291,14 +291,14 @@ export default function InventoryPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center w-full sm:w-auto border border-border bg-card">
+          <div className="flex items-center w-full sm:w-auto border border-border bg-card rounded-md shadow-sm overflow-hidden p-1 gap-1">
             <button
               type="button"
               onClick={() => setStockFilter("all")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 stockFilter === "all"
-                  ? "bg-muted hover:bg-card/20 text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Semua ({products.length})
@@ -306,10 +306,10 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setStockFilter("low")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors border-l border-r border-border ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 stockFilter === "low"
-                  ? "bg-muted hover:bg-card/20 text-foreground border-transparent"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Menipis (≤5)
@@ -317,10 +317,10 @@ export default function InventoryPage() {
             <button
               type="button"
               onClick={() => setStockFilter("out")}
-              className={`px-4 py-2 text-xs font-semibold tracking-wide transition-colors ${
+              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
                 stockFilter === "out"
-                  ? "bg-muted hover:bg-card/20 text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               Habis (0)
@@ -329,7 +329,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Products Table */}
-        <div className="bg-card  border-border text-foreground border border-border">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12">
               <Spinner size="md" />
@@ -425,7 +425,7 @@ export default function InventoryPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="h-8 rounded-none border-border text-xs px-3"
+                              className="h-8 text-xs px-3"
                               onClick={() => {
                                 setSelectedProduct(p);
                                 setAdjustmentType("add");
@@ -439,7 +439,7 @@ export default function InventoryPage() {
                             </Button>
                             <button
                               type="button"
-                              className="h-8 w-8 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
+                              className="h-8 w-8 rounded-md flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               onClick={() => handleViewMovements(p)}
                               title="Riwayat mutasi stok"
                             >
@@ -524,16 +524,16 @@ export default function InventoryPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsAddModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none px-6 bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isSubmittingProduct}>
+            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmittingProduct}>
               Simpan Produk
             </Button>
           </div>
@@ -559,14 +559,14 @@ export default function InventoryPage() {
             <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
               Tipe Penyesuaian
             </label>
-            <div className="grid grid-cols-2 gap-0 border border-border">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setAdjustmentType("add")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors border-r border-border ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border ${
                   adjustmentType === "add"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 (+) Masuk
@@ -574,10 +574,10 @@ export default function InventoryPage() {
               <button
                 type="button"
                 onClick={() => setAdjustmentType("reduce")}
-                className={`py-3 px-3 text-xs font-semibold tracking-wider uppercase transition-colors ${
+                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border ${
                   adjustmentType === "reduce"
-                    ? "bg-muted hover:bg-card/20 text-foreground"
-                    : "bg-card  border-border text-foreground text-muted-foreground hover:bg-card"
+                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
                 (-) Keluar
@@ -602,16 +602,16 @@ export default function InventoryPage() {
             onChange={(e) => setAdjustmentNotes(e.target.value)}
           />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-6"
+              className="px-6"
               onClick={() => setIsAdjustModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="rounded-none px-6 bg-muted hover:bg-card/20 text-foreground hover:bg-muted" isLoading={isSubmittingAdjust}>
+            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmittingAdjust}>
               Konfirmasi
             </Button>
           </div>
@@ -638,7 +638,7 @@ export default function InventoryPage() {
           ) : (
             <div className="max-h-80 overflow-y-auto border border-border divide-y divide-slate-100">
               {movements.map((m) => (
-                <div key={m.id} className="p-4 flex items-center justify-between text-sm bg-card  border-border text-foreground">
+                <div key={m.id} className="p-4 flex items-center justify-between text-sm bg-card">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <span className="font-semibold text-foreground uppercase text-xs tracking-wider">
@@ -676,7 +676,7 @@ export default function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="rounded-none px-8"
+              className="px-8"
               onClick={() => setIsMovementsModalOpen(false)}
             >
               Tutup

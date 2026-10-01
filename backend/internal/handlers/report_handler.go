@@ -38,3 +38,28 @@ func (h *ReportHandler) GetStockValuation(c fiber.Ctx) error {
 
 	return c.JSON(report)
 }
+
+func (h *ReportHandler) GetCashFlow(c fiber.Ctx) error {
+	storeID, _ := c.Locals("store_id").(uint)
+
+	startDate := c.Query("start_date", "1970-01-01")
+	endDate := c.Query("end_date", "2100-01-01")
+
+	report, err := h.reportService.GetCashFlow(storeID, startDate, endDate)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate cash flow report"})
+	}
+
+	return c.JSON(report)
+}
+
+func (h *ReportHandler) GetDashboardMetrics(c fiber.Ctx) error {
+	storeID, _ := c.Locals("store_id").(uint)
+
+	report, err := h.reportService.GetDashboardMetrics(storeID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate dashboard metrics"})
+	}
+
+	return c.JSON(report)
+}

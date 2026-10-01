@@ -50,7 +50,7 @@ func (s *inventoryService) CreateProduct(storeID uint, name, sku string, barcode
 		if initialStock > 0 {
 			movement := &models.InventoryMovement{
 				StoreID:       storeID,
-				ProductID:     product.ID,
+				ProductID:     &product.ID,
 				MovementType:  "restock",
 				QuantityDelta: initialStock,
 				ReferenceType: "manual",
@@ -98,7 +98,7 @@ func (s *inventoryService) AdjustStock(storeID uint, productID uint, quantityDel
 
 		movement := &models.InventoryMovement{
 			StoreID:       storeID,
-			ProductID:     productID,
+			ProductID:     &productID,
 			MovementType:  "adjustment",
 			QuantityDelta: quantityDelta,
 			ReferenceType: "manual",

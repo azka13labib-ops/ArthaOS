@@ -26,9 +26,9 @@ import { formatIDR, formatDate } from "@/lib/utils";
 import {
   Transaction,
   Product,
-  ProfitLossReport,
   StockValuationReport,
   Debt,
+  DashboardMetrics,
 } from "@/lib/types";
 import {
   Card,
@@ -134,8 +134,8 @@ export default function DashboardPage() {
   const { token, isLoading: authLoading } = useAuth();
   const { activeStore, isLoadingStores } = useStore();
 
-  const [profitLoss, setProfitLoss] = useState<ProfitLossReport | null>(null);
   const [stockValuation, setStockValuation] = useState<StockValuationReport | null>(null);
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [recentSales, setRecentSales] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -150,15 +150,15 @@ export default function DashboardPage() {
     setIsLoadingData(true);
     setError("");
     try {
-      const [plData, stockData, salesData, prodData, debtsData] = await Promise.all([
-        api.reports.profitLoss(storeId).catch(() => null),
+      const [stockData, metricsData, salesData, prodData, debtsData] = await Promise.all([
         api.reports.stockValuation(storeId).catch(() => null),
+        api.reports.dashboardMetrics(storeId).catch(() => null),
         api.sales.list(storeId).catch(() => []),
         api.products.list(storeId).catch(() => []),
         api.debts.list(storeId).catch(() => []),
       ]);
-      setProfitLoss(plData);
       setStockValuation(stockData);
+      setDashboardMetrics(metricsData);
       setRecentSales(Array.isArray(salesData) ? salesData.slice(0, 8) : []);
       setProducts(Array.isArray(prodData) ? prodData : []);
       setDebts(Array.isArray(debtsData) ? debtsData : []);
@@ -228,9 +228,9 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
 
   const kpis: KpiCardProps[] = [
     {
-      title: "Omzet Kotor",
-      value: formatIDR(profitLoss?.gross_sales ?? 0),
-      sub: `HPP: ${formatIDR(profitLoss?.cogs ?? 0)}`,
+      title: "Penjualan Hari Ini",
+      value: formatIDR(dashboardMetrics?.today_sales ?? 0),
+      sub: `${dashboardMetrics?.today_transactions ?? 0} Transaksi`,
       icon: TrendingUp,
       accent: "border-t-primary/20",
       iconColor: "bg-primary/10 text-primary",
@@ -238,17 +238,17 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       chartColor: "var(--color-primary)",
     },
     {
-      title: "Laba Bersih",
-      value: formatIDR(profitLoss?.net_profit ?? 0),
-      sub: `Beban: ${formatIDR(profitLoss?.expenses ?? 0)}`,
-      icon: TrendingUp,
-      accent: "border-t-green-500/50",
-      iconColor: "bg-green-500/10 text-green-600 dark:text-green-400",
+      title: "Pengeluaran Hari Ini",
+      value: formatIDR(dashboardMetrics?.today_expenses ?? 0),
+      sub: "Beban Operasional",
+      icon: TrendingDown,
+      accent: "border-t-orange-500/50",
+      iconColor: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
       chartData: mockChartData2,
-      chartColor: "#22c55e",
+      chartColor: "#f97316",
     },
     {
-      title: "Nilai Stok",
+      title: "Nilai Stok Keseluruhan",
       value: formatIDR(stockValuation?.total_asset_retail ?? 0),
       sub: `${products.length} SKU terdaftar`,
       icon: Package,
@@ -261,7 +261,7 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       title: "Kasbon Tertunda",
       value: formatIDR(totalUnpaidDebt),
       sub: `${unpaidCount} tagihan aktif`,
-      icon: TrendingDown,
+      icon: AlertTriangle,
       accent: unpaidCount > 0 ? "border-t-destructive" : "border-t-foreground/10",
       iconColor: unpaidCount > 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground",
       chartData: mockChartData4,

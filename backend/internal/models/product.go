@@ -12,8 +12,10 @@ type Product struct {
 	Barcode      *string   `gorm:"type:varchar(100)" json:"barcode"`
 	BuyPrice     int64     `gorm:"not null" json:"buy_price"`
 	SellPrice    int64     `gorm:"not null" json:"sell_price"`
-	CurrentStock int       `gorm:"not null" json:"current_stock"`
-	IsActive     bool      `gorm:"default:true;not null" json:"is_active"`
-	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	CurrentStock  int          `gorm:"not null" json:"current_stock"`
+	IsRecipeBased bool         `gorm:"default:false;not null" json:"is_recipe_based"`
+	IsActive      bool         `gorm:"default:true;not null" json:"is_active"`
+	RecipeItems  []RecipeItem `gorm:"foreignKey:ProductID" json:"recipe_items,omitempty"`
+	CreatedAt    time.Time    `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt    time.Time    `gorm:"autoUpdateTime" json:"updated_at"`
 }

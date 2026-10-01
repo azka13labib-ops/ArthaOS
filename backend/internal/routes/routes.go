@@ -20,6 +20,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	trxRepo := repository.NewTransactionRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	debtRepo := repository.NewDebtRepository(db)
+	rmRepo := repository.NewRawMaterialRepository(db)
+	recipeRepo := repository.NewRecipeRepository(db)
 
 	authService := services.NewAuthService(userRepo)
 	invService := services.NewInventoryService(db, productRepo, invRepo)
@@ -28,6 +30,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	customerService := services.NewCustomerService(customerRepo)
 	debtService := services.NewDebtService(db, debtRepo, trxRepo)
 	reportService := services.NewReportService(db)
+	rmService := services.NewRawMaterialService(rmRepo)
+	recipeService := services.NewRecipeService(recipeRepo)
+	syncService := services.NewSyncService(db, saleService, expenseService)
 	nlpService := services.NewNLPService()
 	llmService := services.NewLLMService(cfg.GroqAPIKey, cfg.GeminiAPIKey, cfg.OpenAIAPIKey, cfg.AIProvider)
 
@@ -38,6 +43,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	customerHandler := handlers.NewCustomerHandler(customerService)
 	debtHandler := handlers.NewDebtHandler(debtService)
 	reportHandler := handlers.NewReportHandler(reportService)
+	rmHandler := handlers.NewRawMaterialHandler(rmService)
+	recipeHandler := handlers.NewRecipeHandler(recipeService)
+	syncHandler := handlers.NewSyncHandler(syncService)
 	aiHandler := handlers.NewAIHandler(llmService, productRepo, customerRepo, storeRepo, debtRepo, trxRepo)
 
 	waHandler := handlers.NewWhatsAppHandler(nlpService, cfg.WebhookSecret)
@@ -67,6 +75,14 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	tenantGroup.Post("/products/:id/adjustments", productHandler.AdjustStock)
 	tenantGroup.Get("/products/:id/movements", productHandler.GetMovements)
 
+	tenantGroup.Get("/raw-materials", rmHandler.GetAll)
+	tenantGroup.Post("/raw-materials", rmHandler.Create)
+	tenantGroup.Post("/raw-materials/:id/adjustments", rmHandler.AdjustStock)
+
+	tenantGroup.Get("/products/:product_id/recipes", recipeHandler.GetByProduct)
+	tenantGroup.Post("/products/:product_id/recipes", recipeHandler.AddItem)
+	tenantGroup.Delete("/recipes/:id", recipeHandler.Delete)
+
 	tenantGroup.Get("/sales", saleHandler.GetAll)
 	tenantGroup.Post("/sales", saleHandler.Create)
 
@@ -81,6 +97,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 
 	tenantGroup.Get("/reports/profit-loss", reportHandler.GetProfitLoss)
 	tenantGroup.Get("/reports/stock-valuation", reportHandler.GetStockValuation)
+	tenantGroup.Get("/reports/cash-flow", reportHandler.GetCashFlow)
+	tenantGroup.Get("/reports/dashboard-metrics", reportHandler.GetDashboardMetrics)
+
+	tenantGroup.Post("/sync/batch", syncHandler.BatchSync)
 
 	tenantGroup.Post("/whatsapp/link", waHandler.LinkAccount)
 

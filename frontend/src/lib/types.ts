@@ -121,3 +121,40 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface RawMaterial {
+  id: number;
+  store_id: number;
+  name: string;
+  sku: string;
+  unit: string;
+  cost_per_unit: number;
+  current_stock: number;
+}
+
+export interface RecipeItem {
+  id: number;
+  product_id: number;
+  raw_material_id: number;
+  quantity: number;
+  raw_material?: RawMaterial;
+}
+
+export interface CashFlowReport {
+  cash_in: number;
+  cash_out: number;
+  net_cash_flow: number;
+  payment_methods: Array<{ method: string; amount: number }>;
+}
+
+export interface DashboardMetrics {
+  today_sales: number;
+  today_expenses: number;
+  today_transactions: number;
+  top_products: Array<{ name: string; quantity: number }>;
+}
+
+export interface BatchSyncResponse {
+  synced_sales: number;
+  failed_sales: number;
+}

@@ -9,6 +9,9 @@ import {
   DebtPayment,
   ProfitLossReport,
   StockValuationReport,
+  CashFlowReport,
+  DashboardMetrics,
+  BatchSyncResponse,
 } from "./types";
 
 const API_BASE = "http://localhost:8080/api/v1";
@@ -158,6 +161,26 @@ export const api = {
         body: JSON.stringify(data),
       });
     },
+
+    async batchSync(
+      storeId: number,
+      transactions: Array<{
+        items: Array<{ product_id: number; quantity: number }>;
+        payments: Array<{
+          amount: number;
+          payment_method: string;
+          customer_id?: number | null;
+          due_date?: string | null;
+        }>;
+        description?: string;
+        occurred_at: string;
+      }>
+    ): Promise<BatchSyncResponse> {
+      return request(`/stores/${storeId}/sync/batch`, {
+        method: "POST",
+        body: JSON.stringify({ transactions }),
+      });
+    },
   },
 
   expenses: {
@@ -243,6 +266,18 @@ export const api = {
     async stockValuation(storeId: number): Promise<StockValuationReport> {
       return request(`/stores/${storeId}/reports/stock-valuation`);
     },
+
+    async cashFlow(storeId: number, startDate?: string, endDate?: string): Promise<CashFlowReport> {
+      const params = new URLSearchParams();
+      if (startDate) params.set("start_date", startDate);
+      if (endDate) params.set("end_date", endDate);
+      const query = params.toString() ? `?${params.toString()}` : "";
+      return request(`/stores/${storeId}/reports/cash-flow${query}`);
+    },
+
+    async dashboardMetrics(storeId: number): Promise<DashboardMetrics> {
+      return request(`/stores/${storeId}/reports/dashboard-metrics`);
+    },
   },
 
   whatsapp: {
@@ -317,6 +352,41 @@ export const api = {
       return request(`/stores/${storeId}/ai/generate-promo`, {
         method: "POST",
         body: JSON.stringify({ prompt, phone }),
+      });
+    },
+  },
+
+  rawMaterials: {
+    list(storeId: number) {
+      return request(`/stores/${storeId}/raw-materials`);
+    },
+    create(storeId: number, data: { name: string; sku: string; initial_stock: number; unit: string; cost_per_unit: number }) {
+      return request(`/stores/${storeId}/raw-materials`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    adjustStock(storeId: number, id: number, quantity_delta: number, notes?: string) {
+      return request(`/stores/${storeId}/raw-materials/${id}/adjustments`, {
+        method: "POST",
+        body: JSON.stringify({ quantity_delta, notes }),
+      });
+    },
+  },
+
+  recipes: {
+    listByProduct(storeId: number, productId: number) {
+      return request(`/stores/${storeId}/products/${productId}/recipes`);
+    },
+    addItem(storeId: number, productId: number, data: { raw_material_id: number; quantity: number }) {
+      return request(`/stores/${storeId}/products/${productId}/recipes`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    deleteItem(storeId: number, id: number) {
+      return request(`/stores/${storeId}/recipes/${id}`, {
+        method: "DELETE",
       });
     },
   },

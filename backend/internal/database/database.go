@@ -30,6 +30,8 @@ func ConnectDB(dsn string) {
 		&models.Store{},
 		&models.StoreMember{},
 		&models.Product{},
+		&models.RawMaterial{},
+		&models.RecipeItem{},
 		&models.InventoryMovement{},
 		&models.Customer{},
 		&models.Debt{},
@@ -178,6 +180,20 @@ func runSchemaMigrations(db *gorm.DB) {
 							WHEN type = 'expense' THEN 'expense'::transaction_type
 							ELSE 'sale'::transaction_type
 						END;
+					END IF;
+				END $$;
+			`,
+		},
+		{
+			name: "make inventory_movements.product_id nullable",
+			sql: `
+				DO $$
+				BEGIN
+					IF EXISTS (
+						SELECT 1 FROM information_schema.columns
+						WHERE table_name='inventory_movements' AND column_name='product_id' AND is_nullable='NO'
+					) THEN
+						ALTER TABLE inventory_movements ALTER COLUMN product_id DROP NOT NULL;
 					END IF;
 				END $$;
 			`,

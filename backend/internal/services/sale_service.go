@@ -94,13 +94,39 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 				Subtotal:  subtotal,
 			})
 
-			inventoryMovements = append(inventoryMovements, models.InventoryMovement{
-				StoreID:       storeID,
-				ProductID:     pid,
-				MovementType:  "sale",
-				QuantityDelta: -qty,
-				ReferenceType: "sale",
-			})
+			if product.IsRecipeBased {
+				// Deduct raw materials instead of product stock
+				for _, recipe := range product.RecipeItems {
+					reqQty := recipe.Quantity * qty
+					err := tx.Exec(`
+						UPDATE raw_materials 
+						SET current_stock = current_stock - $1, updated_at = NOW() 
+						WHERE id = $2 AND store_id = $3 AND current_stock >= $1
+					`, reqQty, recipe.RawMaterialID, storeID).Error
+					if err != nil {
+						return err
+					}
+
+					rmID := recipe.RawMaterialID
+					inventoryMovements = append(inventoryMovements, models.InventoryMovement{
+						StoreID:       storeID,
+						RawMaterialID: &rmID,
+						MovementType:  "sale",
+						QuantityDelta: -reqQty,
+						ReferenceType: "sale",
+					})
+				}
+			} else {
+				// Deduct normal product stock
+				pidCopy := pid
+				inventoryMovements = append(inventoryMovements, models.InventoryMovement{
+					StoreID:       storeID,
+					ProductID:     &pidCopy,
+					MovementType:  "sale",
+					QuantityDelta: -qty,
+					ReferenceType: "sale",
+				})
+			}
 		}
 
 		var totalPaid int64

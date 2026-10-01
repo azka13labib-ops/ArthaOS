@@ -23,6 +23,8 @@ import {
   Sparkles,
   ChevronsUpDown,
   Check,
+  Wheat,
+  ChefHat,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
@@ -66,7 +68,9 @@ import { api } from "@/lib/api";
 const navigation = [
   { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard, group: "Utama" },
   { name: "Kasir POS", href: "/pos", icon: ShoppingCart, group: "Utama" },
-  { name: "Stok & Katalog", href: "/inventory", icon: Package, group: "Operasional" },
+  { name: "Stok Produk", href: "/inventory", icon: Package, group: "Operasional" },
+  { name: "Bahan Baku", href: "/raw-materials", icon: Wheat, group: "Operasional" },
+  { name: "Resep (BOM)", href: "/recipes", icon: ChefHat, group: "Operasional" },
   { name: "Buku Kasbon", href: "/debts", icon: BookOpen, group: "Operasional" },
   { name: "Pengeluaran", href: "/expenses", icon: Receipt, group: "Operasional" },
   { name: "Pelanggan", href: "/customers", icon: Users, group: "Operasional" },

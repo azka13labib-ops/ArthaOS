@@ -194,7 +194,7 @@ export default function PosPage() {
     }
   };
 
-  // Submit sale transaction
+  // Submit sale transaction (Offline First)
   const handleProcessSale = async () => {
     if (!activeStore || cart.length === 0) return;
     setCheckoutError("");
@@ -225,14 +225,48 @@ export default function PosPage() {
           due_date: paymentMethod === "debt" && dueDate ? dueDate : null,
         },
       ];
-
-      const res = await api.sales.create(activeStore.id, {
+      
+      const payload = {
         items: itemsPayload,
         payments: paymentsPayload,
         description: notes.trim() || undefined,
-      });
+      };
 
-      // Update local product stocks
+      // 1. Try to save it online immediately
+      let transactionResponse: Transaction | null = null;
+      let isOffline = false;
+      
+      try {
+        transactionResponse = await api.sales.create(activeStore.id, payload);
+      } catch (err: unknown) {
+        // 2. If it fails (likely network error), save to offline queue
+        console.warn("Network error or server unreachable. Saving to offline queue.", err);
+        isOffline = true;
+        const offlineQueueRaw = localStorage.getItem(`offline_sales_${activeStore.id}`);
+        const offlineQueue = offlineQueueRaw ? JSON.parse(offlineQueueRaw) : [];
+        
+        // Generate a fake temporary transaction for the UI
+        const nowMs = new Date().getTime();
+        const tempTx: Transaction = {
+          id: nowMs, // fake id
+          store_id: activeStore.id,
+          type: "sale",
+          total_amount: totalAmount,
+          occurred_at: new Date().toISOString(),
+          description: payload.description,
+        };
+        
+        offlineQueue.push({
+          ...payload,
+          occurred_at: tempTx.occurred_at,
+          temp_id: tempTx.id
+        });
+        
+        localStorage.setItem(`offline_sales_${activeStore.id}`, JSON.stringify(offlineQueue));
+        transactionResponse = tempTx;
+      }
+
+      // Update local product stocks optimistically
       setProducts((prev) =>
         prev.map((prod) => {
           const cartMatch = cart.find((c) => c.product.id === prod.id);
@@ -246,7 +280,7 @@ export default function PosPage() {
         })
       );
 
-      setCompletedTransaction(res);
+      setCompletedTransaction(transactionResponse);
       setIsCheckoutOpen(false);
       setIsReceiptOpen(true);
       setCart([]);
@@ -260,8 +294,13 @@ export default function PosPage() {
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#047857', '#10b981', '#059669', '#ffffff'] // Emerald theme
+        colors: isOffline ? ['#f59e0b', '#d97706'] : ['#047857', '#10b981', '#059669', '#ffffff'] // Orange if offline, Emerald if online
       });
+      
+      // Attempt background sync if we went offline previously
+      if (!isOffline) {
+        triggerBackgroundSync(activeStore.id);
+      }
     } catch (err: unknown) {
       setCheckoutError(
         err instanceof Error ? err.message : "Gagal memproses transaksi penjualan"
@@ -270,6 +309,41 @@ export default function PosPage() {
       setIsSubmittingSale(false);
     }
   };
+
+  const triggerBackgroundSync = async (storeId: number) => {
+    const offlineQueueRaw = localStorage.getItem(`offline_sales_${storeId}`);
+    if (!offlineQueueRaw) return;
+    
+    try {
+      const offlineQueue = JSON.parse(offlineQueueRaw);
+      if (offlineQueue.length === 0) return;
+      
+      // Clean up the temp_id before sending to backend
+      const transactionsToSync = offlineQueue.map((tx: { temp_id?: number; [key: string]: unknown }) => {
+        const copy = { ...tx };
+        delete copy.temp_id;
+        return copy;
+      });
+      
+      await api.sales.batchSync(storeId, transactionsToSync as Parameters<typeof api.sales.batchSync>[1]);
+      // Clear queue on success
+      localStorage.removeItem(`offline_sales_${storeId}`);
+      console.log("Offline sync successful");
+    } catch (err) {
+      console.error("Background sync failed, will retry later.", err);
+    }
+  };
+
+  // Sync periodically or on mount
+  useEffect(() => {
+    if (activeStore) {
+      triggerBackgroundSync(activeStore.id);
+      const intervalId = setInterval(() => {
+        triggerBackgroundSync(activeStore.id);
+      }, 60000); // Check every minute
+      return () => clearInterval(intervalId);
+    }
+  }, [activeStore]);
 
   const handlePrintReceipt = () => {
     window.print();

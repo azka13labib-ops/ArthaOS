@@ -1,16 +1,20 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { Store } from "@/lib/types";
+import { Store, StoreSettings } from "@/lib/types";
 import { api } from "@/lib/api";
 import { useAuth } from "./AuthContext";
 
 interface StoreContextType {
   stores: Store[];
   activeStore: Store | null;
+  settings: StoreSettings | null;
   isLoadingStores: boolean;
+  isLoadingSettings: boolean;
   setActiveStore: (store: Store) => void;
   refreshStores: () => Promise<void>;
+  refreshSettings: () => Promise<void>;
+  updateSettingsLocal: (patch: Partial<StoreSettings>) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -19,12 +23,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [activeStore, setActiveStoreState] = useState<Store | null>(null);
+  const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [isLoadingStores, setIsLoadingStores] = useState<boolean>(true);
+  const [isLoadingSettings, setIsLoadingSettings] = useState<boolean>(false);
+
+  const refreshSettings = useCallback(async () => {
+    if (!token || !activeStore) {
+      setSettings(null);
+      return;
+    }
+    setIsLoadingSettings(true);
+    try {
+      const data = await api.settings.get(activeStore.id);
+      setSettings(data as unknown as StoreSettings);
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingSettings(false);
+    }
+  }, [token, activeStore]);
 
   const refreshStores = useCallback(async () => {
     if (!token) {
       setStores([]);
       setActiveStoreState(null);
+      setSettings(null);
       setIsLoadingStores(false);
       return;
     }
@@ -68,9 +91,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refreshStores]);
 
+  useEffect(() => {
+    if (activeStore) {
+      refreshSettings();
+    }
+  }, [activeStore, refreshSettings]);
+
   const setActiveStore = (store: Store) => {
     setActiveStoreState(store);
     localStorage.setItem("artha_active_store_id", store.id.toString());
+  };
+
+  const updateSettingsLocal = (patch: Partial<StoreSettings>) => {
+    setSettings((prev) => (prev ? { ...prev, ...patch } : prev));
   };
 
   return (
@@ -78,9 +111,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       value={{
         stores,
         activeStore,
+        settings,
         isLoadingStores,
+        isLoadingSettings,
         setActiveStore,
         refreshStores,
+        refreshSettings,
+        updateSettingsLocal,
       }}
     >
       {children}

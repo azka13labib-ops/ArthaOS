@@ -26,7 +26,7 @@ import { ProfitLossReport, StockValuationReport } from "@/lib/types";
 export default function ReportsPage() {
   const router = useRouter();
   const { token, isLoading: authLoading } = useAuth();
-  const { activeStore } = useStore();
+  const { activeStore, settings } = useStore();
 
   const [profitLoss, setProfitLoss] = useState<ProfitLossReport | null>(null);
   const [stockValuation, setStockValuation] = useState<StockValuationReport | null>(null);
@@ -278,7 +278,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Right 1 Col: Stock Valuation Asset Report */}
+          {/* Right 1 Col: Stock Valuation Asset Report & Financial Analysis */}
           <div className="space-y-6">
             <div className="border border-border bg-card rounded-xl shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-border bg-muted/50">
@@ -337,6 +337,33 @@ export default function ReportsPage() {
                 )}
               </div>
             </div>
+
+            {/* PSAK 73 Lease Accounting Summary */}
+            {settings?.lease_monthly_cost ? (
+              <div className="border border-violet-500/30 bg-violet-500/5 rounded-xl p-6 space-y-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-violet-400" />
+                  <h4 className="text-sm font-bold text-violet-300">Amortisasi Sewa Tempat (PSAK 73)</h4>
+                </div>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between py-1 border-b border-border/50">
+                    <span>Beban Sewa Bulanan:</span>
+                    <span className="font-semibold text-foreground">{formatIDR(settings.lease_monthly_cost)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/50">
+                    <span>Suku Bunga Implisit:</span>
+                    <span className="font-semibold text-foreground">{settings.lease_interest_rate}% / tahun</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>Periode Kontrak:</span>
+                    <span className="font-semibold text-foreground">
+                      {settings.lease_start_date ? new Date(settings.lease_start_date).toLocaleDateString("id-ID") : "-"} s/d{" "}
+                      {settings.lease_end_date ? new Date(settings.lease_end_date).toLocaleDateString("id-ID") : "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

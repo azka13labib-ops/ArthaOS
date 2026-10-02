@@ -412,7 +412,7 @@ export default function InventoryPage() {
                           <span
                             className={`inline-block px-2 py-0.5 text-xs font-bold ${
                               p.current_stock === 0
-                                ? "bg-rose-100 text-rose-300"
+                                ? "bg-rose-100 text-rose-700"
                                 : p.current_stock <= 5
                                 ? "bg-amber-100 text-amber-800"
                                 : "bg-muted text-foreground"

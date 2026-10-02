@@ -36,7 +36,7 @@ import { Product, Customer, CartItem, Transaction } from "@/lib/types";
 export default function PosPage() {
   const router = useRouter();
   const { token, isLoading: authLoading } = useAuth();
-  const { activeStore } = useStore();
+  const { activeStore, settings } = useStore();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -143,10 +143,13 @@ export default function PosPage() {
   };
 
   // Calculations
-  const totalAmount = cart.reduce(
+  const subtotalAmount = cart.reduce(
     (sum, item) => sum + item.product.sell_price * item.quantity,
     0
   );
+  const isTaxEnabled = settings?.feature_tax_calculation ?? false;
+  const taxAmount = isTaxEnabled ? Math.round(subtotalAmount * 0.1) : 0;
+  const totalAmount = subtotalAmount + taxAmount;
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const parsedCashGiven = Number(cashGiven) || 0;
@@ -460,7 +463,7 @@ export default function PosPage() {
                         <span
                           className={`text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide ${
                             isOutOfStock
-                              ? "bg-rose-100 text-rose-300"
+                              ? "bg-rose-100 text-rose-700"
                               : p.current_stock <= 5
                               ? "bg-amber-100 text-amber-800"
                               : "bg-muted text-muted-foreground"
@@ -571,12 +574,14 @@ export default function PosPage() {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span className="font-semibold text-foreground">{formatIDR(totalAmount)}</span>
+                <span className="font-semibold text-foreground">{formatIDR(subtotalAmount)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Pajak / Diskon</span>
-                <span className="font-medium text-muted-foreground">Rp 0</span>
-              </div>
+              {isTaxEnabled && (
+                <div className="flex justify-between text-violet-400">
+                  <span>PB1 / Pajak (10%)</span>
+                  <span className="font-semibold">{formatIDR(taxAmount)}</span>
+                </div>
+              )}
               <div className="pt-3 border-t border-border flex justify-between items-end">
                 <span className="text-sm font-semibold text-foreground">Total Tagihan</span>
                 <span className="text-2xl font-bold text-primary tracking-tight">
@@ -886,9 +891,14 @@ export default function PosPage() {
           {/* Receipt Preview Box */}
           <div
             id="printable-receipt"
-            className="p-6 bg-card  border-border text-foreground border border-border text-left text-xs space-y-4 font-mono text-foreground max-w-sm mx-auto"
+            className="p-6 bg-card border border-border text-left text-xs space-y-4 font-mono text-foreground max-w-sm mx-auto shadow-sm"
           >
-            <div className="text-center pb-4 border-b border-solid border-white/20">
+            <div className="text-center pb-4 border-b border-dashed border-border">
+              {settings?.feature_logo_on_receipt && (
+                <div className="w-8 h-8 mx-auto mb-1.5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">
+                  {activeStore.name[0]?.toUpperCase()}
+                </div>
+              )}
               <p className="font-bold text-base tracking-widest uppercase mb-1">{activeStore.name}</p>
               <p className="text-[10px] text-muted-foreground uppercase">{activeStore.address || "Outlet Resmi"}</p>
               <p className="text-[10px] text-muted-foreground mt-2">
@@ -900,7 +910,7 @@ export default function PosPage() {
             </div>
 
             {/* Receipt Items */}
-            <div className="space-y-2 py-3 border-b border-solid border-white/20">
+            <div className="space-y-2 py-3 border-b border-dashed border-border">
               {completedTransaction?.items?.map((it, idx) => (
                 <div key={idx} className="flex justify-between items-start gap-4">
                   <span className="flex-1">
@@ -918,15 +928,18 @@ export default function PosPage() {
                 <span>{formatIDR(completedTransaction?.total_amount)}</span>
               </div>
               <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest">
-                <span>Metode</span>
+                <span>Metode Pembayaran</span>
                 <span>
                   {completedTransaction?.payments?.[0]?.payment_method || "CASH"}
                 </span>
               </div>
             </div>
 
-            <div className="text-center pt-6 text-[10px] text-muted-foreground uppercase tracking-widest">
-              Terima Kasih
+            <div className="text-center pt-4 text-[10px] text-muted-foreground space-y-1">
+              <p>{settings?.menu_footer_msg || "Terima Kasih Atas Kunjungan Anda"}</p>
+              {!settings?.feature_remove_watermark && (
+                <p className="text-[9px] font-semibold tracking-widest opacity-70">POWERED BY ARTHAOS</p>
+              )}
             </div>
           </div>
 

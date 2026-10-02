@@ -390,4 +390,94 @@ export const api = {
       });
     },
   },
+
+  settings: {
+    get(storeId: number) {
+      return request(`/stores/${storeId}/settings`);
+    },
+    patch(storeId: number, section: string, body: object) {
+      return request(`/stores/${storeId}/settings/${section}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+    },
+    updateProfile(body: { name: string }) {
+      return request("/settings/profile", {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+    },
+    deactivateAccount() {
+      return request("/settings/deactivate", {
+        method: "POST",
+      });
+    },
+    updateStoreName(storeId: number, name: string) {
+      return request(`/stores/${storeId}/name`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      });
+    },
+    updateStoreInfo(storeId: number, body: { name?: string; address?: string; logo_url?: string }) {
+      return request(`/stores/${storeId}/settings/store-info`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+    },
+    deleteStore(storeId: number) {
+      return request(`/stores/${storeId}/settings/store`, {
+        method: "DELETE",
+      });
+    },
+    listMembers(storeId: number) {
+      return request(`/stores/${storeId}/settings/members`);
+    },
+    invite(storeId: number, body: { email: string; role: string }) {
+      return request(`/stores/${storeId}/settings/members/invite`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+    removeMember(storeId: number, userId: number) {
+      return request(`/stores/${storeId}/settings/members/${userId}`, {
+        method: "DELETE",
+      });
+    },
+    updateMemberRole(storeId: number, userId: number, role: string) {
+      return request(`/stores/${storeId}/settings/members/${userId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      });
+    },
+    getInvitation(token: string) {
+      return request(`/invitations/${token}`);
+    },
+    acceptInvitation(token: string) {
+      return request(`/invitations/${token}/accept`, { method: "POST" });
+    },
+    getVAPIDPublicKey() {
+      return request("/push/vapid-public-key");
+    },
+    subscribePush(storeId: number, body: { endpoint: string; p256dh: string; auth: string }) {
+      return request(`/stores/${storeId}/settings/push/subscribe`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+    unsubscribePush(storeId: number, endpoint: string) {
+      return request(`/stores/${storeId}/settings/push/unsubscribe`, {
+        method: "POST",
+        body: JSON.stringify({ endpoint }),
+      });
+    },
+  },
+
+  sync: {
+    batch(storeId: number, data: object) {
+      return request(`/stores/${storeId}/sync/batch`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+  },
 };

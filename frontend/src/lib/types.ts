@@ -158,3 +158,62 @@ export interface BatchSyncResponse {
   synced_sales: number;
   failed_sales: number;
 }
+
+export interface StoreSettings {
+  id: number;
+  store_id: number;
+  logo_url: string;
+  feature_financial_analysis: boolean;
+  feature_custom_branding: boolean;
+  feature_crm: boolean;
+  feature_remove_watermark: boolean;
+  feature_tax_calculation: boolean;
+  feature_multi_branch: boolean;
+  feature_logo_on_receipt: boolean;
+  feature_customer_mgmt: boolean;
+  feature_shift_mgmt: boolean;
+  feature_advanced_stock: boolean;
+  feature_smart_notif: boolean;
+  feature_advanced_promo: boolean;
+  notif_low_stock: boolean;
+  notif_expired_stock: boolean;
+  notif_due_bill: boolean;
+  notif_high_transaction: boolean;
+  notif_high_transaction_amt: number;
+  notif_high_void: boolean;
+  notif_high_void_amt: number;
+  menu_slug: string;
+  menu_published: boolean;
+  menu_wa_number: string;
+  menu_instagram: string;
+  menu_grabfood: string;
+  menu_gofood: string;
+  menu_shopeefood: string;
+  menu_delivery: boolean;
+  menu_pickup: boolean;
+  menu_reservation: boolean;
+  menu_welcome_msg: string;
+  menu_footer_msg: string;
+  operating_hours_json: string;
+  lease_start_date: string | null;
+  lease_end_date: string | null;
+  lease_monthly_cost: number;
+  lease_interest_rate: number;
+}
+
+export interface Member {
+  id: number;
+  user_id: number;
+  name: string;
+  email: string;
+  role: string;
+  joined_at: string;
+}
+
+export interface Invitation {
+  id: number;
+  email: string;
+  role: string;
+  expires_at: string;
+  accepted_at: string | null;
+}

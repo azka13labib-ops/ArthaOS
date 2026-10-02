@@ -25,6 +25,7 @@ import {
   Check,
   Wheat,
   ChefHat,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
@@ -83,9 +84,15 @@ const navigation = [
     group: "Analitik",
     badge: "Baru",
   },
+  {
+    name: "Pengaturan",
+    href: "/settings",
+    icon: Settings,
+    group: "Pengaturan",
+  },
 ];
 
-const navGroups = ["Utama", "Operasional", "Analitik"];
+const navGroups = ["Utama", "Operasional", "Analitik", "Pengaturan"];
 
 function AppSidebarInner({ pathname }: { pathname: string }) {
   const router = useRouter();
@@ -280,8 +287,16 @@ function AppSidebarInner({ pathname }: { pathname: string }) {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                onSelect={() => router.push("/settings")}
+                className="cursor-pointer"
+              >
+                <Settings className="w-3.5 h-3.5 mr-2" />
+                Pengaturan
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
                 onSelect={handleLogout}
-                className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5 mr-2" />
                 Keluar

@@ -44,6 +44,9 @@ func ConnectDB(dsn string) {
 		&models.InboundMessage{},
 		&models.ConversationSession{},
 		&models.AuditLog{},
+		&models.StoreSettings{},
+		&models.StoreInvitation{},
+		&models.PushSubscription{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate failed: %v", err)

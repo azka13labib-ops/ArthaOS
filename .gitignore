@@ -6,9 +6,10 @@
 *.dylib
 *.test
 *.out
-backend/server.exe
-backend/server_test.exe
-backend/server_new.exe
+server.exe
+seed.exe
+server_test.exe
+server_new.exe
 
 # Environment variables & secrets
 .env
@@ -16,16 +17,16 @@ backend/server_new.exe
 .env.development.local
 .env.test.local
 .env.production.local
-backend/.env
-frontend/.env*
-!frontend/.env.example
-!backend/.env.example
+web/.env*
+!web/.env.example
+!.env.example
 
 # Node dependencies & Next.js build
-frontend/node_modules/
-frontend/.next/
-frontend/out/
-frontend/build/
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/tsconfig.tsbuildinfo
 node_modules/
 .next/
 dist/

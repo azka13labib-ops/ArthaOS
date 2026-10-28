@@ -425,23 +425,6 @@ function PosContent() {
           />
         </div>
       </AppLayout>
-  );
-}
-
-export default function PosPage() {
-  return (
-    <React.Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Spinner />
-        </div>
-      }
-    >
-      <PosContent />
-    </React.Suspense>
-  );
-}
-func_dummy_end_marker() {
     );
   }
 
@@ -1072,20 +1055,3 @@ export default function PosPage() {
     </React.Suspense>
   );
 }
-export default function PosPage() {
-  return (
-    <React.Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <Spinner />
-        </div>
-      }
-    >
-      <PosContent />
-    </React.Suspense>
-  );
-}
-func_dummy_end_marker() {
-  );
-}
-

@@ -63,7 +63,7 @@ func createCustomTypes(db *gorm.DB) {
 		name   string
 		values string
 	}{
-		{"user_role", "'owner', 'admin', 'cashier'"},
+		{"user_role", "'owner', 'manager', 'cashier'"},
 		{"inventory_movement_type", "'in', 'out', 'adjustment', 'restock', 'sale'"},
 		{"inventory_reference_type", "'transaction', 'initial', 'manual', 'loss', 'sale', 'purchase'"},
 		{"transaction_type", "'sale', 'expense', 'debt_payment'"},
@@ -104,6 +104,7 @@ func createCustomTypes(db *gorm.DB) {
 		{"inventory_reference_type", "sale"},
 		{"inventory_reference_type", "purchase"},
 		{"debt_source", "sale"},
+		{"user_role", "manager"},
 	}
 
 	for _, v := range additionalValues {

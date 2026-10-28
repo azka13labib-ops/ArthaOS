@@ -1,20 +1,29 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 
+	"app/internal/repository"
 	"app/internal/services"
 	appvalidator "app/pkg/validator"
 
 	"github.com/gofiber/fiber/v3"
+	"gorm.io/gorm"
 )
 
 type ProductHandler struct {
 	invService services.InventoryService
+	auditRepo  repository.AuditRepository
+	db         *gorm.DB
 }
 
-func NewProductHandler(invService services.InventoryService) *ProductHandler {
-	return &ProductHandler{invService}
+func NewProductHandler(invService services.InventoryService, auditRepo repository.AuditRepository, db *gorm.DB) *ProductHandler {
+	return &ProductHandler{
+		invService: invService,
+		auditRepo:  auditRepo,
+		db:         db,
+	}
 }
 
 type CreateProductRequest struct {
@@ -97,6 +106,12 @@ func (h *ProductHandler) AdjustStock(c fiber.Ctx) error {
 			"code":  "ADJUST_FAILED",
 		})
 	}
+
+	userID, _ := c.Locals("user_id").(uint)
+	go func() {
+		meta := fmt.Sprintf(`{"user_id":%d,"quantity_delta":%d,"notes":%q}`, userID, req.QuantityDelta, req.Notes)
+		_ = h.auditRepo.Log(h.db, storeID, "user", "adjust_stock", "product", uint(productID), &meta)
+	}()
 
 	return c.JSON(fiber.Map{"message": "Stock adjusted successfully"})
 }

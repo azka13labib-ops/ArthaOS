@@ -24,7 +24,16 @@ type Config struct {
 }
 
 func LoadConfig() Config {
-	if err := godotenv.Overload(); err != nil {
+	loaded := false
+	for _, envPath := range []string{".env", "../../.env", "../.env"} {
+		if _, err := os.Stat(envPath); err == nil {
+			if err := godotenv.Overload(envPath); err == nil {
+				loaded = true
+				break
+			}
+		}
+	}
+	if !loaded {
 		log.Println("No .env file found or failed to load, relying on environment variables")
 	}
 

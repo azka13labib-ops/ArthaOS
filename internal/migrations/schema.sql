@@ -3,7 +3,7 @@
 -- ==========================================
 -- 1. ENUMS
 -- ==========================================
-CREATE TYPE user_role AS ENUM ('owner', 'manager', 'staff');
+CREATE TYPE user_role AS ENUM ('owner', 'manager', 'cashier');
 CREATE TYPE subscription_plan AS ENUM ('free', 'basic_49k', 'pro_99k');
 CREATE TYPE subscription_status AS ENUM ('active', 'expired', 'trial');
 CREATE TYPE wa_provider AS ENUM ('baileys', 'wwebjs', 'official_meta');
@@ -139,6 +139,9 @@ CREATE TABLE transactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX idx_transactions_store_correlation
+    ON transactions (store_id, correlation_id);
 
 CREATE TABLE transaction_items (
     id SERIAL PRIMARY KEY,

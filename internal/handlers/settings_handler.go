@@ -1,23 +1,28 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"app/internal/config"
 	"app/internal/models"
 	"app/internal/repository"
+	appvalidator "app/pkg/validator"
 
 	"github.com/gofiber/fiber/v3"
+	"gorm.io/gorm"
 )
 
 type SettingsHandler struct {
 	settingsRepo repository.SettingsRepository
 	cfg          config.Config
+	auditRepo    repository.AuditRepository
+	db           *gorm.DB
 }
 
-func NewSettingsHandler(settingsRepo repository.SettingsRepository, cfg config.Config) *SettingsHandler {
-	return &SettingsHandler{settingsRepo: settingsRepo, cfg: cfg}
+func NewSettingsHandler(settingsRepo repository.SettingsRepository, cfg config.Config, auditRepo repository.AuditRepository, db *gorm.DB) *SettingsHandler {
+	return &SettingsHandler{settingsRepo: settingsRepo, cfg: cfg, auditRepo: auditRepo, db: db}
 }
 
 // ─────────────────────────────────────────────
@@ -38,6 +43,10 @@ func (h *SettingsHandler) UpdateProfile(c fiber.Ctx) error {
 	var req UpdateProfileRequest
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if errs := appvalidator.Validate(req); errs != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Validation failed", "details": errs})
 	}
 
 	if err := h.settingsRepo.UpdateUserProfile(userID, req.Name); err != nil {
@@ -66,9 +75,9 @@ func (h *SettingsHandler) GetSettings(c fiber.Ctx) error {
 }
 
 type UpdateStoreInfoRequest struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
-	LogoURL string `json:"logo_url"`
+	Name    string `json:"name" validate:"omitempty,min=2,max=100"`
+	Address string `json:"address" validate:"omitempty,max=255"`
+	LogoURL string `json:"logo_url" validate:"omitempty,max=500"`
 }
 
 // UpdateStoreInfo godoc — PATCH /api/v1/stores/:storeId/settings/store-info
@@ -81,6 +90,10 @@ func (h *SettingsHandler) UpdateStoreInfo(c fiber.Ctx) error {
 	var req UpdateStoreInfoRequest
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if errs := appvalidator.Validate(req); errs != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Validation failed", "details": errs})
 	}
 
 	if req.Name != "" || req.Address != "" {
@@ -421,10 +434,20 @@ func (h *SettingsHandler) InviteMember(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
+	if errs := appvalidator.Validate(req); errs != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Validation failed", "details": errs})
+	}
+
 	inv, err := h.settingsRepo.CreateInvitation(storeID, userID, req.Email, req.Role)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create invitation"})
 	}
+
+	// Audit log
+	go func() {
+		meta := fmt.Sprintf(`{"actor_id":%d,"invited_email":%q,"role":%q}`, userID, req.Email, req.Role)
+		_ = h.auditRepo.Log(h.db, storeID, "user", "invite_member", "invitation", inv.ID, &meta)
+	}()
 
 	inviteLink := h.cfg.AppBaseURL + "/register?invite=" + inv.Token
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -452,6 +475,13 @@ func (h *SettingsHandler) RemoveMember(c fiber.Ctx) error {
 	if e := h.settingsRepo.RemoveMember(storeID, uid); e != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to remove member"})
 	}
+
+	actorID, _ := c.Locals("user_id").(uint)
+	go func() {
+		meta := fmt.Sprintf(`{"actor_id":%d,"removed_user_id":%d}`, actorID, uid)
+		_ = h.auditRepo.Log(h.db, storeID, "user", "remove_member", "member", uid, &meta)
+	}()
+
 	return c.JSON(fiber.Map{"message": "Member removed"})
 }
 
@@ -478,9 +508,20 @@ func (h *SettingsHandler) UpdateMemberRole(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
+	if errs := appvalidator.Validate(req); errs != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Validation failed", "details": errs})
+	}
+
 	if err := h.settingsRepo.UpdateMemberRole(storeID, uid, req.Role); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update role"})
 	}
+
+	actorID, _ := c.Locals("user_id").(uint)
+	go func() {
+		meta := fmt.Sprintf(`{"actor_id":%d,"target_user_id":%d,"new_role":%q}`, actorID, uid, req.Role)
+		_ = h.auditRepo.Log(h.db, storeID, "user", "update_role", "member", uid, &meta)
+	}()
+
 	return c.JSON(fiber.Map{"message": "Role updated"})
 }
 
@@ -581,9 +622,17 @@ func (h *SettingsHandler) DeleteStore(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
+	actorID, _ := c.Locals("user_id").(uint)
+
 	if err := h.settingsRepo.DeleteStore(storeID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete store"})
 	}
+
+	go func() {
+		meta := fmt.Sprintf(`{"actor_id":%d,"deleted_store_id":%d}`, actorID, storeID)
+		_ = h.auditRepo.Log(h.db, storeID, "user", "delete_store", "store", storeID, &meta)
+	}()
+
 	return c.JSON(fiber.Map{"message": "Store deleted successfully"})
 }
 

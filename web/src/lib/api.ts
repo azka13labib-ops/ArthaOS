@@ -19,7 +19,7 @@ import {
   BatchSyncResponse,
 } from "./types";
 
-const API_BASE = "http://localhost:8080/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -220,6 +220,7 @@ export const api = {
     async batchSync(
       storeId: number,
       transactions: Array<{
+        correlation_id?: string;
         items: Array<{ product_id: number; quantity: number }>;
         payments: Array<{
           amount: number;
@@ -228,12 +229,12 @@ export const api = {
           due_date?: string | null;
         }>;
         description?: string;
-        occurred_at: string;
+        occurred_at?: string;
       }>
     ): Promise<BatchSyncResponse> {
       return request(`/stores/${storeId}/sync/batch`, {
         method: "POST",
-        body: JSON.stringify({ transactions }),
+        body: JSON.stringify({ sales: transactions, transactions }),
       });
     },
   },

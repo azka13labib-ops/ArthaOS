@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Sparkles,
   TrendingUp,
@@ -26,6 +27,8 @@ import {
   Clock,
   ArrowRight,
   Layers,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -48,6 +51,8 @@ interface ChatMessage {
 interface ParsedOrderResult {
   customer_name: string;
   matched_customer_id?: number | null;
+  needs_verification?: boolean;
+  stock_warnings?: string[];
   items: {
     product_name: string;
     matched_product_id?: number | null;
@@ -63,6 +68,7 @@ interface ParsedOrderResult {
 
 export default function AICopilotPage() {
   const { activeStore } = useStore();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"advisor" | "order_extractor" | "cs_bot" | "promo" | "settings">("promo");
 
@@ -90,6 +96,7 @@ export default function AICopilotPage() {
   );
   const [isExtractingOrder, setIsExtractingOrder] = useState(false);
   const [extractedOrder, setExtractedOrder] = useState<ParsedOrderResult | null>(null);
+  const [extractOrderError, setExtractOrderError] = useState<string | null>(null);
 
   // Tab 3: CS Bot State
   const [inquiryText, setInquiryText] = useState("Halo min, ada croissant butter ga? Harganya berapaan ya?");
@@ -107,6 +114,14 @@ export default function AICopilotPage() {
   const [customerFilter, setCustomerFilter] = useState<"all" | "has_phone" | "has_debt">("all");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [broadcastDone, setBroadcastDone] = useState(false);
+  const [showPhoneNumbers, setShowPhoneNumbers] = useState(false);
+
+  const maskPhoneNumber = (phone: string) => {
+    if (!phone) return "Tanpa Nomor";
+    const clean = phone.trim();
+    if (clean.length < 8) return clean;
+    return clean.slice(0, 4) + "••••" + clean.slice(-4);
+  };
 
   const loadData = useCallback(async () => {
     if (!activeStore) return;
@@ -229,14 +244,36 @@ export default function AICopilotPage() {
   const handleExtractOrder = async () => {
     if (!activeStore || !rawOrderText.trim() || isExtractingOrder) return;
     setIsExtractingOrder(true);
+    setExtractedOrder(null);
+    setExtractOrderError(null);
     try {
       const result = await api.ai.parseOrder(activeStore.id, rawOrderText);
-      setExtractedOrder(result);
+      setExtractedOrder(result as ParsedOrderResult);
     } catch (err) {
-      console.error("Gagal mengekstrak order:", err);
+      const msg = err instanceof Error ? err.message : "Pesanan belum dapat dibaca, silakan periksa manual.";
+      setExtractOrderError(msg);
     } finally {
       setIsExtractingOrder(false);
     }
+  };
+
+  const handleGoToPOS = () => {
+    if (!extractedOrder) return;
+    // Encode draft order into URL params for POS to pick up as a pre-filled cart.
+    const draftItems = extractedOrder.items
+      .filter((item) => item.matched_product_id)
+      .map((item) => `${item.matched_product_id}:${item.quantity}`);
+    if (draftItems.length === 0) {
+      alert("Tidak ada item yang cocok dengan produk di katalog. Tambahkan item secara manual di kasir.");
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("draft_items", draftItems.join(","));
+    if (extractedOrder.matched_customer_id) {
+      params.set("customer_id", String(extractedOrder.matched_customer_id));
+    }
+    params.set("payment_method", extractedOrder.payment_method || "cash");
+    router.push(`/pos?${params.toString()}`);
   };
 
   const handleInquiry = async () => {
@@ -586,9 +623,20 @@ export default function AICopilotPage() {
               <div className="border border-border bg-card flex flex-col h-full">
                 <div className="p-6 border-b border-border flex items-center justify-between bg-muted">
                   <h2 className="text-lg font-medium text-foreground">Target Broadcast</h2>
-                  <span className="px-3 py-1 bg-border text-slate-800 text-xs font-bold tracking-widest uppercase">
-                    {customers.length} Kontak
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPhoneNumbers(!showPhoneNumbers)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-border bg-background hover:bg-muted text-muted-foreground transition-colors"
+                      title={showPhoneNumbers ? "Sembunyikan nomor (masking)" : "Tampilkan nomor lengkap"}
+                    >
+                      {showPhoneNumbers ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showPhoneNumbers ? "Masking" : "Lihat Nomor"}</span>
+                    </button>
+                    <span className="px-3 py-1 bg-border text-slate-800 text-xs font-bold tracking-widest uppercase">
+                      {customers.length} Kontak
+                    </span>
+                  </div>
                 </div>
 
                 <div className="p-6 flex-1 flex flex-col space-y-4">
@@ -640,7 +688,7 @@ export default function AICopilotPage() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground font-mono mt-1">
-                                {phoneNum || "Tanpa Nomor"}
+                                {showPhoneNumbers ? (phoneNum || "Tanpa Nomor") : maskPhoneNumber(phoneNum)}
                               </p>
                             </div>
                             {phoneNum && (
@@ -792,19 +840,48 @@ export default function AICopilotPage() {
               </div>
 
               <div className="border border-border bg-muted p-6 flex flex-col justify-center">
-                {!extractedOrder ? (
+                {!extractedOrder && !extractOrderError ? (
                   <div className="text-center text-muted-foreground space-y-3">
                     <CheckCircle2 className="w-12 h-12 mx-auto opacity-30" />
                     <p className="text-sm">Menunggu ekstraksi data pesanan.</p>
                   </div>
-                ) : (
+                ) : extractOrderError ? (
+                  <div className="bg-rose-50 border border-rose-200 p-6 space-y-3">
+                    <div className="flex items-center gap-2 text-rose-700">
+                      <AlertTriangle className="w-5 h-5 shrink-0" />
+                      <p className="font-semibold text-sm">Pesanan Belum Dapat Dibaca</p>
+                    </div>
+                    <p className="text-sm text-rose-600">{extractOrderError}</p>
+                    <p className="text-xs text-rose-500">Silakan buat transaksi secara manual di halaman Kasir.</p>
+                    <Link
+                      href="/pos"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
+                    >
+                      <ArrowRight className="w-4 h-4" /> Buka Kasir Manual
+                    </Link>
+                  </div>
+                ) : extractedOrder ? (
                   <div className="bg-card border border-border p-6 space-y-6">
                     <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                       <h3 className="font-semibold text-foreground">Draft Transaksi</h3>
-                      <span className="px-2 py-1 bg-slate-100 text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                        Skor: {(extractedOrder.confidence_score * 100).toFixed(0)}%
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold tracking-widest uppercase">
+                          Perlu Verifikasi Kasir
+                        </span>
+                        <span className="px-2 py-1 bg-slate-100 text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+                          Skor: {(extractedOrder.confidence_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
                     </div>
+
+                    {extractedOrder.stock_warnings && extractedOrder.stock_warnings.length > 0 && (
+                      <div className="bg-rose-50 border border-rose-200 p-3 space-y-1">
+                        <p className="text-xs font-semibold text-rose-700 uppercase tracking-wide">Peringatan Stok:</p>
+                        {extractedOrder.stock_warnings.map((w, i) => (
+                          <p key={i} className="text-xs text-rose-600">{w}</p>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="space-y-4 text-sm">
                       <div className="grid grid-cols-2 gap-4">
@@ -825,9 +902,14 @@ export default function AICopilotPage() {
                             <div key={idx} className="p-3 flex justify-between items-center bg-muted">
                               <div>
                                 <p className="font-medium text-foreground">{item.product_name}</p>
-                                <p className="text-xs text-muted-foreground font-mono">
-                                  {item.quantity} x {formatCurrency(item.estimated_unit_price)}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-muted-foreground font-mono">
+                                    {item.quantity} x {formatCurrency(item.estimated_unit_price)}
+                                  </p>
+                                  {!item.matched_product_id && (
+                                    <span className="text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 font-bold">Tidak Cocok</span>
+                                  )}
+                                </div>
                               </div>
                               <p className="font-semibold text-foreground font-mono">
                                 {formatCurrency(item.subtotal)}
@@ -846,12 +928,18 @@ export default function AICopilotPage() {
                     </div>
 
                     <div className="pt-4 flex gap-3">
-                      <Button className="flex-1 rounded-none bg-background text-foreground hover:bg-muted">
-                        Lanjut ke Kasir
+                      <Button
+                        className="flex-1 rounded-none bg-background text-foreground hover:bg-muted"
+                        onClick={handleGoToPOS}
+                      >
+                        <ArrowRight className="w-4 h-4 mr-2" /> Lanjut ke Kasir
                       </Button>
                     </div>
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      Draft ini harus dikonfirmasi kasir sebelum menjadi transaksi resmi.
+                    </p>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   ShoppingCart,
@@ -36,8 +36,9 @@ import { api } from "@/lib/api";
 import { formatIDR, formatDate } from "@/lib/utils";
 import { Product, Customer, CartItem, Transaction } from "@/lib/types";
 
-export default function PosPage() {
+function PosContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token, isLoading: authLoading } = useAuth();
   const { activeStore, settings } = useStore();
 
@@ -107,6 +108,45 @@ export default function PosPage() {
       isMounted = false;
     };
   }, [activeStore, loadInitialData]);
+
+  // Pre-fill cart from Copilot draft_items URL param.
+  // Format: draft_items=productId:qty,productId:qty
+  useEffect(() => {
+    const draftParam = searchParams.get("draft_items");
+    const customerParam = searchParams.get("customer_id");
+    const paymentParam = searchParams.get("payment_method");
+    if (!draftParam || products.length === 0) return;
+
+    const draftItems = draftParam.split(",").map((s) => {
+      const [idStr, qtyStr] = s.split(":");
+      return { productId: parseInt(idStr, 10), quantity: parseInt(qtyStr, 10) };
+    });
+
+    const newCart: CartItem[] = [];
+    for (const di of draftItems) {
+      if (!di.productId || !di.quantity || isNaN(di.productId) || isNaN(di.quantity)) continue;
+      const product = products.find((p) => p.id === di.productId);
+      if (!product) continue;
+      const qty = Math.min(di.quantity, product.current_stock);
+      if (qty <= 0) continue;
+      newCart.push({ product, quantity: qty });
+    }
+
+    if (newCart.length > 0) {
+      setCart(newCart);
+    }
+
+    if (customerParam) {
+      const cid = parseInt(customerParam, 10);
+      if (!isNaN(cid)) setSelectedCustomerId(cid);
+    }
+
+    if (paymentParam === "cash" || paymentParam === "transfer" || paymentParam === "qris" || paymentParam === "debt") {
+      setPaymentMethod(paymentParam);
+    }
+  // Only run when products load — not on every searchParams change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   // Cart operations
   const addToCart = (product: Product) => {
@@ -267,8 +307,10 @@ export default function PosPage() {
           description: payload.description,
         };
         
+        const uniqueTxId = `offline-${activeStore.id}-${nowMs}-${crypto.randomUUID()}`;
         offlineQueue.push({
           ...payload,
+          correlation_id: uniqueTxId,
           occurred_at: tempTx.occurred_at,
           temp_id: tempTx.id
         });
@@ -329,9 +371,12 @@ export default function PosPage() {
       const offlineQueue = JSON.parse(offlineQueueRaw);
       if (offlineQueue.length === 0) return;
       
-      // Clean up the temp_id before sending to backend
-      const transactionsToSync = offlineQueue.map((tx: { temp_id?: number; [key: string]: unknown }) => {
+      // Clean up temp_id before sending to backend, ensure correlation_id is preserved
+      const transactionsToSync = offlineQueue.map((tx: { temp_id?: number; correlation_id?: string; [key: string]: unknown }) => {
         const copy = { ...tx };
+        if (!copy.correlation_id) {
+          copy.correlation_id = `offline-${storeId}-${copy.temp_id || Date.now()}`;
+        }
         delete copy.temp_id;
         return copy;
       });
@@ -380,6 +425,23 @@ export default function PosPage() {
           />
         </div>
       </AppLayout>
+  );
+}
+
+export default function PosPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Spinner />
+        </div>
+      }
+    >
+      <PosContent />
+    </React.Suspense>
+  );
+}
+func_dummy_end_marker() {
     );
   }
 
@@ -997,4 +1059,33 @@ export default function PosPage() {
   );
 }
 
+export default function PosPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Spinner />
+        </div>
+      }
+    >
+      <PosContent />
+    </React.Suspense>
+  );
+}
+export default function PosPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Spinner />
+        </div>
+      }
+    >
+      <PosContent />
+    </React.Suspense>
+  );
+}
+func_dummy_end_marker() {
+  );
+}
 

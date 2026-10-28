@@ -26,6 +26,10 @@ func GenerateToken(userID uint, secret string) (string, error) {
 
 func ParseToken(tokenString, secret string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+		// Validasi ketat: tolak token jika algoritma signing bukan HS256
+		if t.Method != jwt.SigningMethodHS256 {
+			return nil, errors.New("invalid signing method: expected HS256")
+		}
 		return []byte(secret), nil
 	})
 

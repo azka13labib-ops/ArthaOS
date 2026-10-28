@@ -63,3 +63,47 @@ func TestParseToken_MalformedToken(t *testing.T) {
 		t.Error("Expected error when parsing malformed token, got nil")
 	}
 }
+
+func TestParseToken_RejectNonHS256(t *testing.T) {
+	secret := "a-very-long-and-secure-test-jwt-secret-key-32-chars"
+	claims := CustomClaims{
+		UserID: 10,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	// Token signed with HS384 instead of HS256
+	tokenHS384, err := jwt.NewWithClaims(jwt.SigningMethodHS384, claims).SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("Failed to sign HS384 token: %v", err)
+	}
+
+	_, err = ParseToken(tokenHS384, secret)
+	if err == nil {
+		t.Error("Expected error when parsing non-HS256 (HS384) token, got nil")
+	}
+
+	// Token signed with HS512
+	tokenHS512, err := jwt.NewWithClaims(jwt.SigningMethodHS512, claims).SignedString([]byte(secret))
+	if err != nil {
+		t.Fatalf("Failed to sign HS512 token: %v", err)
+	}
+
+	_, err = ParseToken(tokenHS512, secret)
+	if err == nil {
+		t.Error("Expected error when parsing non-HS256 (HS512) token, got nil")
+	}
+
+	// Token signed with None (alg: none)
+	tokenNone, err := jwt.NewWithClaims(jwt.SigningMethodNone, claims).SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		t.Fatalf("Failed to sign none token: %v", err)
+	}
+
+	_, err = ParseToken(tokenNone, secret)
+	if err == nil {
+		t.Error("Expected error when parsing none algorithm token, got nil")
+	}
+}

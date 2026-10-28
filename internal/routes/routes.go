@@ -23,6 +23,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	rmRepo := repository.NewRawMaterialRepository(db)
 	recipeRepo := repository.NewRecipeRepository(db)
 	supplierRepo := repository.NewSupplierRepository(db)
+	auditRepo := repository.NewAuditRepository()
 	purchaseRepo := repository.NewPurchaseRepository(db)
 
 	authService := services.NewAuthService(userRepo)
@@ -33,7 +34,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	debtService := services.NewDebtService(db, debtRepo, trxRepo)
 	reportService := services.NewReportService(db)
 	rmService := services.NewRawMaterialService(rmRepo)
-	recipeService := services.NewRecipeService(recipeRepo)
+	recipeService := services.NewRecipeService(recipeRepo, productRepo, rmRepo)
 	supplierService := services.NewSupplierService(supplierRepo)
 	purchaseService := services.NewPurchaseService(db, purchaseRepo)
 	syncService := services.NewSyncService(db, saleService, expenseService)
@@ -41,7 +42,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	llmService := services.NewLLMService(cfg.GroqAPIKey, cfg.GeminiAPIKey, cfg.OpenAIAPIKey, cfg.AIProvider)
 
 	authHandler := handlers.NewAuthHandler(authService, cfg)
-	productHandler := handlers.NewProductHandler(invService)
+	productHandler := handlers.NewProductHandler(invService, auditRepo, db)
 	saleHandler := handlers.NewSaleHandler(saleService)
 	expenseHandler := handlers.NewExpenseHandler(expenseService)
 	customerHandler := handlers.NewCustomerHandler(customerService)
@@ -52,7 +53,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	supplierHandler := handlers.NewSupplierHandler(supplierService)
 	purchaseHandler := handlers.NewPurchaseHandler(purchaseService)
 	syncHandler := handlers.NewSyncHandler(syncService)
-	aiHandler := handlers.NewAIHandler(llmService, productRepo, customerRepo, storeRepo, debtRepo, trxRepo)
+	aiHandler := handlers.NewAIHandler(llmService, productRepo, customerRepo, storeRepo, debtRepo, trxRepo, auditRepo, db)
 
 	waHandler := handlers.NewWhatsAppHandler(nlpService, cfg.WebhookSecret)
 
@@ -67,7 +68,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	authGroup.Post("/login", middleware.RateLimitLogin(), authHandler.Login)
 	authGroup.Get("/me", authMiddleware, authHandler.Me)
 
-	api.Post("/webhooks/whatsapp", waHandler.Webhook)
+	api.Post("/webhooks/whatsapp", middleware.RateLimitWebhook(), middleware.LimitBodySize(64*1024), waHandler.Webhook)
 
 	storesGroup := api.Group("/stores", authMiddleware)
 	storesGroup.Post("/", storeHandler.Create)
@@ -77,23 +78,23 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	tenantGroup.Get("/", storeHandler.GetByID)
 
 	tenantGroup.Get("/products", productHandler.GetAll)
-	tenantGroup.Post("/products", productHandler.Create)
-	tenantGroup.Post("/products/:id/adjustments", productHandler.AdjustStock)
+	tenantGroup.Post("/products", middleware.RequireRole("owner", "manager"), productHandler.Create)
+	tenantGroup.Post("/products/:id/adjustments", middleware.RequireRole("owner", "manager"), productHandler.AdjustStock)
 	tenantGroup.Get("/products/:id/movements", productHandler.GetMovements)
 
 	tenantGroup.Get("/raw-materials", rmHandler.GetAll)
-	tenantGroup.Post("/raw-materials", rmHandler.Create)
-	tenantGroup.Post("/raw-materials/:id/adjustments", rmHandler.AdjustStock)
+	tenantGroup.Post("/raw-materials", middleware.RequireRole("owner", "manager"), rmHandler.Create)
+	tenantGroup.Post("/raw-materials/:id/adjustments", middleware.RequireRole("owner", "manager"), rmHandler.AdjustStock)
 
-	tenantGroup.Get("/products/:product_id/recipes", recipeHandler.GetByProduct)
-	tenantGroup.Post("/products/:product_id/recipes", recipeHandler.AddItem)
-	tenantGroup.Delete("/recipes/:id", recipeHandler.Delete)
+	tenantGroup.Get("/products/:product_id/recipes", middleware.RequireRole("owner", "manager"), recipeHandler.GetByProduct)
+	tenantGroup.Post("/products/:product_id/recipes", middleware.RequireRole("owner", "manager"), recipeHandler.AddItem)
+	tenantGroup.Delete("/recipes/:id", middleware.RequireRole("owner", "manager"), recipeHandler.Delete)
 
 	tenantGroup.Get("/sales", saleHandler.GetAll)
 	tenantGroup.Post("/sales", saleHandler.Create)
 
-	tenantGroup.Get("/expenses", expenseHandler.GetAll)
-	tenantGroup.Post("/expenses", expenseHandler.Create)
+	tenantGroup.Get("/expenses", middleware.RequireRole("owner", "manager"), expenseHandler.GetAll)
+	tenantGroup.Post("/expenses", middleware.RequireRole("owner", "manager"), expenseHandler.Create)
 
 	tenantGroup.Post("/customers", customerHandler.Create)
 	tenantGroup.Get("/customers", customerHandler.GetAll)
@@ -102,21 +103,21 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	tenantGroup.Post("/debts/:id/payments", debtHandler.PayDebt)
 
 	// Suppliers & Purchases
-	tenantGroup.Get("/suppliers", supplierHandler.GetAll)
-	tenantGroup.Post("/suppliers", supplierHandler.Create)
-	tenantGroup.Get("/suppliers/:id", supplierHandler.GetByID)
-	tenantGroup.Put("/suppliers/:id", supplierHandler.Update)
-	tenantGroup.Patch("/suppliers/:id", supplierHandler.Update)
-	tenantGroup.Delete("/suppliers/:id", supplierHandler.Delete)
+	tenantGroup.Get("/suppliers", middleware.RequireRole("owner", "manager"), supplierHandler.GetAll)
+	tenantGroup.Post("/suppliers", middleware.RequireRole("owner", "manager"), supplierHandler.Create)
+	tenantGroup.Get("/suppliers/:id", middleware.RequireRole("owner", "manager"), supplierHandler.GetByID)
+	tenantGroup.Put("/suppliers/:id", middleware.RequireRole("owner", "manager"), supplierHandler.Update)
+	tenantGroup.Patch("/suppliers/:id", middleware.RequireRole("owner", "manager"), supplierHandler.Update)
+	tenantGroup.Delete("/suppliers/:id", middleware.RequireRole("owner", "manager"), supplierHandler.Delete)
 
-	tenantGroup.Get("/purchases", purchaseHandler.GetAll)
-	tenantGroup.Post("/purchases", purchaseHandler.Create)
-	tenantGroup.Get("/purchases/:id", purchaseHandler.GetByID)
+	tenantGroup.Get("/purchases", middleware.RequireRole("owner", "manager"), purchaseHandler.GetAll)
+	tenantGroup.Post("/purchases", middleware.RequireRole("owner", "manager"), purchaseHandler.Create)
+	tenantGroup.Get("/purchases/:id", middleware.RequireRole("owner", "manager"), purchaseHandler.GetByID)
 
-	tenantGroup.Get("/reports/profit-loss", reportHandler.GetProfitLoss)
-	tenantGroup.Get("/reports/stock-valuation", reportHandler.GetStockValuation)
-	tenantGroup.Get("/reports/cash-flow", reportHandler.GetCashFlow)
-	tenantGroup.Get("/reports/dashboard-metrics", reportHandler.GetDashboardMetrics)
+	tenantGroup.Get("/reports/profit-loss", middleware.RequireRole("owner", "manager"), reportHandler.GetProfitLoss)
+	tenantGroup.Get("/reports/stock-valuation", middleware.RequireRole("owner", "manager"), reportHandler.GetStockValuation)
+	tenantGroup.Get("/reports/cash-flow", middleware.RequireRole("owner", "manager"), reportHandler.GetCashFlow)
+	tenantGroup.Get("/reports/dashboard-metrics", middleware.RequireRole("owner", "manager"), reportHandler.GetDashboardMetrics)
 
 	tenantGroup.Post("/sync/batch", syncHandler.BatchSync)
 
@@ -128,10 +129,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	tenantGroup.Post("/ai/generate-promo", aiHandler.GeneratePromo)
 
 	settingsRepo := repository.NewSettingsRepository(db)
-	settingsHandler := handlers.NewSettingsHandler(settingsRepo, cfg)
+	settingsHandler := handlers.NewSettingsHandler(settingsRepo, cfg, auditRepo, db)
 
-	// Store name update
-	storesGroup.Patch("/:storeId/name", storeMiddleware, storeHandler.UpdateName)
+	// Store name update (Owner only)
+	storesGroup.Patch("/:storeId/name", storeMiddleware, middleware.RequireRole("owner"), storeHandler.UpdateName)
 
 	// Public invite endpoints (no auth needed to read invite, auth needed to accept)
 	api.Get("/invitations/:token", settingsHandler.GetInvitation)
@@ -144,20 +145,20 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	api.Patch("/settings/profile", authMiddleware, settingsHandler.UpdateProfile)
 	api.Post("/settings/deactivate", authMiddleware, settingsHandler.DeactivateAccount)
 
-	// Store-scoped settings
+	// Store-scoped settings (Owner only for mutations & deletion)
 	tenantGroup.Get("/settings", settingsHandler.GetSettings)
-	tenantGroup.Patch("/settings/store-info", settingsHandler.UpdateStoreInfo)
-	tenantGroup.Delete("/settings/store", settingsHandler.DeleteStore)
-	tenantGroup.Patch("/settings/features", settingsHandler.UpdateFeatures)
-	tenantGroup.Patch("/settings/notifications", settingsHandler.UpdateNotifications)
-	tenantGroup.Patch("/settings/menu", settingsHandler.UpdateMenuSettings)
-	tenantGroup.Patch("/settings/lease", settingsHandler.UpdateLease)
+	tenantGroup.Patch("/settings/store-info", middleware.RequireRole("owner"), settingsHandler.UpdateStoreInfo)
+	tenantGroup.Delete("/settings/store", middleware.RequireRole("owner"), settingsHandler.DeleteStore)
+	tenantGroup.Patch("/settings/features", middleware.RequireRole("owner"), settingsHandler.UpdateFeatures)
+	tenantGroup.Patch("/settings/notifications", middleware.RequireRole("owner"), settingsHandler.UpdateNotifications)
+	tenantGroup.Patch("/settings/menu", middleware.RequireRole("owner"), settingsHandler.UpdateMenuSettings)
+	tenantGroup.Patch("/settings/lease", middleware.RequireRole("owner"), settingsHandler.UpdateLease)
 
-	// Members
+	// Members (Owner only for modifying members)
 	tenantGroup.Get("/settings/members", settingsHandler.ListMembers)
-	tenantGroup.Post("/settings/members/invite", settingsHandler.InviteMember)
-	tenantGroup.Delete("/settings/members/:userId", settingsHandler.RemoveMember)
-	tenantGroup.Patch("/settings/members/:userId/role", settingsHandler.UpdateMemberRole)
+	tenantGroup.Post("/settings/members/invite", middleware.RequireRole("owner"), settingsHandler.InviteMember)
+	tenantGroup.Delete("/settings/members/:userId", middleware.RequireRole("owner"), settingsHandler.RemoveMember)
+	tenantGroup.Patch("/settings/members/:userId/role", middleware.RequireRole("owner"), settingsHandler.UpdateMemberRole)
 
 	// Browser push subscriptions
 	tenantGroup.Post("/settings/push/subscribe", settingsHandler.SubscribePush)

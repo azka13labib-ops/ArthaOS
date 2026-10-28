@@ -56,9 +56,9 @@ ArthaOS adalah platform enterprise Point-of-Sale (POS), manajemen keuangan ritel
 ### 1. Menjalankan Backend (Go Fiber)
 
 ```bash
-cd backend
+# Backend berada di root direktori proyek
 cp .env.example .env
-# Sesuaikan konfigurasi database DB_URL dan GROQ_API_KEY di .env
+# Sesuaikan konfigurasi database DB_URL dan API key di .env
 
 go mod tidy
 go run ./cmd/api
@@ -68,10 +68,10 @@ go run ./cmd/api
 ### 2. Menjalankan Frontend (Next.js)
 
 ```bash
-cd frontend
-npm install
-npm run dev -- -p 3001
-# Frontend berjalan di http://localhost:3001
+cd web
+pnpm install # atau npm install
+pnpm dev     # atau npm run dev
+# Frontend berjalan di http://localhost:3000 (atau http://localhost:3001)
 ```
 
 ---
@@ -80,7 +80,7 @@ npm run dev -- -p 3001
 
 - Dokumentasi RESTful API lengkap: [`API_DOCUMENTATION.md`](./API_DOCUMENTATION.md)
 - Panduan Postman & Variabel Lingkungan: [`POSTMAN_GUIDE.md`](./POSTMAN_GUIDE.md)
-- File Postman Collection: [`FluxOS_Postman_Collection.json`](./FluxOS_Postman_Collection.json)
+- File Postman Collection: [`ArthaOs_Postman_Collection.json`](./ArthaOs_Postman_Collection.json)
 
 ---
 

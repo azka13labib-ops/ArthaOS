@@ -1,6 +1,6 @@
-# Panduan Pengujian API FluxOS via Postman
+# Panduan Pengujian API ArthaOS via Postman
 
-Panduan ini memandu Anda melakukan pengujian seluruh endpoint API **FluxOS** menggunakan Postman secara berurutan dan otomatis.
+Panduan ini memandu Anda melakukan pengujian seluruh endpoint API **ArthaOS** menggunakan Postman secara berurutan dan otomatis.
 
 ---
 
@@ -8,13 +8,13 @@ Panduan ini memandu Anda melakukan pengujian seluruh endpoint API **FluxOS** men
 
 1. Buka aplikasi **Postman**.
 2. Klik tombol **Import** (di pojok kiri atas).
-3. Pilih file **`FluxOS_Postman_Collection.json`** yang ada di root project ini:
+3. Pilih file **`ArthaOs_Postman_Collection.json`** yang ada di root project ini:
 
    ```text
-   c:\ngodink\1x\FluxOS_Postman_Collection.json
+   ArthaOs_Postman_Collection.json
    ```
 
-4. Klik **Import**. Collection **`FluxOS REST API v1`** akan langsung muncul di sidebar kiri Anda.
+4. Klik **Import**. Collection **`ArthaOS REST API v1`** akan langsung muncul di sidebar kiri Anda.
 
 ---
 

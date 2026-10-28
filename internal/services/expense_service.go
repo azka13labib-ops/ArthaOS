@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"time"
 
 	"app/internal/models"
 	"app/internal/repository"
@@ -69,6 +70,7 @@ func (s *expenseService) CreateExpense(storeID uint, req ExpenseRequest) (*model
 		Type:        "expense",
 		TotalAmount: req.TotalAmount,
 		Description: desc,
+		OccurredAt:  time.Now(),
 	}
 
 	err := s.trxRepo.CreateTransaction(s.db, &trx, nil, payments, nil, nil)

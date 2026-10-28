@@ -19,7 +19,8 @@ func NewSyncService(db *gorm.DB, saleService SaleService, expService ExpenseServ
 }
 
 type BatchSyncRequest struct {
-	Sales    []SaleRequest `json:"sales"`
+	Sales        []SaleRequest `json:"sales"`
+	Transactions []SaleRequest `json:"transactions"`
 	// We can add expenses, debt payments, etc. later
 }
 
@@ -32,12 +33,16 @@ func (s *syncService) BatchSync(storeID uint, req BatchSyncRequest) (*BatchSyncR
 	// For offline first, we process all items. Even if some fail, we continue to sync the rest.
 	var syncedSales, failedSales int
 
-	for _, saleReq := range req.Sales {
-		// Note: CreateSale already handles its own database transaction
+	salesToProcess := req.Sales
+	if len(salesToProcess) == 0 && len(req.Transactions) > 0 {
+		salesToProcess = req.Transactions
+	}
+
+	for _, saleReq := range salesToProcess {
+		// Note: CreateSale already handles its own database transaction and idempotency check
 		_, err := s.saleService.CreateSale(storeID, saleReq)
 		if err != nil {
 			failedSales++
-			// Ideally we'd log the error or return an array of errors
 		} else {
 			syncedSales++
 		}

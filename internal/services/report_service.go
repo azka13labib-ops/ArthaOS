@@ -24,7 +24,7 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 	err := s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'sale' AND created_at >= ? AND created_at <= ?
+		WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&totalSales).Error
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 		SELECT COALESCE(SUM(ti.cost_price * ti.quantity), 0)
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND t.created_at >= ? AND t.created_at <= ?
+		WHERE t.store_id = ? AND t.type = 'sale' AND DATE(t.occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&totalCost).Error
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 	err = s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'expense' AND created_at >= ? AND created_at <= ?
+		WHERE store_id = ? AND type = 'expense' AND DATE(occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&totalExpenses).Error
 	if err != nil {
 		return nil, err
@@ -87,12 +87,16 @@ func (s *reportService) GetStockValuation(storeID uint) (map[string]interface{},
 }
 
 func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
-	// Simple cash flow: Cash In (Sales, paid debts) and Cash Out (Expenses)
+	// Cash flow follows actual payment methods, not sale totals: debt is receivable, not cash in.
 	var cashIn int64
 	err := s.db.Raw(`
-		SELECT COALESCE(SUM(total_amount), 0)
-		FROM transactions
-		WHERE store_id = ? AND type = 'sale' AND created_at >= ? AND created_at <= ?
+		SELECT COALESCE(SUM(tp.amount), 0)
+		FROM transaction_payments tp
+		JOIN transactions t ON t.id = tp.transaction_id
+		WHERE t.store_id = ?
+			AND t.type IN ('sale', 'debt_payment')
+			AND tp.payment_method != 'debt'
+			AND DATE(t.occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&cashIn).Error
 	if err != nil {
 		return nil, err
@@ -100,9 +104,10 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 
 	var cashOut int64
 	err = s.db.Raw(`
-		SELECT COALESCE(SUM(total_amount), 0)
-		FROM transactions
-		WHERE store_id = ? AND type = 'expense' AND created_at >= ? AND created_at <= ?
+		SELECT COALESCE(SUM(tp.amount), 0)
+		FROM transaction_payments tp
+		JOIN transactions t ON t.id = tp.transaction_id
+		WHERE t.store_id = ? AND t.type = 'expense' AND DATE(t.occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&cashOut).Error
 	if err != nil {
 		return nil, err
@@ -114,12 +119,18 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 	}
 
 	var paymentMethods []PaymentBreakdown
-	s.db.Raw(`
-		SELECT payment_method as method, COALESCE(SUM(total_amount), 0) as amount
-		FROM transactions
-		WHERE store_id = ? AND type = 'sale' AND created_at >= ? AND created_at <= ?
-		GROUP BY payment_method
-	`, storeID, startDate, endDate).Scan(&paymentMethods)
+	if err := s.db.Raw(`
+		SELECT tp.payment_method AS method, COALESCE(SUM(tp.amount), 0) AS amount
+		FROM transaction_payments tp
+		JOIN transactions t ON t.id = tp.transaction_id
+		WHERE t.store_id = ?
+			AND t.type IN ('sale', 'debt_payment')
+			AND tp.payment_method != 'debt'
+			AND DATE(t.occurred_at) BETWEEN ? AND ?
+		GROUP BY tp.payment_method
+	`, storeID, startDate, endDate).Scan(&paymentMethods).Error; err != nil {
+		return nil, err
+	}
 
 	netCashFlow := cashIn - cashOut
 
@@ -134,29 +145,37 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{}, error) {
 	// A summary for the dashboard
 	var totalSales int64
-	s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(created_at) = CURRENT_DATE", storeID).Scan(&totalSales)
-	
+	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalSales).Error; err != nil {
+		return nil, err
+	}
+
 	var totalExpenses int64
-	s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'expense' AND DATE(created_at) = CURRENT_DATE", storeID).Scan(&totalExpenses)
+	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'expense' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalExpenses).Error; err != nil {
+		return nil, err
+	}
 
 	var totalTransactions int64
-	s.db.Raw("SELECT COUNT(*) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(created_at) = CURRENT_DATE", storeID).Scan(&totalTransactions)
+	if err := s.db.Raw("SELECT COUNT(*) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalTransactions).Error; err != nil {
+		return nil, err
+	}
 
 	type TopProduct struct {
 		Name     string `json:"name"`
 		Quantity int    `json:"quantity"`
 	}
 	var topProducts []TopProduct
-	s.db.Raw(`
+	if err := s.db.Raw(`
 		SELECT p.name, COALESCE(SUM(ti.quantity), 0) as quantity
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
 		JOIN products p ON p.id = ti.product_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND DATE(t.created_at) = CURRENT_DATE
+		WHERE t.store_id = ? AND t.type = 'sale' AND DATE(t.occurred_at) = CURRENT_DATE
 		GROUP BY p.name
 		ORDER BY quantity DESC
 		LIMIT 5
-	`, storeID).Scan(&topProducts)
+	`, storeID).Scan(&topProducts).Error; err != nil {
+		return nil, err
+	}
 
 	return map[string]interface{}{
 		"today_sales":        totalSales,

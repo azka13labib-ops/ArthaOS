@@ -81,6 +81,7 @@ func (s *debtService) PayDebt(storeID uint, debtID uint, amount int64, paymentMe
 			Type:        "debt_payment",
 			TotalAmount: amount,
 			Description: &desc,
+			OccurredAt:  now,
 		}
 
 		trxPayment := models.TransactionPayment{

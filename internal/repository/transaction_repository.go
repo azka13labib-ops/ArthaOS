@@ -6,10 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type SalesAggregate struct {
+	TotalOmset int64
+	TotalCost  int64
+	TotalCount int64
+}
+
 type TransactionRepository interface {
 	CreateTransaction(tx *gorm.DB, trx *models.Transaction, items []models.TransactionItem, payments []models.TransactionPayment, movements []models.InventoryMovement, debt *models.Debt) error
 	GetByIDAndStore(id uint, storeID uint) (*models.Transaction, error)
 	GetByStore(storeID uint, limit int, offset int) ([]models.Transaction, error)
+	GetSalesAggregate(storeID uint) (*SalesAggregate, error)
 }
 
 type transactionRepository struct {
@@ -84,4 +91,25 @@ func (r *transactionRepository) GetByStore(storeID uint, limit int, offset int) 
 	}
 	err := q.Find(&trxs).Error
 	return trxs, err
+}
+
+func (r *transactionRepository) GetSalesAggregate(storeID uint) (*SalesAggregate, error) {
+	var result struct {
+		TotalOmset int64
+		TotalCost  int64
+		TotalCount int64
+	}
+	err := r.db.
+		Model(&models.Transaction{}).
+		Select("COALESCE(SUM(total_amount), 0) AS total_omset, COALESCE(SUM(total_cost), 0) AS total_cost, COUNT(*) AS total_count").
+		Where("store_id = ? AND type = ?", storeID, "sale").
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return &SalesAggregate{
+		TotalOmset: result.TotalOmset,
+		TotalCost:  result.TotalCost,
+		TotalCount: result.TotalCount,
+	}, nil
 }

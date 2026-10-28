@@ -39,9 +39,11 @@ type SaleRequestPayment struct {
 }
 
 type SaleRequest struct {
-	Items       []SaleRequestItem    `json:"items"`
-	Payments    []SaleRequestPayment `json:"payments"`
-	Description string               `json:"description"`
+	CorrelationID string               `json:"correlation_id"`
+	OccurredAt    string               `json:"occurred_at"`
+	Items         []SaleRequestItem    `json:"items"`
+	Payments      []SaleRequestPayment `json:"payments"`
+	Description   string               `json:"description"`
 }
 
 func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transaction, error) {
@@ -66,6 +68,16 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 	var finalTrx *models.Transaction
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// Idempotency check for offline sync and repeated requests
+		if req.CorrelationID != "" {
+			var existing models.Transaction
+			if err := tx.Where("store_id = ? AND correlation_id = ?", storeID, req.CorrelationID).
+				Preload("Items").Preload("Payments").First(&existing).Error; err == nil {
+				finalTrx = &existing
+				return nil
+			}
+		}
+
 		var totalAmount int64
 		var totalCost int64
 		var transactionItems []models.TransactionItem
@@ -74,7 +86,7 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 		for _, pid := range productIDs {
 			qty := itemMap[pid]
 
-			product, err := s.productRepo.UpdateStockWithLock(tx, pid, storeID, qty)
+			product, err := s.productRepo.GetByIDAndStoreWithLock(tx, pid, storeID)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return errors.New("insufficient stock or product not found")
@@ -96,15 +108,21 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 
 			if product.IsRecipeBased {
 				// Deduct raw materials instead of product stock
+				if len(product.RecipeItems) == 0 {
+					return errors.New("produk berbasis resep tidak memiliki komposisi bahan baku")
+				}
 				for _, recipe := range product.RecipeItems {
 					reqQty := recipe.Quantity * qty
-					err := tx.Exec(`
+					res := tx.Exec(`
 						UPDATE raw_materials 
 						SET current_stock = current_stock - $1, updated_at = NOW() 
 						WHERE id = $2 AND store_id = $3 AND current_stock >= $1
-					`, reqQty, recipe.RawMaterialID, storeID).Error
-					if err != nil {
-						return err
+					`, reqQty, recipe.RawMaterialID, storeID)
+					if res.Error != nil {
+						return res.Error
+					}
+					if res.RowsAffected == 0 {
+						return errors.New("stok bahan baku tidak mencukupi untuk memenuhi pesanan resep")
 					}
 
 					rmID := recipe.RawMaterialID
@@ -117,7 +135,19 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 					})
 				}
 			} else {
-				// Deduct normal product stock
+				// Deduct normal product stock with verified RowsAffected
+				res := tx.Exec(`
+					UPDATE products
+					SET current_stock = current_stock - $1, updated_at = NOW()
+					WHERE id = $2 AND store_id = $3 AND current_stock >= $1 AND is_active = true
+				`, qty, pid, storeID)
+				if res.Error != nil {
+					return res.Error
+				}
+				if res.RowsAffected == 0 {
+					return errors.New("insufficient stock or product not found")
+				}
+
 				pidCopy := pid
 				inventoryMovements = append(inventoryMovements, models.InventoryMovement{
 					StoreID:       storeID,
@@ -185,12 +215,28 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 			desc = &req.Description
 		}
 
+		var corrID *string
+		if req.CorrelationID != "" {
+			corrID = &req.CorrelationID
+		}
+
+		occurredAt := time.Now()
+		if req.OccurredAt != "" {
+			if t, err := time.Parse(time.RFC3339, req.OccurredAt); err == nil {
+				occurredAt = t
+			} else if t, err := time.Parse("2006-01-02T15:04:05.000Z", req.OccurredAt); err == nil {
+				occurredAt = t
+			}
+		}
+
 		trx := models.Transaction{
-			StoreID:     storeID,
-			Type:        "sale",
-			TotalAmount: totalAmount,
-			TotalCost:   totalCost,
-			Description: desc,
+			StoreID:       storeID,
+			Type:          "sale",
+			TotalAmount:   totalAmount,
+			TotalCost:     totalCost,
+			Description:   desc,
+			CorrelationID: corrID,
+			OccurredAt:    occurredAt,
 		}
 
 		if err := s.trxRepo.CreateTransaction(tx, &trx, transactionItems, payments, inventoryMovements, debt); err != nil {
@@ -202,6 +248,16 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 	})
 
 	if err != nil {
+		// A concurrent retry can pass the initial lookup before the first
+		// transaction commits. The database unique index rejects the duplicate;
+		// return the sale that won the race instead of treating the retry as failed.
+		if req.CorrelationID != "" {
+			var existing models.Transaction
+			if lookupErr := s.db.Where("store_id = ? AND correlation_id = ?", storeID, req.CorrelationID).
+				Preload("Items").Preload("Payments").First(&existing).Error; lookupErr == nil {
+				return &existing, nil
+			}
+		}
 		return nil, err
 	}
 

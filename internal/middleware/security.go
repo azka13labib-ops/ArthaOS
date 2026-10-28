@@ -69,6 +69,34 @@ func RateLimitLogin() fiber.Handler {
 	})
 }
 
+func RateLimitWebhook() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c fiber.Ctx) string {
+			return "webhook:" + c.IP()
+		},
+		LimitReached: func(c fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many webhook requests. Please slow down.",
+				"code":  "WEBHOOK_RATE_LIMIT_EXCEEDED",
+			})
+		},
+	})
+}
+
+func LimitBodySize(maxBytes int) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		if len(c.Body()) > maxBytes {
+			return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{
+				"error": "Request body too large",
+				"code":  "PAYLOAD_TOO_LARGE",
+			})
+		}
+		return c.Next()
+	}
+}
+
 func PreventPathTraversal() fiber.Handler {
 	dangerous := []string{"../", "..\\", "%2e%2e", "%2E%2E", "..%2f", "..%5c"}
 	return func(c fiber.Ctx) error {

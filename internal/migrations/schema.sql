@@ -130,6 +130,7 @@ CREATE TABLE transactions (
     id SERIAL PRIMARY KEY,
     store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
     type transaction_type NOT NULL,
+    status VARCHAR(20) DEFAULT 'completed' NOT NULL,
     total_amount BIGINT NOT NULL CHECK (total_amount >= 0),
     total_cost BIGINT NOT NULL CHECK (total_cost >= 0),
     description TEXT,
@@ -239,4 +240,25 @@ CREATE TABLE audit_logs (
     correlation_id VARCHAR(255),
     metadata_json JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transaction_voids (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE RESTRICT,
+    authorized_by_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (transaction_id)
+);
+
+CREATE TABLE push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

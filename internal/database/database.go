@@ -50,6 +50,7 @@ func ConnectDB(dsn string) {
 		&models.Supplier{},
 		&models.Purchase{},
 		&models.PurchaseItem{},
+		&models.TransactionVoid{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate failed: %v", err)
@@ -202,6 +203,20 @@ func runSchemaMigrations(db *gorm.DB) {
 						WHERE table_name='inventory_movements' AND column_name='product_id' AND is_nullable='NO'
 					) THEN
 						ALTER TABLE inventory_movements ALTER COLUMN product_id DROP NOT NULL;
+					END IF;
+				END $$;
+			`,
+		},
+		{
+			name: "ensure transactions.status column exists",
+			sql: `
+				DO $$
+				BEGIN
+					IF NOT EXISTS (
+						SELECT 1 FROM information_schema.columns
+						WHERE table_name='transactions' AND column_name='status'
+					) THEN
+						ALTER TABLE transactions ADD COLUMN status VARCHAR(20) DEFAULT 'completed' NOT NULL;
 					END IF;
 				END $$;
 			`,

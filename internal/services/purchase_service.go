@@ -62,6 +62,24 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 		if item.BuyPrice < 0 {
 			return nil, errors.New("harga beli barang tidak valid")
 		}
+		switch item.ItemType {
+		case "product":
+			if item.ProductID == nil || *item.ProductID == 0 {
+				return nil, errors.New("product_id wajib diisi untuk item bertipe product")
+			}
+			if item.RawMaterialID != nil {
+				return nil, errors.New("raw_material_id tidak boleh diisi untuk item bertipe product")
+			}
+		case "raw_material":
+			if item.RawMaterialID == nil || *item.RawMaterialID == 0 {
+				return nil, errors.New("raw_material_id wajib diisi untuk item bertipe raw_material")
+			}
+			if item.ProductID != nil {
+				return nil, errors.New("product_id tidak boleh diisi untuk item bertipe raw_material")
+			}
+		default:
+			return nil, errors.New("item_type tidak valid (hanya 'product' atau 'raw_material')")
+		}
 	}
 
 	invoiceNo := strings.TrimSpace(req.InvoiceNumber)
@@ -162,7 +180,7 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 				if err := tx.Create(&movement).Error; err != nil {
 					return err
 				}
-			} else if it.ProductID != nil {
+			} else if it.ItemType == "product" && it.ProductID != nil {
 				var prod models.Product
 				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 					Where("id = ? AND store_id = ?", *it.ProductID, storeID).
@@ -190,6 +208,8 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 				if err := tx.Create(&movement).Error; err != nil {
 					return err
 				}
+			} else {
+				return errors.New("item pembelian tidak memiliki referensi produk atau bahan baku yang valid")
 			}
 		}
 

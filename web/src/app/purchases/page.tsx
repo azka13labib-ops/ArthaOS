@@ -501,7 +501,7 @@ export default function PurchasesPage() {
               <div>
                 <p className="font-semibold text-foreground">Belum ada faktur pembelian</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Klik tombol "Catat Pembelian Masuk" untuk menambah stok dan faktur baru.
+                  Klik tombol &quot;Catat Pembelian Masuk&quot; untuk menambah stok dan faktur baru.
                 </p>
               </div>
             </div>

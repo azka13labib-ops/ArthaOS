@@ -8,8 +8,8 @@ import (
 
 type RecipeRepository interface {
 	Create(recipeItem *models.RecipeItem) error
-	GetByProductID(productID uint) ([]models.RecipeItem, error)
-	Delete(id uint) error
+	GetByProductID(storeID, productID uint) ([]models.RecipeItem, error)
+	Delete(storeID, id uint) error
 	DeleteByProductID(productID uint) error
 }
 
@@ -25,14 +25,22 @@ func (r *recipeRepo) Create(recipeItem *models.RecipeItem) error {
 	return r.db.Create(recipeItem).Error
 }
 
-func (r *recipeRepo) GetByProductID(productID uint) ([]models.RecipeItem, error) {
+func (r *recipeRepo) GetByProductID(storeID, productID uint) ([]models.RecipeItem, error) {
 	var items []models.RecipeItem
-	err := r.db.Where("product_id = ?", productID).Preload("RawMaterial").Find(&items).Error
+	err := r.db.Joins("JOIN products ON products.id = recipe_items.product_id").
+		Where("recipe_items.product_id = ? AND products.store_id = ?", productID, storeID).
+		Preload("RawMaterial").Find(&items).Error
 	return items, err
 }
 
-func (r *recipeRepo) Delete(id uint) error {
-	return r.db.Where("id = ?", id).Delete(&models.RecipeItem{}).Error
+func (r *recipeRepo) Delete(storeID, id uint) error {
+	return r.db.Exec(`
+		DELETE FROM recipe_items
+		USING products
+		WHERE recipe_items.id = ?
+			AND recipe_items.product_id = products.id
+			AND products.store_id = ?
+	`, id, storeID).Error
 }
 
 func (r *recipeRepo) DeleteByProductID(productID uint) error {

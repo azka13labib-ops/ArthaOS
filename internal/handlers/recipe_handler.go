@@ -23,7 +23,7 @@ type AddRecipeItemRequest struct {
 }
 
 func (h *RecipeHandler) AddItem(c fiber.Ctx) error {
-	_, ok := c.Locals("store_id").(uint)
+	storeID, ok := c.Locals("store_id").(uint)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -42,7 +42,7 @@ func (h *RecipeHandler) AddItem(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Validation failed", "fields": errs})
 	}
 
-	item, err := h.recipeService.Create(uint(productID), req.RawMaterialID, req.Quantity)
+	item, err := h.recipeService.Create(storeID, uint(productID), req.RawMaterialID, req.Quantity)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to add recipe item"})
 	}
@@ -51,7 +51,7 @@ func (h *RecipeHandler) AddItem(c fiber.Ctx) error {
 }
 
 func (h *RecipeHandler) GetByProduct(c fiber.Ctx) error {
-	_, ok := c.Locals("store_id").(uint)
+	storeID, ok := c.Locals("store_id").(uint)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -61,7 +61,7 @@ func (h *RecipeHandler) GetByProduct(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Product ID"})
 	}
 
-	items, err := h.recipeService.GetByProductID(uint(productID))
+	items, err := h.recipeService.GetByProductID(storeID, uint(productID))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch recipes"})
 	}
@@ -70,7 +70,7 @@ func (h *RecipeHandler) GetByProduct(c fiber.Ctx) error {
 }
 
 func (h *RecipeHandler) Delete(c fiber.Ctx) error {
-	_, ok := c.Locals("store_id").(uint)
+	storeID, ok := c.Locals("store_id").(uint)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -80,7 +80,7 @@ func (h *RecipeHandler) Delete(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID"})
 	}
 
-	if err := h.recipeService.Delete(uint(id)); err != nil {
+	if err := h.recipeService.Delete(storeID, uint(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete recipe item"})
 	}
 

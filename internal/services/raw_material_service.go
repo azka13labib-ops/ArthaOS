@@ -3,6 +3,7 @@ package services
 import (
 	"app/internal/models"
 	"app/internal/repository"
+	"errors"
 )
 
 type RawMaterialService interface {
@@ -42,10 +43,8 @@ func (s *rawMaterialService) GetByID(storeID, id uint) (*models.RawMaterial, err
 }
 
 func (s *rawMaterialService) UpdateStock(storeID, id uint, quantityDelta int) error {
-	rm, err := s.rmRepo.GetByID(storeID, id)
-	if err != nil {
-		return err
+	if quantityDelta == 0 {
+		return errors.New("quantity delta cannot be zero")
 	}
-	rm.CurrentStock += quantityDelta
-	return s.rmRepo.Update(rm)
+	return s.rmRepo.AdjustStock(storeID, id, quantityDelta)
 }

@@ -12,6 +12,7 @@ type ProductRepository interface {
 	GetAllByStore(storeID uint) ([]models.Product, error)
 	UpdateStockWithLock(tx *gorm.DB, productID uint, storeID uint, quantity int) (*models.Product, error)
 	GetByIDAndStoreWithLock(tx *gorm.DB, id uint, storeID uint) (*models.Product, error)
+	SetRecipeBased(productID uint, storeID uint, isRecipe bool) error
 }
 
 type productRepository struct {
@@ -84,5 +85,11 @@ func (r *productRepository) GetByIDAndStoreWithLock(tx *gorm.DB, id uint, storeI
 	}
 
 	return &product, nil
+}
+
+func (r *productRepository) SetRecipeBased(productID uint, storeID uint, isRecipe bool) error {
+	return r.db.Model(&models.Product{}).
+		Where("id = ? AND store_id = ?", productID, storeID).
+		Update("is_recipe_based", isRecipe).Error
 }
 

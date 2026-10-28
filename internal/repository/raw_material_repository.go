@@ -11,6 +11,7 @@ type RawMaterialRepository interface {
 	GetByID(storeID, id uint) (*models.RawMaterial, error)
 	GetAll(storeID uint) ([]models.RawMaterial, error)
 	Update(rm *models.RawMaterial) error
+	AdjustStock(storeID, id uint, quantityDelta int) error
 	Delete(storeID, id uint) error
 }
 
@@ -40,6 +41,21 @@ func (r *rawMaterialRepo) GetAll(storeID uint) ([]models.RawMaterial, error) {
 
 func (r *rawMaterialRepo) Update(rm *models.RawMaterial) error {
 	return r.db.Save(rm).Error
+}
+
+func (r *rawMaterialRepo) AdjustStock(storeID, id uint, quantityDelta int) error {
+	result := r.db.Exec(`
+		UPDATE raw_materials
+		SET current_stock = current_stock + ?, updated_at = NOW()
+		WHERE id = ? AND store_id = ? AND current_stock + ? >= 0
+	`, quantityDelta, id, storeID, quantityDelta)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *rawMaterialRepo) Delete(storeID, id uint) error {

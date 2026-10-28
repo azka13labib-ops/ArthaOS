@@ -359,6 +359,12 @@ func (h *SettingsHandler) UpdateLease(c fiber.Ctx) error {
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
+	if req.LeaseMonthlyCost != nil && *req.LeaseMonthlyCost < 0 {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Biaya sewa tidak boleh negatif"})
+	}
+	if req.LeaseInterestRate != nil && (*req.LeaseInterestRate < 0 || *req.LeaseInterestRate > 100) {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Bunga sewa harus berada antara 0 dan 100 persen"})
+	}
 
 	s, err := h.settingsRepo.GetSettings(storeID)
 	if err != nil {
@@ -367,15 +373,23 @@ func (h *SettingsHandler) UpdateLease(c fiber.Ctx) error {
 
 	if req.LeaseStartDate != nil {
 		t, err := time.Parse("2006-01-02", *req.LeaseStartDate)
-		if err == nil {
-			s.LeaseStartDate = &t
+		if err != nil {
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Tanggal mulai sewa tidak valid"})
 		}
+		if s.LeaseEndDate != nil && t.After(*s.LeaseEndDate) {
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Tanggal mulai tidak boleh setelah tanggal selesai"})
+		}
+		s.LeaseStartDate = &t
 	}
 	if req.LeaseEndDate != nil {
 		t, err := time.Parse("2006-01-02", *req.LeaseEndDate)
-		if err == nil {
-			s.LeaseEndDate = &t
+		if err != nil {
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Tanggal selesai sewa tidak valid"})
 		}
+		if s.LeaseStartDate != nil && t.Before(*s.LeaseStartDate) {
+			return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Tanggal selesai tidak boleh sebelum tanggal mulai"})
+		}
+		s.LeaseEndDate = &t
 	}
 	if req.LeaseMonthlyCost != nil {
 		s.LeaseMonthlyCost = *req.LeaseMonthlyCost

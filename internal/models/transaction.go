@@ -8,6 +8,7 @@ type Transaction struct {
 	ID              uint                 `gorm:"primaryKey;autoIncrement" json:"id"`
 	StoreID         uint                 `gorm:"not null;uniqueIndex:idx_transactions_store_correlation" json:"store_id"`
 	Type            string               `gorm:"type:transaction_type;not null" json:"type"`
+	Status          string               `gorm:"type:varchar(20);default:'completed';not null" json:"status"`
 	TotalAmount     int64                `gorm:"not null" json:"total_amount"`
 	TotalCost       int64                `gorm:"not null" json:"total_cost"`
 	Description     *string              `gorm:"type:text" json:"description"`

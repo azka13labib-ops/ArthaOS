@@ -1,12 +1,16 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"app/internal/models"
 	"app/internal/repository"
+	"app/internal/worker"
 
 	"gorm.io/gorm"
 )
@@ -14,16 +18,38 @@ import (
 type SaleService interface {
 	CreateSale(storeID uint, req SaleRequest) (*models.Transaction, error)
 	GetSales(storeID uint, limit, offset int) ([]models.Transaction, error)
+	VoidSale(storeID uint, transactionID uint, authorizedByID uint, reason string) (*models.Transaction, error)
 }
 
 type saleService struct {
 	db          *gorm.DB
 	productRepo repository.ProductRepository
 	trxRepo     repository.TransactionRepository
+	auditRepo   repository.AuditRepository
+	pushService PushService
+	workerPool  *worker.Pool
 }
 
 func NewSaleService(db *gorm.DB, productRepo repository.ProductRepository, trxRepo repository.TransactionRepository) SaleService {
-	return &saleService{db, productRepo, trxRepo}
+	return &saleService{db: db, productRepo: productRepo, trxRepo: trxRepo}
+}
+
+func NewSaleServiceWithNotifier(
+	db *gorm.DB,
+	productRepo repository.ProductRepository,
+	trxRepo repository.TransactionRepository,
+	auditRepo repository.AuditRepository,
+	pushService PushService,
+	pool *worker.Pool,
+) SaleService {
+	return &saleService{
+		db:          db,
+		productRepo: productRepo,
+		trxRepo:     trxRepo,
+		auditRepo:   auditRepo,
+		pushService: pushService,
+		workerPool:  pool,
+	}
 }
 
 type SaleRequestItem struct {
@@ -266,4 +292,162 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 
 func (s *saleService) GetSales(storeID uint, limit, offset int) ([]models.Transaction, error) {
 	return s.trxRepo.GetByStore(storeID, limit, offset)
+}
+
+func (s *saleService) VoidSale(storeID uint, transactionID uint, authorizedByID uint, reason string) (*models.Transaction, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, errors.New("alasan void wajib diisi")
+	}
+
+	var trx models.Transaction
+	if err := s.db.Preload("Items").Preload("Payments").
+		Where("id = ? AND store_id = ?", transactionID, storeID).
+		First(&trx).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("transaksi tidak ditemukan")
+		}
+		return nil, err
+	}
+
+	if trx.Status == "voided" {
+		return nil, errors.New("transaksi sudah pernah di-void")
+	}
+	if trx.Type != "sale" {
+		return nil, errors.New("hanya transaksi penjualan (sale) yang dapat di-void")
+	}
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Reverse stock and raw materials for each transaction item
+		for _, item := range trx.Items {
+			product, err := s.productRepo.GetByIDAndStoreWithLock(tx, item.ProductID, storeID)
+			if err != nil {
+				return fmt.Errorf("gagal memuat data produk ID %d: %w", item.ProductID, err)
+			}
+
+			if product.IsRecipeBased {
+				// Revert raw materials
+				var recipes []models.RecipeItem
+				if err := tx.Where("product_id = ?", item.ProductID).Find(&recipes).Error; err != nil {
+					return err
+				}
+				for _, r := range recipes {
+					restockQty := r.Quantity * item.Quantity
+					res := tx.Exec(`
+						UPDATE raw_materials 
+						SET current_stock = current_stock + $1, updated_at = NOW() 
+						WHERE id = $2 AND store_id = $3
+					`, restockQty, r.RawMaterialID, storeID)
+					if res.Error != nil {
+						return res.Error
+					}
+
+					rmID := r.RawMaterialID
+					notes := fmt.Sprintf("Void sale #%d: pengembalian resep %s", trx.ID, product.Name)
+					movement := models.InventoryMovement{
+						StoreID:       storeID,
+						RawMaterialID: &rmID,
+						MovementType:  "adjustment",
+						QuantityDelta: restockQty,
+						ReferenceType: "transaction",
+						ReferenceID:   &trx.ID,
+						Notes:         &notes,
+					}
+					if err := tx.Create(&movement).Error; err != nil {
+						return err
+					}
+				}
+			} else {
+				// Revert standard product stock
+				res := tx.Exec(`
+					UPDATE products 
+					SET current_stock = current_stock + $1, updated_at = NOW() 
+					WHERE id = $2 AND store_id = $3
+				`, item.Quantity, item.ProductID, storeID)
+				if res.Error != nil {
+					return res.Error
+				}
+
+				pid := item.ProductID
+				notes := fmt.Sprintf("Void sale #%d: pengembalian produk %s", trx.ID, product.Name)
+				movement := models.InventoryMovement{
+					StoreID:       storeID,
+					ProductID:     &pid,
+					MovementType:  "adjustment",
+					QuantityDelta: item.Quantity,
+					ReferenceType: "transaction",
+					ReferenceID:   &trx.ID,
+					Notes:         &notes,
+				}
+				if err := tx.Create(&movement).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		// 2. Reverse / cancel associated debt if paid via debt
+		var debt models.Debt
+		if err := tx.Where("store_id = ? AND transaction_id = ?", storeID, trx.ID).First(&debt).Error; err == nil {
+			if err := tx.Model(&debt).Updates(map[string]interface{}{
+				"remaining_amount": 0,
+				"status":           "paid",
+			}).Error; err != nil {
+				return fmt.Errorf("gagal membatalkan catatan kasbon: %w", err)
+			}
+		}
+
+		// 3. Insert transaction void authorization log
+		tv := models.TransactionVoid{
+			StoreID:        storeID,
+			TransactionID:  trx.ID,
+			AuthorizedByID: authorizedByID,
+			Reason:         reason,
+		}
+		if err := tx.Create(&tv).Error; err != nil {
+			return fmt.Errorf("gagal menyimpan otorisasi void: %w", err)
+		}
+
+		// 4. Mark transaction as voided
+		if err := tx.Model(&models.Transaction{}).
+			Where("id = ? AND store_id = ?", trx.ID, storeID).
+			Update("status", "voided").Error; err != nil {
+			return fmt.Errorf("gagal mengupdate status transaksi: %w", err)
+		}
+		trx.Status = "voided"
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Audit log
+	if s.auditRepo != nil {
+		go func() {
+			meta := fmt.Sprintf(`{"actor_id":%d,"reason":%q,"total_amount":%d}`, authorizedByID, reason, trx.TotalAmount)
+			_ = s.auditRepo.Log(s.db, storeID, "user", "void_sale", "transaction", trx.ID, &meta)
+		}()
+	}
+
+	// 6. Asynchronous Web Push notification
+	if s.pushService != nil {
+		pushJob := func(ctx context.Context) error {
+			return s.pushService.BroadcastToStore(ctx, storeID, PushPayload{
+				Title: "Notifikasi Void Transaksi",
+				Body:  fmt.Sprintf("Penjualan #%d senilai Rp%d telah dibatalkan (void). Alasan: %s", trx.ID, trx.TotalAmount, reason),
+				URL:   "/reports",
+				Tag:   fmt.Sprintf("void-%d", trx.ID),
+			})
+		}
+		if s.workerPool != nil {
+			if !s.workerPool.Submit(pushJob) {
+				go func() { _ = pushJob(context.Background()) }()
+			}
+		} else {
+			go func() { _ = pushJob(context.Background()) }()
+		}
+	}
+
+	return &trx, nil
 }

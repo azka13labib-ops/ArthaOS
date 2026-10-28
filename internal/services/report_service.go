@@ -24,7 +24,7 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 	err := s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) BETWEEN ? AND ?
+		WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&totalSales).Error
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 		SELECT COALESCE(SUM(ti.cost_price * ti.quantity), 0)
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND DATE(t.occurred_at) BETWEEN ? AND ?
+		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' AND DATE(t.occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&totalCost).Error
 	if err != nil {
 		return nil, err
@@ -94,6 +94,7 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 		FROM transaction_payments tp
 		JOIN transactions t ON t.id = tp.transaction_id
 		WHERE t.store_id = ?
+			AND t.status != 'voided'
 			AND t.type IN ('sale', 'debt_payment')
 			AND tp.payment_method != 'debt'
 			AND DATE(t.occurred_at) BETWEEN ? AND ?
@@ -107,7 +108,7 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 		SELECT COALESCE(SUM(tp.amount), 0)
 		FROM transaction_payments tp
 		JOIN transactions t ON t.id = tp.transaction_id
-		WHERE t.store_id = ? AND t.type = 'expense' AND DATE(t.occurred_at) BETWEEN ? AND ?
+		WHERE t.store_id = ? AND t.status != 'voided' AND t.type = 'expense' AND DATE(t.occurred_at) BETWEEN ? AND ?
 	`, storeID, startDate, endDate).Scan(&cashOut).Error
 	if err != nil {
 		return nil, err
@@ -124,6 +125,7 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 		FROM transaction_payments tp
 		JOIN transactions t ON t.id = tp.transaction_id
 		WHERE t.store_id = ?
+			AND t.status != 'voided'
 			AND t.type IN ('sale', 'debt_payment')
 			AND tp.payment_method != 'debt'
 			AND DATE(t.occurred_at) BETWEEN ? AND ?
@@ -145,17 +147,17 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{}, error) {
 	// A summary for the dashboard
 	var totalSales int64
-	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalSales).Error; err != nil {
+	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalSales).Error; err != nil {
 		return nil, err
 	}
 
 	var totalExpenses int64
-	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'expense' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalExpenses).Error; err != nil {
+	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'expense' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalExpenses).Error; err != nil {
 		return nil, err
 	}
 
 	var totalTransactions int64
-	if err := s.db.Raw("SELECT COUNT(*) FROM transactions WHERE store_id = ? AND type = 'sale' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalTransactions).Error; err != nil {
+	if err := s.db.Raw("SELECT COUNT(*) FROM transactions WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalTransactions).Error; err != nil {
 		return nil, err
 	}
 
@@ -169,7 +171,7 @@ func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
 		JOIN products p ON p.id = ti.product_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND DATE(t.occurred_at) = CURRENT_DATE
+		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' AND DATE(t.occurred_at) = CURRENT_DATE
 		GROUP BY p.name
 		ORDER BY quantity DESC
 		LIMIT 5

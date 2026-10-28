@@ -102,7 +102,7 @@ func (r *transactionRepository) GetSalesAggregate(storeID uint) (*SalesAggregate
 	err := r.db.
 		Model(&models.Transaction{}).
 		Select("COALESCE(SUM(total_amount), 0) AS total_omset, COALESCE(SUM(total_cost), 0) AS total_cost, COUNT(*) AS total_count").
-		Where("store_id = ? AND type = ?", storeID, "sale").
+		Where("store_id = ? AND type = ? AND status != ?", storeID, "sale", "voided").
 		Scan(&result).Error
 	if err != nil {
 		return nil, err

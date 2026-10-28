@@ -6,12 +6,13 @@ import (
 	"app/internal/middleware"
 	"app/internal/repository"
 	"app/internal/services"
+	"app/internal/worker"
 
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
+func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Pool) {
 
 	userRepo := repository.NewUserRepository(db)
 	storeRepo := repository.NewStoreRepository(db)
@@ -25,10 +26,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	supplierRepo := repository.NewSupplierRepository(db)
 	auditRepo := repository.NewAuditRepository()
 	purchaseRepo := repository.NewPurchaseRepository(db)
+	settingsRepo := repository.NewSettingsRepository(db)
+
+	pushService := services.NewPushService(cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, "admin@antigravity.local", settingsRepo)
 
 	authService := services.NewAuthService(userRepo)
 	invService := services.NewInventoryService(db, productRepo, invRepo)
-	saleService := services.NewSaleService(db, productRepo, trxRepo)
+	saleService := services.NewSaleServiceWithNotifier(db, productRepo, trxRepo, auditRepo, pushService, pool)
 	expenseService := services.NewExpenseService(db, trxRepo)
 	customerService := services.NewCustomerService(customerRepo)
 	debtService := services.NewDebtService(db, debtRepo, trxRepo)
@@ -54,6 +58,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	purchaseHandler := handlers.NewPurchaseHandler(purchaseService)
 	syncHandler := handlers.NewSyncHandler(syncService)
 	aiHandler := handlers.NewAIHandler(llmService, productRepo, customerRepo, storeRepo, debtRepo, trxRepo, auditRepo, db)
+
+	var backupHandler *handlers.BackupHandler
+	if cfg.BackupEncryptionKey != "" {
+		if backupSvc, err := services.NewBackupService(cfg.BackupEncryptionKey); err == nil {
+			backupHandler = handlers.NewBackupHandler(backupSvc, cfg, auditRepo, db)
+		}
+	}
 
 	waHandler := handlers.NewWhatsAppHandler(nlpService, cfg.WebhookSecret)
 
@@ -92,6 +103,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 
 	tenantGroup.Get("/sales", saleHandler.GetAll)
 	tenantGroup.Post("/sales", saleHandler.Create)
+	tenantGroup.Post("/sales/:id/void", middleware.RequireRole("owner", "manager"), saleHandler.Void)
 
 	tenantGroup.Get("/expenses", middleware.RequireRole("owner", "manager"), expenseHandler.GetAll)
 	tenantGroup.Post("/expenses", middleware.RequireRole("owner", "manager"), expenseHandler.Create)
@@ -128,7 +140,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 	tenantGroup.Post("/ai/inquiry", aiHandler.CustomerInquiry)
 	tenantGroup.Post("/ai/generate-promo", aiHandler.GeneratePromo)
 
-	settingsRepo := repository.NewSettingsRepository(db)
 	settingsHandler := handlers.NewSettingsHandler(settingsRepo, cfg, auditRepo, db)
 
 	// Store name update (Owner only)
@@ -166,5 +177,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config) {
 
 	adminGroup := tenantGroup.Group("/admin", middleware.RequireRole("owner"))
 
-	_ = adminGroup
+	if backupHandler != nil {
+		tenantGroup.Post("/backups", middleware.RequireRole("owner"), backupHandler.Create)
+		tenantGroup.Get("/backups", middleware.RequireRole("owner"), backupHandler.List)
+		tenantGroup.Post("/backups/restore", middleware.RequireRole("owner"), backupHandler.Restore)
+
+		adminGroup.Post("/backups", backupHandler.Create)
+		adminGroup.Get("/backups", backupHandler.List)
+		adminGroup.Post("/backups/restore", backupHandler.Restore)
+	}
 }

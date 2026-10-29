@@ -219,6 +219,8 @@ export default function WhatsAppHubPage() {
                     </span>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={autoKasbonActive}
                       onClick={() => setAutoKasbonActive(!autoKasbonActive)}
                       className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
                         autoKasbonActive ? "bg-muted hover:bg-card/20" : "bg-border"
@@ -273,6 +275,8 @@ export default function WhatsAppHubPage() {
                     </span>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={autoClosingActive}
                       onClick={() => setAutoClosingActive(!autoClosingActive)}
                       className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
                         autoClosingActive ? "bg-muted hover:bg-card/20" : "bg-border"
@@ -327,6 +331,8 @@ export default function WhatsAppHubPage() {
                     </span>
                     <button
                       type="button"
+                      role="switch"
+                      aria-checked={autoStockActive}
                       onClick={() => setAutoStockActive(!autoStockActive)}
                       className={`w-12 h-6 flex items-center rounded-none p-1 transition-colors ${
                         autoStockActive ? "bg-muted hover:bg-card/20" : "bg-border"

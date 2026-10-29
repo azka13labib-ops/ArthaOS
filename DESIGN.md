@@ -66,3 +66,4 @@ Palet warna dibatasi pada 2 warna inti netral + 1 aksen ungu (Kalibra Purple) + 
 
 - Dilarang keras menampilkan tren grafik (sparkline) atau skor numerik (seperti "Kesehatan Bisnis: 95/100") dari data acak / mock statis tanpa sumber riil.
 - Fitur yang belum terhubung ke backend wajib diberi tanda jelas (misal: badge `Segera Hadir` atau dialog informatif), tidak boleh menggunakan delay palsu (`setTimeout`).
+

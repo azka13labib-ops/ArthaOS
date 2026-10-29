@@ -609,32 +609,35 @@ function PosContent() {
                       </p>
                       
                       {/* Quantity Controller */}
-                      <div className="flex items-center gap-1 border border-border p-0.5">
+                      <div className="flex items-center gap-1 border border-border p-1 rounded-md">
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, -1)}
-                          className="w-6 h-6 text-muted-foreground hover:bg-muted flex items-center justify-center"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded text-foreground hover:bg-muted active:scale-95 flex items-center justify-center transition-transform"
+                          aria-label="Kurangi jumlah"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-4 h-4" />
                         </button>
-                        <span className="w-6 text-center text-xs font-bold text-foreground">
+                        <span className="w-8 text-center text-sm font-bold text-foreground">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, 1)}
                           disabled={item.quantity >= item.product.current_stock}
-                          className="w-6 h-6 text-muted-foreground hover:bg-muted disabled:opacity-40 flex items-center justify-center"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded text-foreground hover:bg-muted active:scale-95 disabled:opacity-30 flex items-center justify-center transition-transform"
+                          aria-label="Tambah jumlah"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-4 h-4" />
                         </button>
-                        <div className="w-px h-4 bg-border mx-1"></div>
+                        <div className="w-px h-5 bg-border mx-1"></div>
                         <button
                           type="button"
                           onClick={() => removeFromCart(item.product.id)}
-                          className="w-6 h-6 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 flex items-center justify-center transition-colors"
+                          aria-label="Hapus dari keranjang"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1020,7 +1023,7 @@ function PosContent() {
                         setIsHistoryOpen(false);
                         setIsReceiptOpen(true);
                       }}
-                      className="h-8 gap-1 text-xs"
+                      className="h-9 px-3 gap-1.5 text-xs"
                     >
                       <Printer className="h-3.5 w-3.5" />
                       Cetak Struk

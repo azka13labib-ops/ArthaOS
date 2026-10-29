@@ -372,11 +372,11 @@ export default function AICopilotPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
+      <div className="space-y-8 w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1 flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
               <Sparkles className="w-6 h-6 text-foreground" />
               Artha AI Copilot
             </h1>

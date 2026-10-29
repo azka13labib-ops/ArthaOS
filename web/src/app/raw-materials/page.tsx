@@ -176,11 +176,11 @@ export default function RawMaterialsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 md:p-10 space-y-10 max-w-screen-2xl mx-auto w-full">
+      <div className="space-y-8 w-full">
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Bahan Baku
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -320,7 +320,7 @@ export default function RawMaterialsPage() {
                     <th className="px-6 py-4 font-medium text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {filteredMaterials.map((m) => (
                     <tr key={m.id} className="hover:bg-card transition-colors">
                       <td className="px-6 py-4 font-mono">

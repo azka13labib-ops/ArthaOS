@@ -147,11 +147,11 @@ export default function RecipesPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-screen-2xl mx-auto w-full flex flex-col h-[calc(100vh-4rem)]">
+      <div className="space-y-6 w-full flex flex-col h-[calc(100vh-4rem)]">
         {/* Header Title & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-4 border-b border-border shrink-0">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-foreground mb-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Resep Produk (BOM)
             </h1>
             <p className="text-sm text-muted-foreground">

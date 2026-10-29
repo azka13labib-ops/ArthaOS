@@ -220,12 +220,6 @@ export default function DashboardPage() {
     .reduce((sum, d) => sum + Number(d.remaining_amount), 0);
   const unpaidCount = debts.filter((d) => d.status !== "paid").length;
 
-// Mock data for sparklines
-const mockChartData1 = [{value: 50}, {value: 70}, {value: 65}, {value: 85}, {value: 80}, {value: 95}, {value: 100}];
-const mockChartData2 = [{value: 20}, {value: 30}, {value: 25}, {value: 40}, {value: 35}, {value: 45}, {value: 50}];
-const mockChartData3 = [{value: 100}, {value: 110}, {value: 105}, {value: 130}, {value: 120}, {value: 150}, {value: 160}];
-const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {value: 85}, {value: 70}, {value: 60}];
-
   const kpis: KpiCardProps[] = [
     {
       title: "Penjualan Hari Ini",
@@ -234,8 +228,6 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       icon: TrendingUp,
       accent: "border-t-primary/20",
       iconColor: "bg-primary/10 text-primary",
-      chartData: mockChartData1,
-      chartColor: "var(--color-primary)",
     },
     {
       title: "Pengeluaran Hari Ini",
@@ -244,8 +236,6 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       icon: TrendingDown,
       accent: "border-t-orange-500/50",
       iconColor: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-      chartData: mockChartData2,
-      chartColor: "#f97316",
     },
     {
       title: "Nilai Stok Keseluruhan",
@@ -254,8 +244,6 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       icon: Package,
       accent: "border-t-blue-500/50",
       iconColor: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-      chartData: mockChartData3,
-      chartColor: "#3b82f6",
     },
     {
       title: "Kasbon Tertunda",
@@ -264,8 +252,6 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
       icon: AlertTriangle,
       accent: unpaidCount > 0 ? "border-t-destructive" : "border-t-foreground/10",
       iconColor: unpaidCount > 0 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground",
-      chartData: mockChartData4,
-      chartColor: unpaidCount > 0 ? "var(--color-destructive)" : "#94a3b8",
     },
   ];
 
@@ -430,7 +416,7 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
                 </div>
               ) : recentSales.length === 0 ? (
                 // Empty state (R-27)
-                <div className="py-10 text-center text-sm text-muted-foreground border border-solid border-border rounded-lg">
+                <div className="py-10 text-center text-sm text-muted-foreground border border-border rounded-lg">
                   Belum ada transaksi hari ini
                 </div>
               ) : (
@@ -504,7 +490,7 @@ const mockChartData4 = [{value: 100}, {value: 90}, {value: 95}, {value: 80}, {va
                 </div>
               ) : lowStockProducts.length === 0 ? (
                 // Empty / good state (R-27)
-                <div className="py-10 text-center text-sm text-muted-foreground border border-solid border-border rounded-lg">
+                <div className="py-10 text-center text-sm text-muted-foreground border border-border rounded-lg">
                   Semua stok aman
                 </div>
               ) : (

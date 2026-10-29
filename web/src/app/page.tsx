@@ -65,12 +65,12 @@ export default function GatewayPage() {
             <div className="flex flex-col gap-3 w-full">
               <Link href="/login" className="w-full">
                 <button className="w-full bg-primary hover:bg-primary/90 text-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
-                  Otorisasi Sistem
+                  Masuk ke Akun
                 </button>
               </Link>
               <Link href="/register" className="w-full">
                 <button className="w-full border border-input bg-background hover:bg-accent hover:text-accent-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
-                  Registrasi Akses
+                  Daftar Akun Baru
                 </button>
               </Link>
             </div>

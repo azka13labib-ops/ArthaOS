@@ -27,9 +27,12 @@ import {
   ChefHat,
   Settings,
   Truck,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
+import { useTheme } from "@/context/ThemeContext";
 import {
   SidebarProvider,
   Sidebar,
@@ -99,6 +102,7 @@ const navGroups = ["Utama", "Operasional", "Analitik", "Pengaturan"];
 function AppSidebarInner({ pathname }: { pathname: string }) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { stores, activeStore, setActiveStore, refreshStores } = useStore();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -295,6 +299,22 @@ function AppSidebarInner({ pathname }: { pathname: string }) {
                 <Settings className="w-3.5 h-3.5 mr-2" />
                 Pengaturan
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={toggleTheme}
+                className="cursor-pointer"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 mr-2" />
+                    Mode Terang
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 mr-2" />
+                    Mode Gelap
+                  </>
+                )}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={handleLogout}
@@ -405,6 +425,7 @@ function MobileDrawer({
   pathname: string;
 }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { activeStore, stores, setActiveStore } = useStore();
   const router = useRouter();
   const [createStoreOpen, setCreateStoreOpen] = useState(false);
@@ -550,6 +571,14 @@ function MobileDrawer({
                   {user?.email}
                 </p>
               </div>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label={theme === "dark" ? "Ganti ke mode terang" : "Ganti ke mode gelap"}
+                title={theme === "dark" ? "Mode Terang" : "Mode Gelap"}
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
               <button
                 onClick={handleLogout}
                 className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

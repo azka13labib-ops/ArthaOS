@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { StoreProvider } from "@/context/StoreContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({
@@ -22,15 +23,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${inter.variable} dark`} suppressHydrationWarning>
+    <html lang="id" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen font-sans bg-background text-foreground selection:bg-primary/20 selection:text-primary" suppressHydrationWarning>
-        <AuthProvider>
-          <StoreProvider>
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
-          </StoreProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <StoreProvider>
+              <TooltipProvider>
+                {children}
+              </TooltipProvider>
+            </StoreProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
+  AlertCircle,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function ReportsPage() {
   const [stockValuation, setStockValuation] = useState<StockValuationReport | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlowReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Date Filters
   const todayStr = new Date().toISOString().split("T")[0];
@@ -61,18 +63,20 @@ export default function ReportsPage() {
   const loadReports = useCallback(async () => {
     if (!activeStore) return;
     setIsLoading(true);
+    setError(null);
 
     try {
       const [plData, stockData, cfData] = await Promise.all([
-        api.reports.profitLoss(activeStore.id, startDate, endDate).catch(() => null),
-        api.reports.stockValuation(activeStore.id).catch(() => null),
-        api.reports.cashFlow(activeStore.id, startDate, endDate).catch(() => null),
+        api.reports.profitLoss(activeStore.id, startDate, endDate),
+        api.reports.stockValuation(activeStore.id),
+        api.reports.cashFlow(activeStore.id, startDate, endDate),
       ]);
       setProfitLoss(plData);
       setStockValuation(stockData);
       setCashFlow(cfData);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to load reports:", err);
+      setError(err instanceof Error ? err.message : "Gagal memuat data laporan dari server.");
     } finally {
       setIsLoading(false);
     }
@@ -419,6 +423,21 @@ export default function ReportsPage() {
             </Button>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">Gagal Memuat Laporan</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={loadReports}>
+              Coba Lagi
+            </Button>
+          </div>
+        )}
 
         {/* Tab 1: Income Statement (Laba Rugi) */}
         {activeTab === "profit_loss" && (

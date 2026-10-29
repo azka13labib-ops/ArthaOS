@@ -109,23 +109,26 @@ export default function PurchasesPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const loadData = async () => {
     if (!activeStore) return;
     setLoading(true);
+    setPageError(null);
     try {
       const [purchasesRes, suppliersRes, productsRes, rmRes] = await Promise.all([
-        api.purchases.list(activeStore.id, 100, 0).catch(() => ({ data: [], total: 0, limit: 100, offset: 0 })),
-        api.suppliers.list(activeStore.id).catch(() => []),
-        api.products.list(activeStore.id).catch(() => []),
-        api.rawMaterials.list(activeStore.id).catch(() => []),
+        api.purchases.list(activeStore.id, 100, 0),
+        api.suppliers.list(activeStore.id),
+        api.products.list(activeStore.id),
+        api.rawMaterials.list(activeStore.id),
       ]);
       setPurchases(purchasesRes.data || []);
       setSuppliers(suppliersRes || []);
       setProducts(productsRes || []);
       setRawMaterials(rmRes || []);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to load purchase data:", err);
+      setPageError(err instanceof Error ? err.message : "Gagal memuat data faktur pembelian dari server.");
     } finally {
       setLoading(false);
     }
@@ -385,6 +388,21 @@ export default function PurchasesPage() {
           )}
         </div>
       </div>
+
+      {pageError && (
+        <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/10 text-destructive flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Gagal Memuat Data Pembelian</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{pageError}</p>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={loadData}>
+            Coba Lagi
+          </Button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

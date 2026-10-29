@@ -24,6 +24,7 @@ import {
   Search,
   Filter,
   CheckCircle2,
+  Inbox,
   Clock,
   ArrowRight,
   Layers,
@@ -176,6 +177,20 @@ export default function AICopilotPage() {
     const totalUnpaid = unpaid.reduce((sum, d) => sum + (d.remaining_amount || d.original_amount || 0), 0);
     const lowStock = products.filter((p) => p.current_stock <= 5);
 
+    // Kalkulasi Skor Kesehatan Operasional Riil (0-100) berdasarkan data aktual
+    let healthScore = 100;
+    if (lowStock.length > 0) healthScore -= Math.min(30, lowStock.length * 6);
+    if (unpaid.length > 0) healthScore -= Math.min(25, unpaid.length * 5);
+    if (totalOmset === 0) healthScore -= 20;
+    else if (grossMarginPct < 15) healthScore -= 15;
+    healthScore = Math.max(10, Math.min(100, Math.round(healthScore)));
+
+    const healthStatus =
+      healthScore >= 85 ? { label: "Prima", color: "bg-emerald-500/10 text-emerald-500" } :
+      healthScore >= 70 ? { label: "Stabil", color: "bg-blue-500/10 text-blue-500" } :
+      healthScore >= 50 ? { label: "Waspada", color: "bg-amber-500/10 text-amber-500" } :
+      { label: "Perhatian", color: "bg-rose-500/10 text-rose-500" };
+
     return {
       totalOmset,
       grossProfit,
@@ -183,6 +198,8 @@ export default function AICopilotPage() {
       totalUnpaid,
       unpaidCount: unpaid.length,
       lowStockCount: lowStock.length,
+      healthScore,
+      healthStatus,
     };
   }, [products, sales, debts]);
 
@@ -310,14 +327,11 @@ export default function AICopilotPage() {
     setTimeout(() => setCopiedPromo(false), 2000);
   };
 
-  const handleSimulateBroadcast = () => {
+  const handleCopyBroadcast = () => {
     if (!generatedPromo) return;
-    setIsBroadcasting(true);
-    setTimeout(() => {
-      setIsBroadcasting(false);
-      setBroadcastDone(true);
-      setTimeout(() => setBroadcastDone(false), 4000);
-    }, 1200);
+    navigator.clipboard.writeText(generatedPromo);
+    setBroadcastDone(true);
+    setTimeout(() => setBroadcastDone(false), 3000);
   };
 
   const quickPrompts = [
@@ -395,11 +409,11 @@ export default function AICopilotPage() {
               <ShieldCheck className="w-4 h-4 text-foreground" />
             </div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-medium text-foreground">95</span>
+              <span className="text-3xl font-medium text-foreground">{insights.healthScore}</span>
               <span className="text-sm text-muted-foreground">/ 100</span>
             </div>
-            <span className="inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold tracking-widest uppercase">
-              Prima
+            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.healthStatus.color}`}>
+              {insights.healthStatus.label}
             </span>
           </div>
 
@@ -596,25 +610,23 @@ export default function AICopilotPage() {
                         </a>
                       )}
                       <button
-                        onClick={handleSimulateBroadcast}
-                        disabled={isBroadcasting}
-                        className="flex-1 py-3 px-4 bg-background hover:bg-muted text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                        onClick={handleCopyBroadcast}
+                        className="flex-1 py-3 px-4 bg-background hover:bg-muted text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-border"
                       >
-                        {isBroadcasting ? (
+                        {broadcastDone ? (
                           <>
-                            <RefreshCw className="w-4 h-4 animate-spin" /> Memproses...
-                          </>
-                        ) : broadcastDone ? (
-                          <>
-                            <Check className="w-4 h-4" /> Terkirim!
+                            <Check className="w-4 h-4 text-emerald-500" /> Teks Siaran Disalin!
                           </>
                         ) : (
                           <>
-                            <Send className="w-4 h-4" /> Siarkan Massal
+                            <Copy className="w-4 h-4" /> Salin Pesan Siaran
                           </>
                         )}
                       </button>
                     </div>
+                    <p className="text-[11px] text-muted-foreground text-center mt-2">
+                      Gunakan tombol Uji Kirim untuk pesan langsung, atau Salin Pesan Siaran untuk broadcast WhatsApp ke pelanggan.
+                    </p>
                   </div>
                 )}
               </div>
@@ -842,7 +854,7 @@ export default function AICopilotPage() {
               <div className="border border-border bg-muted p-6 flex flex-col justify-center">
                 {!extractedOrder && !extractOrderError ? (
                   <div className="text-center text-muted-foreground space-y-3">
-                    <CheckCircle2 className="w-12 h-12 mx-auto opacity-30" />
+                    <Inbox className="w-12 h-12 mx-auto opacity-30" />
                     <p className="text-sm">Menunggu ekstraksi data pesanan.</p>
                   </div>
                 ) : extractOrderError ? (

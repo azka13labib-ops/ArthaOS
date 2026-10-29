@@ -89,8 +89,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 ${
-        checked ? "bg-violet-600" : "bg-muted"
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring/50 ${
+        checked ? "bg-primary text-primary-foreground" : "bg-muted"
       }`}
     >
       <span
@@ -465,7 +465,7 @@ export default function SettingsPage() {
         <Section title="Profil Anda" desc="Perbarui informasi pribadi pengguna aktif.">
           <Field label="Nama Lengkap">
             <input
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
               placeholder="Nama lengkap Anda"
@@ -485,7 +485,7 @@ export default function SettingsPage() {
         <Section title="Pengaturan Toko / Perusahaan" desc="Kelola identitas, alamat, dan cabang aktif Anda.">
           <Field label="Nama Toko">
             <input
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="Contoh: Warkop Azka"
@@ -493,7 +493,7 @@ export default function SettingsPage() {
           </Field>
           <Field label="Alamat Toko">
             <input
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={storeAddress}
               onChange={(e) => setStoreAddress(e.target.value)}
               placeholder="Contoh: Jl. Sudirman No. 42"
@@ -523,7 +523,7 @@ export default function SettingsPage() {
             </button>
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
             >
               <Printer className="h-4 w-4" /> Uji Cetak Struk
             </button>
@@ -557,7 +557,7 @@ export default function SettingsPage() {
             <button
               onClick={handleSyncNow}
               disabled={isSaving}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition-colors"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg text-sm font-semibold transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${isSaving ? "animate-spin" : ""}`} />
               {isSaving ? "Menyinkronkan..." : "Sync Sekarang"}
@@ -571,7 +571,7 @@ export default function SettingsPage() {
             <Field label="Tanggal Mulai Sewa">
               <input
                 type="date"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={leaseStart}
                 onChange={(e) => setLeaseStart(e.target.value)}
               />
@@ -579,7 +579,7 @@ export default function SettingsPage() {
             <Field label="Tanggal Akhir Sewa">
               <input
                 type="date"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={leaseEnd}
                 onChange={(e) => setLeaseEnd(e.target.value)}
               />
@@ -587,7 +587,7 @@ export default function SettingsPage() {
             <Field label="Biaya Sewa Bulanan (Rp)">
               <input
                 type="number"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={leaseCost}
                 onChange={(e) => setLeaseCost(Number(e.target.value))}
               />
@@ -596,7 +596,7 @@ export default function SettingsPage() {
               <input
                 type="number"
                 step="0.01"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={leaseRate}
                 onChange={(e) => setLeaseRate(Number(e.target.value))}
               />
@@ -648,7 +648,7 @@ export default function SettingsPage() {
           action={
             <button
               onClick={() => setAddBranchOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="h-4 w-4" /> Tambah Cabang
             </button>
@@ -665,7 +665,7 @@ export default function SettingsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`h-11 w-11 rounded-lg flex items-center justify-center ${isCurrent ? "bg-violet-600 text-white" : "bg-muted text-muted-foreground"}`}>
+                    <div className={`h-11 w-11 rounded-lg flex items-center justify-center ${isCurrent ? "bg-primary text-primary-foreground text-white" : "bg-muted text-muted-foreground"}`}>
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div>
@@ -690,7 +690,7 @@ export default function SettingsPage() {
                           setActiveStore(s);
                           showToast(`Beralih ke cabang ${s.name}`);
                         }}
-                        className="px-3 py-1.5 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-md transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors"
                       >
                         Buka Cabang
                       </button>
@@ -735,7 +735,7 @@ export default function SettingsPage() {
             action={
               <button
                 onClick={() => setInviteModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
               >
                 <Plus className="h-4 w-4" /> Undang Pengguna
               </button>
@@ -841,7 +841,7 @@ export default function SettingsPage() {
             action={
               <button
                 onClick={() => setAddRoleModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
               >
                 <Plus className="h-4 w-4" /> Tambah Peran Baru
               </button>
@@ -866,7 +866,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mb-3">{r.desc}</p>
                   </div>
                   {r.badge ? (
-                    <span className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold text-center w-fit">{r.badge}</span>
+                    <span className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-white text-xs font-bold text-center w-fit">{r.badge}</span>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
                       {r.perms.map((p) => (
@@ -1029,7 +1029,7 @@ export default function SettingsPage() {
               <Field label="Pesan Sambutan Header">
                 <textarea
                   rows={2}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                   placeholder="Selamat datang di resto kami! Silakan pilih hidangan favorit Anda..."
                   value={localSettings.menu_welcome_msg}
                   onChange={(e) => updateLocal({ menu_welcome_msg: e.target.value })}
@@ -1038,7 +1038,7 @@ export default function SettingsPage() {
               <Field label="Pesan Footer Nota / Penutup">
                 <textarea
                   rows={2}
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                   placeholder="Terima kasih telah berkunjung. Selamat menikmati!"
                   value={localSettings.menu_footer_msg}
                   onChange={(e) => updateLocal({ menu_footer_msg: e.target.value })}
@@ -1149,7 +1149,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground font-mono">{menuLink}</p>
                   <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors"
                   >
                     <QrCode className="h-4 w-4" /> Cetak Standee QR
                   </button>
@@ -1283,7 +1283,7 @@ export default function SettingsPage() {
               <Field label="Ambang Batas Nominal Transaksi (Rp)">
                 <input
                   type="number"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={localSettings.notif_high_transaction_amt}
                   onChange={(e) => updateLocal({ notif_high_transaction_amt: Number(e.target.value) })}
                 />
@@ -1304,7 +1304,7 @@ export default function SettingsPage() {
               <Field label="Ambang Batas Pembatalan Void (Rp)">
                 <input
                   type="number"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={localSettings.notif_high_void_amt}
                   onChange={(e) => updateLocal({ notif_high_void_amt: Number(e.target.value) })}
                 />
@@ -1335,7 +1335,7 @@ export default function SettingsPage() {
                     showToast("Browser tidak mendukung Web Push.", false);
                   }
                 }}
-                className="mt-3 px-3.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-colors"
+                className="mt-3 px-3.5 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-bold transition-colors"
               >
                 Aktifkan Notifikasi Desktop/HP
               </button>
@@ -1415,7 +1415,7 @@ export default function SettingsPage() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                         isActive
-                          ? "bg-violet-600 text-white shadow-md shadow-violet-600/20 font-semibold"
+                          ? "bg-primary text-primary-foreground text-white shadow-md shadow-primary/20 font-semibold"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       }`}
                     >
@@ -1461,7 +1461,7 @@ export default function SettingsPage() {
                   required
                   autoFocus
                   placeholder="Contoh: Warkop Azka Cabang Kemang"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={newBranchName}
                   onChange={(e) => setNewBranchName(e.target.value)}
                 />
@@ -1469,7 +1469,7 @@ export default function SettingsPage() {
               <Field label="Alamat Cabang (Opsional)">
                 <input
                   placeholder="Jl. Kemang Raya No. 12"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={newBranchAddress}
                   onChange={(e) => setNewBranchAddress(e.target.value)}
                 />
@@ -1485,7 +1485,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold"
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold"
                 >
                   {isSaving ? "Menyimpan..." : "Simpan Cabang"}
                 </button>
@@ -1509,14 +1509,14 @@ export default function SettingsPage() {
               <Field label="Nama Cabang">
                 <input
                   required
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={editBranchModal.name}
                   onChange={(e) => setEditBranchModal({ ...editBranchModal, name: e.target.value })}
                 />
               </Field>
               <Field label="Alamat Cabang">
                 <input
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={editBranchModal.address || ""}
                   onChange={(e) => setEditBranchModal({ ...editBranchModal, address: e.target.value })}
                 />
@@ -1532,7 +1532,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold"
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold"
                 >
                   {isSaving ? "Menyimpan..." : "Perbarui"}
                 </button>
@@ -1561,14 +1561,14 @@ export default function SettingsPage() {
                   type="email"
                   required
                   placeholder="kasir@toko.com"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                 />
               </Field>
               <Field label="Pilih Peran">
                 <select
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
                 >
@@ -1590,7 +1590,7 @@ export default function SettingsPage() {
                     setInviteModalOpen(false);
                   }}
                   disabled={isSaving || !inviteEmail}
-                  className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-lg font-semibold flex items-center gap-2"
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-lg font-semibold flex items-center gap-2"
                 >
                   <Mail className="h-4 w-4" /> Buat Undangan
                 </button>
@@ -1648,7 +1648,7 @@ export default function SettingsPage() {
               <button
                 onClick={updateMemberRole}
                 disabled={isSaving}
-                className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold"
+                className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold"
               >
                 {isSaving ? "Menyimpan..." : "Simpan Peran"}
               </button>
@@ -1671,7 +1671,7 @@ export default function SettingsPage() {
               <Field label="Nama Jabatan / Peran">
                 <input
                   placeholder="Contoh: Barista Lead / Supervisor"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                 />
@@ -1679,7 +1679,7 @@ export default function SettingsPage() {
               <Field label="Deskripsi">
                 <input
                   placeholder="Tanggung jawab peran ini"
-                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={newRoleDesc}
                   onChange={(e) => setNewRoleDesc(e.target.value)}
                 />
@@ -1696,14 +1696,14 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => {
-                    showToast(`Peran ${newRoleName || "Kustom"} berhasil didaftarkan!`);
+                    showToast(`Permintaan peran ${newRoleName || "Kustom"} dicatat untuk ditinjau.`);
                     setAddRoleModal(false);
                     setNewRoleName("");
                     setNewRoleDesc("");
                   }}
-                  className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold"
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold"
                 >
-                  Simpan Peran
+                  Ajukan Peran
                 </button>
               </div>
             </div>
@@ -1769,7 +1769,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold flex items-center gap-1.5"
+                className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold flex items-center gap-1.5"
               >
                 <Printer className="h-4 w-4" /> Cetak Sekarang
               </button>
@@ -1814,15 +1814,15 @@ export default function SettingsPage() {
                 <p className="text-xs text-amber-400 font-semibold">Harga Langganan</p>
                 <p className="text-xl font-bold text-amber-300">Rp 99.000 <span className="text-xs font-normal">/bulan</span></p>
               </div>
-              <button
-                onClick={() => {
-                  showToast("Mode demo: Fitur PRO telah diaktifkan untuk akun Anda!");
-                  setUpgradeProOpen(false);
-                }}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors"
+              <a
+                href={`https://wa.me/6281234567890?text=${encodeURIComponent("Halo Admin ArthaOS, saya pemilik toko " + activeStore.name + " ingin mengaktifkan paket ArthaOS PRO.")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setUpgradeProOpen(false)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"
               >
-                Aktifkan Sekarang
-              </button>
+                Hubungi Penjualan
+              </a>
             </div>
           </div>
         </div>
@@ -1940,7 +1940,7 @@ function SaveBtn({ onClick, loading, label }: { onClick: () => void; loading: bo
     <button
       onClick={onClick}
       disabled={loading}
-      className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-md shadow-violet-600/20 transition-all cursor-pointer"
+      className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-xl text-sm font-bold shadow-md shadow-primary/20 transition-all cursor-pointer"
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
       {label}

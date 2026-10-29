@@ -226,7 +226,7 @@ export default function CustomersPage() {
                     <th className="px-6 py-4 font-semibold tracking-wide text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {filteredCustomers.map((c) => {
                     const debtAmount = customerDebtMap.get(c.id) || 0;
                     const phone = c.phone_number || c.phone || "";
@@ -262,7 +262,7 @@ export default function CustomersPage() {
                               >
                                 <Button
                                   variant="outline"
-                                  className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3 text-xs shadow-sm"
+                                  className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-9 px-3.5 text-xs shadow-sm"
                                 >
                                   <MessageCircle className="w-3.5 h-3.5 mr-1.5" /> Hubungi
                                 </Button>

@@ -218,7 +218,7 @@ export default function ExpensesPage() {
                     <th className="px-6 py-4 font-semibold tracking-wide text-right">Nominal Pengeluaran</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {filteredExpenses.map((exp) => (
                     <tr key={exp.id} className="hover:bg-muted transition-colors group">
                       <td className="px-6 py-4 font-medium text-foreground">

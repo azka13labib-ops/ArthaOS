@@ -371,7 +371,7 @@ export default function InventoryPage() {
                     <th className="px-6 py-4 font-medium text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {filteredProducts.map((p) => {
                     const margin =
                       p.sell_price > 0
@@ -425,7 +425,7 @@ export default function InventoryPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="h-8 text-xs px-3"
+                              className="h-9 text-xs px-3.5"
                               onClick={() => {
                                 setSelectedProduct(p);
                                 setAdjustmentType("add");
@@ -439,11 +439,11 @@ export default function InventoryPage() {
                             </Button>
                             <button
                               type="button"
-                              className="h-8 w-8 rounded-md flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              className="h-9 w-9 rounded-md flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               onClick={() => handleViewMovements(p)}
                               title="Riwayat mutasi stok"
                             >
-                              <History className="w-3.5 h-3.5" />
+                              <History className="w-4 h-4" />
                             </button>
                           </div>
                         </td>

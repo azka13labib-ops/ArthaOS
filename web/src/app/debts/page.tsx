@@ -272,7 +272,7 @@ export default function DebtsPage() {
                     <th className="px-6 py-4 font-medium text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {filteredDebts.map((d) => {
                     const cust = customerMap.get(d.customer_id) || d.customer;
                     const isPaid = d.status === "paid";
@@ -321,7 +321,7 @@ export default function DebtsPage() {
                           {!isPaid ? (
                             <Button
                               variant="default"
-                              className="h-8 px-4 text-xs shadow-sm"
+                              className="h-9 px-4 text-xs shadow-sm"
                               onClick={() => {
                                 setSelectedDebt(d);
                                 setPayAmount(d.remaining_amount);

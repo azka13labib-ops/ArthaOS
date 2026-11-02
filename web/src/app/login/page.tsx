@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -17,16 +17,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, UserCheck } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{
+    email: string;
+    role: string;
+    store_id: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    api.settings
+      .getInvitation(inviteToken)
+      .then((data: any) => {
+        if (data && data.email) {
+          setInviteInfo(data);
+          setEmail(data.email);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal membaca undangan:", err);
+      });
+  }, [inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +61,15 @@ export default function LoginPage() {
     try {
       const res = await api.auth.login(email, password);
       if (res.token) {
+        if (inviteToken) {
+          try {
+            await api.settings.acceptInvitation(inviteToken);
+          } catch (invErr) {
+            console.error("Gagal otomatis klaim undangan saat login:", invErr);
+          }
+        }
         await login(res.token);
-        router.push("/dashboard");
+        router.push("/pos");
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Email atau kata sandi tidak valid");
@@ -62,9 +91,17 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">Masuk ke akun Anda</CardTitle>
+            <CardTitle className="text-lg font-semibold">Masuk ke ArthaOS</CardTitle>
             <CardDescription>
-              Kelola toko, stok, dan keuangan dari satu tempat.
+              {inviteInfo ? (
+                <span className="text-foreground flex items-center gap-1.5 font-medium mt-1">
+                  <UserCheck className="w-4 h-4 text-primary" />
+                  Masuk untuk menerima undangan sebagai{" "}
+                  <strong className="capitalize text-primary">{inviteInfo.role}</strong>
+                </span>
+              ) : (
+                "Masukkan kredensial akun Anda untuk melanjutkan."
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -86,7 +123,7 @@ export default function LoginPage() {
                   placeholder="nama@toko.com"
                   autoComplete="email"
                   required
-                  autoFocus
+                  autoFocus={!inviteInfo}
                 />
               </div>
 
@@ -100,6 +137,7 @@ export default function LoginPage() {
                   placeholder="Minimal 8 karakter"
                   autoComplete="current-password"
                   required
+                  autoFocus={!!inviteInfo}
                 />
               </div>
             </form>
@@ -111,12 +149,12 @@ export default function LoginPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Masuk..." : "Masuk"}
+              {isLoading ? "Memproses..." : inviteInfo ? "Masuk & Gabung Toko" : "Masuk"}
             </Button>
             <p className="text-xs text-muted-foreground text-center">
               Belum punya akun?{" "}
               <Link
-                href="/register"
+                href={inviteToken ? `/register?invite=${inviteToken}` : "/register"}
                 className="text-primary font-medium hover:underline underline-offset-4"
               >
                 Daftar sekarang
@@ -126,5 +164,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <LoginContent />
+    </Suspense>
   );
 }

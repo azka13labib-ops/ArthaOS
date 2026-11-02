@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -17,10 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, UserCheck, CheckCircle2 } from "lucide-react";
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite");
   const { login } = useAuth();
 
   const [name, setName] = useState("");
@@ -28,6 +30,26 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{
+    email: string;
+    role: string;
+    store_id: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    api.settings
+      .getInvitation(inviteToken)
+      .then((data: any) => {
+        if (data && data.email) {
+          setInviteInfo(data);
+          setEmail(data.email);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal membaca undangan:", err);
+      });
+  }, [inviteToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +68,13 @@ export default function RegisterPage() {
       const loginRes = await api.auth.login(email, password);
       if (loginRes.token) {
         await login(loginRes.token);
+        if (inviteToken) {
+          try {
+            await api.settings.acceptInvitation(inviteToken);
+          } catch (invErr) {
+            console.error("Gagal otomatis klaim undangan:", invErr);
+          }
+        }
         router.push("/dashboard");
       }
     } catch (err: unknown) {
@@ -70,7 +99,15 @@ export default function RegisterPage() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold">Buat akun baru</CardTitle>
             <CardDescription>
-              Gratis selamanya untuk satu toko. Mulai dalam 2 menit.
+              {inviteInfo ? (
+                <span className="text-foreground flex items-center gap-1.5 font-medium mt-1">
+                  <UserCheck className="w-4 h-4 text-primary" />
+                  Undangan bergabung sebagai{" "}
+                  <strong className="capitalize text-primary">{inviteInfo.role}</strong>
+                </span>
+              ) : (
+                "Gratis selamanya untuk satu toko. Mulai dalam 2 menit."
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -105,6 +142,8 @@ export default function RegisterPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@toko.com"
                   autoComplete="email"
+                  readOnly={!!inviteInfo}
+                  className={inviteInfo ? "bg-muted cursor-not-allowed opacity-90" : ""}
                   required
                 />
               </div>
@@ -130,12 +169,12 @@ export default function RegisterPage() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Mendaftar..." : "Buat Akun"}
+              {isLoading ? "Mendaftar & Menggabungkan..." : "Buat Akun & Gabung Toko"}
             </Button>
             <p className="text-xs text-muted-foreground text-center">
               Sudah punya akun?{" "}
               <Link
-                href="/login"
+                href={inviteToken ? `/login?invite=${inviteToken}` : "/login"}
                 className="text-primary font-medium hover:underline underline-offset-4"
               >
                 Masuk di sini
@@ -145,5 +184,13 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <RegisterContent />
+    </Suspense>
   );
 }

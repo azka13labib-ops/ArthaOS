@@ -142,6 +142,8 @@ export interface RecipeItem {
 
 export interface CashFlowReport {
   cash_in: number;
+  operating_expenses: number;
+  stock_purchases: number;
   cash_out: number;
   net_cash_flow: number;
   payment_methods: Array<{ method: string; amount: number }>;

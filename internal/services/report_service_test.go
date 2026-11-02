@@ -384,3 +384,115 @@ func TestReportService_CashFlow_CalculationFixture(t *testing.T) {
 	}
 }
 
+func TestReportService_CashFlow_WithStockPurchases_Fixture(t *testing.T) {
+	db := getTestDB(t)
+
+	tx := db.Begin()
+	defer tx.Rollback()
+
+	testStoreID := uint(888804)
+	todayStr := time.Now().Format("2006-01-02")
+
+	store := models.Store{
+		ID:   testStoreID,
+		Name: "Test Store FASE 2",
+	}
+	if err := tx.Create(&store).Error; err != nil {
+		t.Fatalf("failed to create test store: %v", err)
+	}
+
+	// 1 Penjualan tunai 100.000
+	trxSale := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "sale",
+		Status:      "completed",
+		TotalAmount: 100000,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxSale)
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxSale.ID,
+		PaymentMethod: "cash",
+		Amount:        100000,
+	})
+
+	// 1 Pembelian tunai lunas 500.000 (stock_purchases)
+	purchasePaid := models.Purchase{
+		StoreID:       testStoreID,
+		InvoiceNumber: "INV-PAID-001",
+		PurchaseDate:  time.Now(),
+		TotalAmount:   500000,
+		PaymentStatus: "paid",
+		PaymentMethod: "cash",
+	}
+	tx.Create(&purchasePaid)
+
+	// 1 Pembelian pending 200.000 (MUST NOT count in cash out until paid)
+	purchasePending := models.Purchase{
+		StoreID:       testStoreID,
+		InvoiceNumber: "INV-PENDING-001",
+		PurchaseDate:  time.Now(),
+		TotalAmount:   200000,
+		PaymentStatus: "pending",
+		PaymentMethod: "cash",
+	}
+	tx.Create(&purchasePending)
+
+	// 1 Biaya listrik 50.000 (operating_expenses)
+	trxExpense := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "expense",
+		Status:      "completed",
+		TotalAmount: 50000,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxExpense)
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxExpense.ID,
+		PaymentMethod: "cash",
+		Amount:        50000,
+	})
+
+	svc := services.NewReportService(tx)
+
+	// 1. Check Cash Flow
+	cf, err := svc.GetCashFlow(testStoreID, todayStr, todayStr)
+	if err != nil {
+		t.Fatalf("GetCashFlow failed: %v", err)
+	}
+
+	if cf.CashIn != 100000 {
+		t.Errorf("CashIn mismatch: expected 100000, got %d", cf.CashIn)
+	}
+	if cf.OperatingExpenses != 50000 {
+		t.Errorf("OperatingExpenses mismatch: expected 50000, got %d", cf.OperatingExpenses)
+	}
+	if cf.StockPurchases != 500000 {
+		t.Errorf("StockPurchases mismatch: expected 500000, got %d", cf.StockPurchases)
+	}
+	if cf.CashOut != 550000 {
+		t.Errorf("CashOut mismatch: expected 550000, got %d", cf.CashOut)
+	}
+	if cf.NetCashFlow != -450000 {
+		t.Errorf("NetCashFlow mismatch: expected -450000, got %d", cf.NetCashFlow)
+	}
+
+	// 2. Check Profit & Loss (P&L must NOT be affected by the 500,000 stock purchase)
+	pl, err := svc.GetProfitLoss(testStoreID, todayStr, todayStr)
+	if err != nil {
+		t.Fatalf("GetProfitLoss failed: %v", err)
+	}
+
+	if pl.GrossSales != 100000 {
+		t.Errorf("P&L GrossSales mismatch: expected 100000, got %d", pl.GrossSales)
+	}
+	if pl.Expenses != 50000 {
+		t.Errorf("P&L Expenses mismatch: expected 50000 (operational only), got %d", pl.Expenses)
+	}
+	// Net profit: 100,000 - 50,000 = 50,000 (NOT reduced by 500,000 inventory purchase!)
+	if pl.NetProfit != 50000 {
+		t.Errorf("P&L NetProfit mismatch: expected 50000, got %d", pl.NetProfit)
+	}
+}
+
+

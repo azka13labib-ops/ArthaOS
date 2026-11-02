@@ -144,7 +144,9 @@ export default function ReportsPage() {
     } else if (activeTab === "cash_flow") {
       const data = [
         { arus: "Kas Masuk (Cash In)", jumlah: cashFlow?.cash_in || 0, catatan: "Penerimaan penjualan & pelunasan kasbon" },
-        { arus: "Kas Keluar (Cash Out)", jumlah: cashFlow?.cash_out || 0, catatan: "Biaya operasional & belanja stok" },
+        { arus: "Kas Keluar: Biaya Operasional (Operating Expenses)", jumlah: cashFlow?.operating_expenses || 0, catatan: "Beban pengeluaran operasional toko" },
+        { arus: "Kas Keluar: Belanja Stok (Stock Purchases)", jumlah: cashFlow?.stock_purchases || 0, catatan: "Pembelian inventori & bahan baku (lunas)" },
+        { arus: "Total Kas Keluar (Total Cash Out)", jumlah: cashFlow?.cash_out || 0, catatan: "Total biaya operasional & belanja stok" },
         { arus: "Arus Kas Bersih (Net Cash Flow)", jumlah: cashFlow?.net_cash_flow || 0, catatan: "Selisih kas masuk - keluar" },
       ];
       exportToCSV(`Laporan_Arus_Kas_${activeStore.name}_${startDate}_${endDate}`, data, [
@@ -294,14 +296,24 @@ export default function ReportsPage() {
           </thead>
           <tbody>
             <tr>
-              <td><strong>Kas Masuk (Cash In)</strong></td>
+              <td><strong>1. Kas Masuk (Cash In)</strong></td>
               <td class="text-right font-bold" style="color: #059669;">${formatIDR(cashFlow?.cash_in || 0)}</td>
               <td>Penerimaan kas, transfer & QRIS</td>
             </tr>
             <tr>
-              <td><strong>Kas Keluar (Cash Out)</strong></td>
+              <td style="padding-left: 20px;">• Beban Operasional (Operating Expenses)</td>
+              <td class="text-right" style="color: #dc2626;">-${formatIDR(cashFlow?.operating_expenses || 0)}</td>
+              <td>Listrik, sewa, gaji, perlengkapan, dll</td>
+            </tr>
+            <tr>
+              <td style="padding-left: 20px;">• Belanja Stok Inventori (Stock Purchases)</td>
+              <td class="text-right" style="color: #dc2626;">-${formatIDR(cashFlow?.stock_purchases || 0)}</td>
+              <td>Pembelian barang & bahan baku tunai/transfer</td>
+            </tr>
+            <tr>
+              <td><strong>2. Total Kas Keluar (Total Cash Out)</strong></td>
               <td class="text-right font-bold" style="color: #dc2626;">-${formatIDR(cashFlow?.cash_out || 0)}</td>
-              <td>Pengeluaran operasional & belanja stok</td>
+              <td>Total beban operasional & belanja stok</td>
             </tr>
             <tr style="background-color: #f1f5f9;">
               <td><strong>ARUS KAS BERSIH (NET CASH FLOW)</strong></td>
@@ -595,32 +607,96 @@ export default function ReportsPage() {
 
         {/* Tab 3: Cash Flow Statement */}
         {activeTab === "cash_flow" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="p-6 border border-emerald-500/20 bg-emerald-500/5 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Total Kas Masuk (Inflow)</span>
-                <ArrowDownRight className="h-5 w-5 text-emerald-600" />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 border border-emerald-500/20 bg-emerald-500/5 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Total Kas Masuk (Inflow)</span>
+                  <ArrowDownRight className="h-5 w-5 text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-emerald-600 mt-2">{formatIDR(cashFlow?.cash_in || 0)}</h3>
+                <p className="text-xs text-muted-foreground mt-2">Penerimaan dari kasir, transfer & pelunasan kasbon</p>
               </div>
-              <h3 className="text-2xl font-bold text-emerald-600 mt-2">{formatIDR(cashFlow?.cash_in || 0)}</h3>
-              <p className="text-xs text-muted-foreground mt-2">Penerimaan dari kasir, transfer & pelunasan kasbon</p>
+
+              <div className="p-6 border border-rose-500/20 bg-rose-500/5 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-rose-500 uppercase tracking-wider">Total Kas Keluar (Outflow)</span>
+                  <ArrowUpRight className="h-5 w-5 text-rose-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-rose-500 mt-2">{formatIDR(cashFlow?.cash_out || 0)}</h3>
+                <p className="text-xs text-muted-foreground mt-2">Beban operasional & belanja stok inventori</p>
+              </div>
+
+              <div className="p-6 border border-primary/20 bg-primary/5 rounded-xl shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Arus Kas Bersih (Net Flow)</span>
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mt-2">{formatIDR(cashFlow?.net_cash_flow || 0)}</h3>
+                <p className="text-xs text-muted-foreground mt-2">Selisih likuiditas kas operasional toko</p>
+              </div>
             </div>
 
-            <div className="p-6 border border-rose-500/20 bg-rose-500/5 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-rose-500 uppercase tracking-wider">Total Kas Keluar (Outflow)</span>
-                <ArrowUpRight className="h-5 w-5 text-rose-500" />
+            <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-border">
+                <h3 className="font-bold text-base text-foreground">Rincian Arus Kas (Cash Flow Breakdown)</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Periode: {periodText}</p>
               </div>
-              <h3 className="text-2xl font-bold text-rose-500 mt-2">{formatIDR(cashFlow?.cash_out || 0)}</h3>
-              <p className="text-xs text-muted-foreground mt-2">Pengeluaran belanja inventori & biaya operasional</p>
-            </div>
 
-            <div className="p-6 border border-primary/20 bg-primary/5 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Arus Kas Bersih (Net Flow)</span>
-                <Wallet className="h-5 w-5 text-primary" />
+              <div className="p-6 space-y-4 text-sm">
+                {/* 1. Kas Masuk */}
+                <div className="flex items-center justify-between p-3.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <div>
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">1. Penerimaan Kas Masuk (Cash In)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Penerimaan penjualan kasir & pelunasan kasbon</p>
+                  </div>
+                  <span className="font-bold text-base text-emerald-600 dark:text-emerald-400">+{formatIDR(cashFlow?.cash_in || 0)}</span>
+                </div>
+
+                {/* 2a. Beban Operasional */}
+                <div className="flex items-center justify-between p-3.5 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="pl-2">
+                    <p className="font-semibold text-foreground">2a. Beban Operasional Toko (Operating Expenses)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Pengeluaran listrik, sewa, gaji, dan kebutuhan harian</p>
+                  </div>
+                  <span className="font-bold text-base text-rose-500">-{formatIDR(cashFlow?.operating_expenses || 0)}</span>
+                </div>
+
+                {/* 2b. Belanja Stok */}
+                <div className="flex items-center justify-between p-3.5 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="pl-2">
+                    <p className="font-semibold text-foreground">2b. Belanja Stok Inventori & Bahan Baku (Stock Purchases)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Pengadaan stok produk dari supplier (pembayaran lunas)</p>
+                  </div>
+                  <span className="font-bold text-base text-rose-500">-{formatIDR(cashFlow?.stock_purchases || 0)}</span>
+                </div>
+
+                {/* 2c. Total Kas Keluar */}
+                <div className="flex items-center justify-between p-3.5 rounded-lg bg-rose-500/5 border border-rose-500/20">
+                  <div>
+                    <p className="font-bold text-foreground">2. Total Kas Keluar (Total Cash Outflow)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Akumulasi beban operasional + belanja stok</p>
+                  </div>
+                  <span className="font-bold text-base text-rose-500">-{formatIDR(cashFlow?.cash_out || 0)}</span>
+                </div>
+
+                {/* 3. Arus Kas Bersih */}
+                <div
+                  className={`flex items-center justify-between p-5 rounded-xl border ${
+                    (cashFlow?.net_cash_flow || 0) >= 0
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                      : "bg-destructive/10 border-destructive/30 text-destructive"
+                  }`}
+                >
+                  <div>
+                    <p className="font-bold text-base uppercase tracking-wider">3. ARUS KAS BERSIH (NET CASH FLOW)</p>
+                    <p className="text-xs opacity-80 mt-0.5">Selisih mutasi kas masuk dikurangi total kas keluar</p>
+                  </div>
+                  <span className="font-extrabold text-2xl">
+                    {formatIDR(cashFlow?.net_cash_flow || 0)}
+                  </span>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-foreground mt-2">{formatIDR(cashFlow?.net_cash_flow || 0)}</h3>
-              <p className="text-xs text-muted-foreground mt-2">Selisih likuiditas kas operasional toko</p>
             </div>
           </div>
         )}

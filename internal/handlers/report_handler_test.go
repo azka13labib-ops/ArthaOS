@@ -64,9 +64,11 @@ func (s *stubReportService) GetCashFlow(storeID uint, startDate, endDate string)
 		return s.cfReport, nil
 	}
 	return &services.CashFlowReport{
-		CashIn:      1000000,
-		CashOut:     150000,
-		NetCashFlow: 850000,
+		CashIn:            1000000,
+		OperatingExpenses: 50000,
+		StockPurchases:    100000,
+		CashOut:           150000,
+		NetCashFlow:       850000,
 		PaymentMethods: []services.PaymentBreakdown{
 			{Method: "cash", Amount: 700000},
 			{Method: "qris", Amount: 300000},
@@ -217,10 +219,27 @@ func TestReportHandler_GetCashFlow_JSONContract(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	requiredKeys := []string{"cash_in", "cash_out", "net_cash_flow", "payment_methods"}
+	requiredKeys := []string{"cash_in", "operating_expenses", "stock_purchases", "cash_out", "net_cash_flow", "payment_methods"}
 	for _, key := range requiredKeys {
 		if _, exists := raw[key]; !exists {
 			t.Errorf("expected JSON key %q missing in CashFlow response", key)
 		}
 	}
+
+	if int64(raw["cash_in"].(float64)) != 1000000 {
+		t.Errorf("expected cash_in 1000000, got %v", raw["cash_in"])
+	}
+	if int64(raw["operating_expenses"].(float64)) != 50000 {
+		t.Errorf("expected operating_expenses 50000, got %v", raw["operating_expenses"])
+	}
+	if int64(raw["stock_purchases"].(float64)) != 100000 {
+		t.Errorf("expected stock_purchases 100000, got %v", raw["stock_purchases"])
+	}
+	if int64(raw["cash_out"].(float64)) != 150000 {
+		t.Errorf("expected cash_out 150000, got %v", raw["cash_out"])
+	}
+	if int64(raw["net_cash_flow"].(float64)) != 850000 {
+		t.Errorf("expected net_cash_flow 850000, got %v", raw["net_cash_flow"])
+	}
 }
+

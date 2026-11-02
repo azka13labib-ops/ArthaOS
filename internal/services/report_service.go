@@ -32,10 +32,12 @@ type PaymentBreakdown struct {
 }
 
 type CashFlowReport struct {
-	CashIn         int64              `json:"cash_in"`
-	CashOut        int64              `json:"cash_out"`
-	NetCashFlow    int64              `json:"net_cash_flow"`
-	PaymentMethods []PaymentBreakdown `json:"payment_methods"`
+	CashIn            int64              `json:"cash_in"`
+	OperatingExpenses int64              `json:"operating_expenses"`
+	StockPurchases    int64              `json:"stock_purchases"`
+	CashOut           int64              `json:"cash_out"`
+	NetCashFlow       int64              `json:"net_cash_flow"`
+	PaymentMethods    []PaymentBreakdown `json:"payment_methods"`
 }
 
 type TopProduct struct {
@@ -160,16 +162,31 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 		return nil, err
 	}
 
-	var cashOut int64
+	var operatingExpenses int64
 	err = s.db.Raw(`
 		SELECT COALESCE(SUM(tp.amount), 0)
 		FROM transaction_payments tp
 		JOIN transactions t ON t.id = tp.transaction_id
 		WHERE t.store_id = ? AND t.status != 'voided' AND t.type = 'expense' AND DATE(t.occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&cashOut).Error
+	`, storeID, startDate, endDate).Scan(&operatingExpenses).Error
 	if err != nil {
 		return nil, err
 	}
+
+	var stockPurchases int64
+	err = s.db.Raw(`
+		SELECT COALESCE(SUM(total_amount), 0)
+		FROM purchases
+		WHERE store_id = ?
+			AND payment_status = 'paid'
+			AND payment_method != 'debt'
+			AND DATE(purchase_date) BETWEEN ? AND ?
+	`, storeID, startDate, endDate).Scan(&stockPurchases).Error
+	if err != nil {
+		return nil, err
+	}
+
+	cashOut := operatingExpenses + stockPurchases
 
 	var paymentMethods []PaymentBreakdown
 	if err := s.db.Raw(`
@@ -189,10 +206,12 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 	netCashFlow := cashIn - cashOut
 
 	return &CashFlowReport{
-		CashIn:         cashIn,
-		CashOut:        cashOut,
-		NetCashFlow:    netCashFlow,
-		PaymentMethods: paymentMethods,
+		CashIn:            cashIn,
+		OperatingExpenses: operatingExpenses,
+		StockPurchases:    stockPurchases,
+		CashOut:           cashOut,
+		NetCashFlow:       netCashFlow,
+		PaymentMethods:    paymentMethods,
 	}, nil
 }
 

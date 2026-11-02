@@ -29,6 +29,7 @@ import {
   Truck,
   Sun,
   Moon,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
@@ -86,6 +87,13 @@ const navigation = [
     name: "AI Copilot",
     href: "/copilot",
     icon: Sparkles,
+    group: "Analitik",
+    badge: "Baru",
+  },
+  {
+    name: "Media Sosial",
+    href: "/social",
+    icon: Share2,
     group: "Analitik",
     badge: "Baru",
   },

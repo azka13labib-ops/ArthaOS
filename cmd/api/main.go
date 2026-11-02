@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -81,6 +83,15 @@ func main() {
 
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok", "version": "2.3.0"})
+	})
+
+	_ = os.MkdirAll("./uploads/posters", 0755)
+	app.Get("/uploads/*", func(c fiber.Ctx) error {
+		cleanPath := filepath.Clean(c.Params("*"))
+		if strings.Contains(cleanPath, "..") {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid file path"})
+		}
+		return c.SendFile(filepath.Join("./uploads", cleanPath))
 	})
 
 	routes.SetupRoutes(app, database.DB, cfg, workerPool)

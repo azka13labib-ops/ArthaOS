@@ -17,6 +17,10 @@ import {
   CashFlowReport,
   DashboardMetrics,
   BatchSyncResponse,
+  PosterTemplate,
+  SocialQuota,
+  GenerateCaptionResponse,
+  RenderPosterResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -539,6 +543,52 @@ export const api = {
       return request(`/stores/${storeId}/sync/batch`, {
         method: "POST",
         body: JSON.stringify(data),
+      });
+    },
+  },
+
+  social: {
+    async getTemplates(storeId: number): Promise<{ templates: PosterTemplate[]; count: number }> {
+      return request(`/stores/${storeId}/social/posters/templates`);
+    },
+    async getQuota(storeId: number): Promise<SocialQuota> {
+      return request(`/stores/${storeId}/social/quota`);
+    },
+    async generateCaption(
+      storeId: number,
+      data: {
+        product_ids?: number[];
+        goal?: string;
+        tone?: string;
+        extra_note?: string;
+      }
+    ): Promise<GenerateCaptionResponse> {
+      return request(`/stores/${storeId}/social/captions/generate`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    async renderPoster(
+      storeId: number,
+      data: {
+        template_id: string;
+        headline: string;
+        subheadline: string;
+        price_text?: string;
+        brand_color?: string;
+        image_data?: string;
+        image_url?: string;
+      }
+    ): Promise<RenderPosterResponse> {
+      return request(`/stores/${storeId}/social/posters/render`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    async setBYOK(storeId: number, apiKey: string, provider = "groq"): Promise<{ message: string }> {
+      return request(`/stores/${storeId}/social/byok`, {
+        method: "POST",
+        body: JSON.stringify({ api_key: apiKey, provider }),
       });
     },
   },

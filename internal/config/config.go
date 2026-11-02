@@ -21,8 +21,9 @@ type Config struct {
 	VAPIDPublicKey      string
 	VAPIDPrivateKey     string
 	AppBaseURL          string
-	BackupEncryptionKey string
-	BackupDir           string
+	BackupEncryptionKey      string
+	BackupDir                string
+	SocialTokenEncryptionKey string
 }
 
 func LoadConfig() Config {
@@ -53,8 +54,9 @@ func LoadConfig() Config {
 		VAPIDPublicKey:      os.Getenv("VAPID_PUBLIC_KEY"),
 		VAPIDPrivateKey:     os.Getenv("VAPID_PRIVATE_KEY"),
 		AppBaseURL:          os.Getenv("APP_BASE_URL"),
-		BackupEncryptionKey: os.Getenv("BACKUP_ENCRYPTION_KEY"),
-		BackupDir:           os.Getenv("BACKUP_DIR"),
+		BackupEncryptionKey:      os.Getenv("BACKUP_ENCRYPTION_KEY"),
+		BackupDir:                os.Getenv("BACKUP_DIR"),
+		SocialTokenEncryptionKey: os.Getenv("SOCIAL_TOKEN_ENCRYPTION_KEY"),
 	}
 
 	if len(cfg.JWTSecret) < 32 {

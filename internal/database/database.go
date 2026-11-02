@@ -51,6 +51,9 @@ func ConnectDB(dsn string) {
 		&models.Purchase{},
 		&models.PurchaseItem{},
 		&models.TransactionVoid{},
+		&models.StoreAIUsage{},
+		&models.SocialAccount{},
+		&models.SocialPost{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate failed: %v", err)

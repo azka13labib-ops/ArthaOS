@@ -277,3 +277,49 @@ export interface CreatePurchaseRequest {
     buy_price: number;
   }>;
 }
+
+export interface PosterTemplate {
+  id: string;
+  name: string;
+  category: "promo" | "new_product" | "education";
+  default_brand_color: string;
+  description: string;
+  aspect_ratio: string;
+  width: number;
+  height: number;
+}
+
+export interface SocialQuota {
+  plan: string;
+  year_month: string;
+  caption_used: number;
+  caption_limit: number;
+  post_used: number;
+  post_limit: number;
+  has_byok: boolean;
+  caption_left: number;
+  post_left: number;
+}
+
+export interface GenerateCaptionResponse {
+  caption: string;
+  hashtags: string[];
+  headline: string;
+  subheadline: string;
+  quota_left: number;
+  is_byok: boolean;
+  model?: string;
+  latency_ms?: number;
+}
+
+export interface RenderPosterResponse {
+  url: string;
+  full_url: string;
+  filename: string;
+  template_id: string;
+  width: number;
+  height: number;
+  format: string;
+  file_size: number;
+}
+

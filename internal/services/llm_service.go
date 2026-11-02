@@ -30,6 +30,7 @@ type LLMService interface {
 	ParseWhatsAppOrder(ctx context.Context, rawMessage string, catalogJSON string, customerJSON string) (map[string]interface{}, error)
 	CustomerInquiry(ctx context.Context, customerQuery string, catalogJSON string, storeName string) (*LLMResponse, error)
 	GeneratePromo(ctx context.Context, prompt string, productJSON string, storeName string, storePhone string) (*LLMResponse, error)
+	GenerateSocialCaption(ctx context.Context, input GenerateSocialCaptionInput) (*SocialCaptionResult, *LLMResponse, error)
 }
 
 type llmService struct {
@@ -374,4 +375,270 @@ ATURAN FORMAT JAWABAN SANGAT KETAT:
 		TotalTokens: 80,
 		LatencyMs:   10,
 	}, nil
+}
+
+type SocialProductDTO struct {
+	Name        string `json:"name"`
+	SellPrice   int64  `json:"price"`
+	Category    string `json:"category,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type GenerateSocialCaptionInput struct {
+	StoreName   string             `json:"store_name"`
+	Goal        string             `json:"goal"` // promo, new_product, testimonial, education
+	Tone        string             `json:"tone"` // santai, profesional, ramah
+	ExtraNote   string             `json:"extra_note"`
+	Products    []SocialProductDTO `json:"products"`
+	CustomAIKey string             `json:"custom_ai_key,omitempty"`
+}
+
+type SocialCaptionResult struct {
+	Caption     string   `json:"caption"`
+	Hashtags    []string `json:"hashtags"`
+	Headline    string   `json:"headline"`
+	Subheadline string   `json:"subheadline"`
+}
+
+func limitWords(s string, maxWords int) string {
+	s = strings.TrimSpace(s)
+	words := strings.Fields(s)
+	if len(words) <= maxWords {
+		return s
+	}
+	return strings.Join(words[:maxWords], " ")
+}
+
+func sanitizeSocialInput(s string) string {
+	s = strings.TrimSpace(s)
+	if len(s) > 1000 {
+		s = s[:1000]
+	}
+	lower := strings.ToLower(s)
+	badPhrases := []string{
+		"ignore previous", "you are now", "jailbreak", "act as",
+		"<system>", "[system]", "system:", "forget all", "disregard instructions",
+	}
+	for _, bad := range badPhrases {
+		if strings.Contains(lower, bad) {
+			s = strings.ReplaceAll(s, bad, "")
+		}
+	}
+	return strings.TrimSpace(s)
+}
+
+func generateLocalSocialCaption(input GenerateSocialCaptionInput) *SocialCaptionResult {
+	store := input.StoreName
+	if store == "" {
+		store = "Toko Kami"
+	}
+
+	prodDesc := ""
+	if len(input.Products) > 0 {
+		p := input.Products[0]
+		if p.SellPrice > 0 {
+			prodDesc = fmt.Sprintf(" seperti %s hanya Rp %d", p.Name, p.SellPrice)
+		} else {
+			prodDesc = fmt.Sprintf(" seperti %s", p.Name)
+		}
+	}
+
+	switch input.Goal {
+	case "promo":
+		return &SocialCaptionResult{
+			Headline:    limitWords("Promo Spesial Hari Ini Hemat Banget", 8),
+			Subheadline: limitWords(fmt.Sprintf("Dapatkan penawaran terbaik%s di %s", prodDesc, store), 15),
+			Caption: fmt.Sprintf("Promo spesial terbatas di %s! Nikmati produk favorit Anda%s dengan harga terbaik minggu ini.\n\nStok terbatas setiap harinya, yuk segera mampir sebelum kehabisan!", store, prodDesc),
+			Hashtags:    []string{"#promospesial", "#diskonhariini", "#umkmindonesia", "#belanjamurah", "#kulinerindonesia"},
+		}
+	case "new_product":
+		return &SocialCaptionResult{
+			Headline:    limitWords("Menu Baru Yang Wajib Dicoba", 8),
+			Subheadline: limitWords(fmt.Sprintf("Hadirkan sensasi rasa baru%s untuk Anda", prodDesc), 15),
+			Caption: fmt.Sprintf("Kabar gembira untuk Anda semua! Kini hadir menu baru pilihan di %s%s yang siap memanjakan hari Anda.\n\nKunjungi toko kami hari ini dan rasakan kesegarannya langsung!", store, prodDesc),
+			Hashtags:    []string{"#menubaru", "#produkbaru", "#kulinerenak", "#rekomendasikuliner", "#umkmbisa"},
+		}
+	case "testimonial":
+		return &SocialCaptionResult{
+			Headline:    limitWords("Kepuasan Anda Prioritas Utama Kami", 8),
+			Subheadline: limitWords(fmt.Sprintf("Terima kasih selalu setia memilih produk di %s", store), 15),
+			Caption: fmt.Sprintf("Terima kasih kepada seluruh pelanggan setia yang telah mempercayakan kebutuhan hariannya kepada %s.\n\nKami selalu berkomitmen memberikan produk terbaik dan pelayanan yang ramah untuk Anda sekeluarga.", store),
+			Hashtags:    []string{"#pelanggansetia", "#testimoni", "#tokoamanah", "#umkmindonesia", "#kualitasnomorsatu"},
+		}
+	default: // education
+		return &SocialCaptionResult{
+			Headline:    limitWords("Tips Belanja Hemat Berkualitas Toko", 8),
+			Subheadline: limitWords(fmt.Sprintf("Temukan produk terbaik dan berkualitas hanya di %s", store), 15),
+			Caption: fmt.Sprintf("Tahukah Anda? Memilih produk berkualitas adalah investasi terbaik untuk kenyamanan Anda sehari-hari.\n\nDi %s, kami selalu memastikan setiap produk yang tersedia memiliki kualitas terbaik untuk Anda.", store),
+			Hashtags:    []string{"#tipshemat", "#edukasibisniskecil", "#belanjabijak", "#kualitashebat", "#tokorumahan"},
+		}
+	}
+}
+
+func (s *llmService) GenerateSocialCaption(ctx context.Context, input GenerateSocialCaptionInput) (*SocialCaptionResult, *LLMResponse, error) {
+	cleanExtraNote := sanitizeSocialInput(input.ExtraNote)
+
+	systemPrompt := `Anda adalah copywriter profesional media sosial (Instagram) spesialis UMKM dan bisnis ritel di Indonesia.
+Tugas Anda: Menghasilkan materi postingan feed Instagram yang memikat, otentik, dan siap diterbitkan.
+
+STRUKTUR KELUARAN WAJIB (100% format JSON valid murni, tanpa backticks, tanpa markdown tambahan):
+{
+  "headline": "Judul poster (MAKSIMAL 8 KATA, memikat, to the point, TIDAK LEBAY)",
+  "subheadline": "Penjelasan poster atau ajakan bertindak (MAKSIMAL 15 KATA)",
+  "caption": "Teks postingan Instagram lengkap yang mengalir natural, menarik, dan relevan dengan audiens Indonesia",
+  "hashtags": ["#tag1", "#tag2", "#tag3"]
+}
+
+PEDOMAN COPYWRITING KETAT:
+1. Bahasa Indonesia yang natural, mengalir, dan ramah sesuai audiens lokal.
+2. Dilarang bombastis, lebay, atau over-promising ("nomor 1 di dunia", "dijamin kaya", dsb).
+3. HANYA gunakan fakta, nama produk, dan harga yang tertera di data toko. DILARANG MENGARANG diskon atau klaim yang tidak tercantum.
+4. "headline" WAJIB ringkas maksimal 8 kata (untuk ditempel pada poster grafis).
+5. "subheadline" WAJIB ringkas maksimal 15 kata.
+6. "hashtags" berisi 5-10 tag relevan berawalan tanda pagar #.`
+
+	prodJSON, _ := json.Marshal(input.Products)
+	userPrompt := fmt.Sprintf("Nama Toko: %s\nTujuan Konten: %s\nGaya Bahasa (Tone): %s\nCatatan Tambahan: %s\nData Produk Terpilih:\n%s",
+		input.StoreName, input.Goal, input.Tone, cleanExtraNote, string(prodJSON))
+
+	effectiveKey := s.groqKey
+	if input.CustomAIKey != "" {
+		effectiveKey = input.CustomAIKey
+	}
+
+	var lastErr error
+	var parsedResult SocialCaptionResult
+	var llmResp *LLMResponse
+
+	if effectiveKey != "" {
+		// Attempt up to 3 times (initial + 2 retries)
+		for attempt := 0; attempt < 3; attempt++ {
+			reqPrompt := userPrompt
+			if attempt > 0 {
+				reqPrompt = fmt.Sprintf("%s\n\n[PERINGATAN: Respons sebelumnya tidak valid. Pastikan format 100%% JSON murni dengan keys headline, subheadline, caption, hashtags!]", userPrompt)
+			}
+
+			messages := []map[string]string{
+				{"role": "system", "content": systemPrompt},
+				{"role": "user", "content": reqPrompt},
+			}
+
+			// Call Groq
+			start := time.Now()
+			reqBody := map[string]interface{}{
+				"model":           "openai/gpt-oss-120b",
+				"messages":        messages,
+				"temperature":     0.3,
+				"max_tokens":      1200,
+				"response_format": map[string]string{"type": "json_object"},
+			}
+			jsonBytes, err := json.Marshal(reqBody)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+
+			httpReq, err := http.NewRequestWithContext(ctx, "POST", "https://api.groq.com/openai/v1/chat/completions", bytes.NewBuffer(jsonBytes))
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			httpReq.Header.Set("Content-Type", "application/json")
+			httpReq.Header.Set("Authorization", "Bearer "+effectiveKey)
+
+			resp, err := s.client.Do(httpReq)
+			if err != nil {
+				lastErr = fmt.Errorf("gagal menghubungi API AI: %w", err)
+				continue
+			}
+
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("API error (%d): %s", resp.StatusCode, string(bodyBytes))
+				continue
+			}
+
+			var parsed struct {
+				ID      string `json:"id"`
+				Model   string `json:"model"`
+				Choices []struct {
+					Message struct {
+						Content string `json:"content"`
+					} `json:"message"`
+				} `json:"choices"`
+				Usage struct {
+					TotalTokens int `json:"total_tokens"`
+				} `json:"usage"`
+			}
+			if err := json.Unmarshal(bodyBytes, &parsed); err != nil {
+				lastErr = fmt.Errorf("gagal parsing respons API: %w", err)
+				continue
+			}
+
+			if len(parsed.Choices) == 0 {
+				lastErr = fmt.Errorf("tidak ada respons dari penyedia AI")
+				continue
+			}
+
+			cleanContent := strings.TrimSpace(parsed.Choices[0].Message.Content)
+			if strings.HasPrefix(cleanContent, "```json") {
+				cleanContent = strings.TrimPrefix(cleanContent, "```json")
+				cleanContent = strings.TrimSuffix(cleanContent, "```")
+				cleanContent = strings.TrimSpace(cleanContent)
+			} else if strings.HasPrefix(cleanContent, "```") {
+				cleanContent = strings.TrimPrefix(cleanContent, "```")
+				cleanContent = strings.TrimSuffix(cleanContent, "```")
+				cleanContent = strings.TrimSpace(cleanContent)
+			}
+
+			if err := json.Unmarshal([]byte(cleanContent), &parsedResult); err != nil {
+				lastErr = fmt.Errorf("respons AI bukan JSON valid: %w", err)
+				continue
+			}
+
+			if parsedResult.Headline == "" && parsedResult.Caption == "" {
+				lastErr = fmt.Errorf("isi caption dan headline dari AI kosong")
+				continue
+			}
+
+			// Clean and limit words
+			parsedResult.Headline = limitWords(parsedResult.Headline, 8)
+			parsedResult.Subheadline = limitWords(parsedResult.Subheadline, 15)
+
+			for i, tag := range parsedResult.Hashtags {
+				tag = strings.TrimSpace(tag)
+				if tag != "" && !strings.HasPrefix(tag, "#") {
+					tag = "#" + tag
+				}
+				parsedResult.Hashtags[i] = tag
+			}
+
+			latency := time.Since(start).Milliseconds()
+			llmResp = &LLMResponse{
+				Content:     cleanLLMText(cleanContent),
+				Model:       parsed.Model,
+				RequestID:   parsed.ID,
+				TotalTokens: parsed.Usage.TotalTokens,
+				LatencyMs:   latency,
+			}
+			return &parsedResult, llmResp, nil
+		}
+	}
+
+	// If no API key configured or all retries failed due to network/provider error,
+	// provide local contextual fallback in development or offline mode
+	if effectiveKey == "" {
+		fallback := generateLocalSocialCaption(input)
+		return fallback, &LLMResponse{
+			Content:     "local-generator",
+			Model:       "local-copywriter",
+			RequestID:   "local-social-001",
+			TotalTokens: 60,
+			LatencyMs:   5,
+		}, nil
+	}
+
+	return nil, nil, fmt.Errorf("Gagal membuat materi postingan media sosial setelah 3 percobaan (%v). Silakan periksa koneksi atau coba lagi.", lastErr)
 }

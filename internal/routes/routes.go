@@ -27,6 +27,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	auditRepo := repository.NewAuditRepository()
 	purchaseRepo := repository.NewPurchaseRepository(db)
 	settingsRepo := repository.NewSettingsRepository(db)
+	socialRepo := repository.NewSocialRepository(db)
 
 	pushService := services.NewPushService(cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, "admin@antigravity.local", settingsRepo)
 
@@ -58,6 +59,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	purchaseHandler := handlers.NewPurchaseHandler(purchaseService)
 	syncHandler := handlers.NewSyncHandler(syncService)
 	aiHandler := handlers.NewAIHandler(llmService, productRepo, customerRepo, storeRepo, debtRepo, trxRepo, auditRepo, db)
+
+	socialEncryptionKey := cfg.SocialTokenEncryptionKey
+	if socialEncryptionKey == "" {
+		socialEncryptionKey = cfg.BackupEncryptionKey
+	}
+	socialService := services.NewSocialService(db, socialRepo, productRepo, storeRepo, auditRepo, llmService, socialEncryptionKey, cfg.AppBaseURL, "./uploads/posters")
+	socialHandler := handlers.NewSocialHandler(socialService)
 
 	var backupHandler *handlers.BackupHandler
 	if cfg.BackupEncryptionKey != "" {
@@ -139,6 +147,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	tenantGroup.Post("/ai/parse-order", aiHandler.ParseOrder)
 	tenantGroup.Post("/ai/inquiry", aiHandler.CustomerInquiry)
 	tenantGroup.Post("/ai/generate-promo", aiHandler.GeneratePromo)
+
+	// Social Media & Content Marketing (Instagram)
+	tenantGroup.Get("/social/posters/templates", socialHandler.GetTemplates)
+	tenantGroup.Get("/social/quota", socialHandler.GetQuota)
+	tenantGroup.Post("/social/captions/generate", socialHandler.GenerateCaption)
+	tenantGroup.Post("/social/posters/render", socialHandler.RenderPoster)
+	tenantGroup.Post("/social/byok", middleware.RequireRole("owner"), socialHandler.SetBYOKKey)
 
 	settingsHandler := handlers.NewSettingsHandler(settingsRepo, cfg, auditRepo, db)
 

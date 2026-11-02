@@ -32,6 +32,9 @@ func getTestDB(t *testing.T) *gorm.DB {
 	_ = db.AutoMigrate(
 		&models.Store{},
 		&models.Product{},
+		&models.RawMaterial{},
+		&models.RecipeItem{},
+		&models.InventoryMovement{},
 		&models.Transaction{},
 		&models.TransactionItem{},
 		&models.TransactionPayment{},

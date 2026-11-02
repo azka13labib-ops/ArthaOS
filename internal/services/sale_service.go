@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -120,15 +121,38 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 				return err
 			}
 
+			costPrice := product.BuyPrice
+			if product.IsRecipeBased {
+				var recipeCost int64
+				for _, recipe := range product.RecipeItems {
+					if recipe.RawMaterial != nil {
+						recipeCost += int64(recipe.Quantity) * recipe.RawMaterial.CostPerUnit
+					} else {
+						var rmCost int64
+						if err := tx.Model(&models.RawMaterial{}).
+							Where("id = ? AND store_id = ?", recipe.RawMaterialID, storeID).
+							Select("cost_per_unit").
+							Scan(&rmCost).Error; err == nil {
+							recipeCost += int64(recipe.Quantity) * rmCost
+						}
+					}
+				}
+				if recipeCost > 0 {
+					costPrice = recipeCost
+				} else {
+					log.Printf("[WARN] Produk berbasis resep ID %d memiliki total modal resep 0 atau resep kosong, fallback ke BuyPrice: %d", product.ID, product.BuyPrice)
+				}
+			}
+
 			subtotal := product.SellPrice * int64(qty)
 			totalAmount += subtotal
-			totalCost += product.BuyPrice * int64(qty)
+			totalCost += costPrice * int64(qty)
 
 			transactionItems = append(transactionItems, models.TransactionItem{
 				ProductID: pid,
 				Quantity:  qty,
 				SellPrice: product.SellPrice,
-				CostPrice: product.BuyPrice,
+				CostPrice: costPrice,
 				Subtotal:  subtotal,
 			})
 

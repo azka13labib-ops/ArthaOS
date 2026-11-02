@@ -305,6 +305,9 @@ Semua endpoint di bawah ini mewajibkan header `Authorization: Bearer <TOKEN>` da
   }
   ```
 
+> **Catatan HPP Produk Resep:**
+> Untuk produk berbasis resep (`is_recipe_based = true`), HPP (`cost_price` pada setiap item transaksi dan akumulasi pada `total_cost`) dihitung otomatis secara snapshot dari total modal bahan baku saat transaksi dibuat (`SUM(recipe_item.quantity * raw_material.cost_per_unit)`). Transaksi historis tidak diubah jika harga bahan baku berubah di kemudian hari.
+
 ---
 
 #### 2. Transaksi Penjualan Kredit / Kasbon (Auto-Create Debt)
@@ -432,13 +435,16 @@ Semua endpoint di bawah ini mewajibkan header `Authorization: Bearer <TOKEN>` da
 * **Success Response (`200 OK`):**
   ```json
   {
-    "total_sales": 340000,
-    "total_cost": 200000,
+    "gross_sales": 340000,
+    "cogs": 200000,
     "gross_profit": 140000,
-    "total_expenses": 75000,
+    "expenses": 75000,
     "net_profit": 65000
   }
   ```
+
+> **Catatan HPP (COGS):**
+> HPP (`cogs`) dihitung dari `SUM(ti.cost_price * ti.quantity)`. Untuk produk olahan/resep, `cost_price` merupakan snapshot harga modal bahan baku saat transaksi penjualan dibuat.
 
 ---
 

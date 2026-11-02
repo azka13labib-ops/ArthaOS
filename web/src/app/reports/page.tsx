@@ -133,7 +133,9 @@ export default function ReportsPage() {
     } else if (activeTab === "stock") {
       const data = [
         { indikator: "Total Fisik Unit Produk", nilai: stockValuation?.total_inventory_items || 0 },
-        { indikator: "Nilai Aset Modal (HPP / Biaya Beli)", nilai: stockValuation?.total_asset_cost || 0 },
+        { indikator: "Nilai Aset Modal Produk Jadi (Finished Goods)", nilai: stockValuation?.product_asset_cost ?? stockValuation?.total_asset_cost ?? 0 },
+        { indikator: "Nilai Aset Modal Bahan Baku (Raw Materials)", nilai: stockValuation?.raw_material_asset_cost || 0 },
+        { indikator: "Total Nilai Aset Modal (HPP Keseluruhan)", nilai: stockValuation?.total_asset_cost || 0 },
         { indikator: "Nilai Aset Retail (Harga Jual Total)", nilai: stockValuation?.total_asset_retail || 0 },
         { indikator: "Potensi Laba Kotor Inventori", nilai: stockValuation?.potential_gross_profit || 0 },
       ];
@@ -250,9 +252,19 @@ export default function ReportsPage() {
               <td>Akumulasi kuantitas seluruh SKU</td>
             </tr>
             <tr>
-              <td>Nilai Aset Berdasarkan Harga Beli (HPP)</td>
+              <td>Nilai Aset Modal Produk Jadi (Finished Goods)</td>
+              <td class="text-right font-bold">${formatIDR(stockValuation?.product_asset_cost ?? stockValuation?.total_asset_cost ?? 0)}</td>
+              <td>Modal tertanam dalam barang dagangan siap jual</td>
+            </tr>
+            <tr>
+              <td>Nilai Aset Modal Bahan Baku (Raw Materials)</td>
+              <td class="text-right font-bold">${formatIDR(stockValuation?.raw_material_asset_cost || 0)}</td>
+              <td>Modal persediaan bahan baku & komponen resep</td>
+            </tr>
+            <tr>
+              <td>Total Nilai Aset Modal (HPP Keseluruhan)</td>
               <td class="text-right font-bold">${formatIDR(stockValuation?.total_asset_cost || 0)}</td>
-              <td>Modal tertanam dalam stok barang</td>
+              <td>Total modal aset persediaan barang & bahan baku</td>
             </tr>
             <tr>
               <td>Nilai Aset Berdasarkan Harga Jual (Retail)</td>
@@ -562,45 +574,72 @@ export default function ReportsPage() {
 
         {/* Tab 2: Stock Valuation */}
         {activeTab === "stock" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Total Fisik Barang</p>
-                <Package className="h-4 w-4 text-primary" />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Total Fisik Barang</p>
+                  <Package className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {stockValuation?.total_inventory_items ?? 0} <span className="text-sm font-normal text-muted-foreground">Unit</span>
+                </p>
               </div>
-              <p className="text-2xl font-bold text-foreground mt-2">
-                {stockValuation?.total_inventory_items ?? 0} <span className="text-sm font-normal text-muted-foreground">Unit</span>
-              </p>
+
+              <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Total Nilai Modal (Aset)</p>
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {formatIDR(stockValuation?.total_asset_cost ?? 0)}
+                </p>
+              </div>
+
+              <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Nilai Retail (Harga Jual)</p>
+                  <TrendingUp className="h-4 w-4 text-purple-500" />
+                </div>
+                <p className="text-2xl font-bold text-foreground mt-2">
+                  {formatIDR(stockValuation?.total_asset_retail ?? 0)}
+                </p>
+              </div>
+
+              <div className="p-5 border border-primary/20 rounded-xl bg-primary/5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-primary font-semibold uppercase tracking-wider text-xs">Potensi Laba Kotor</p>
+                  <PieChart className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-2xl font-bold text-primary mt-2">
+                  {formatIDR(stockValuation?.potential_gross_profit ?? 0)}
+                </p>
+              </div>
             </div>
 
-            <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Nilai Modal (HPP)</p>
-                <DollarSign className="h-4 w-4 text-blue-500" />
+            {/* Breakdown Rincian Nilai Aset Stok */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nilai Produk Jadi (Finished Goods)</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-medium">Siap Jual</span>
+                </div>
+                <h4 className="text-2xl font-bold text-foreground mt-2">
+                  {formatIDR(stockValuation?.product_asset_cost ?? stockValuation?.total_asset_cost ?? 0)}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">Modal beli barang dagangan siap jual di display/rak</p>
               </div>
-              <p className="text-2xl font-bold text-foreground mt-2">
-                {formatIDR(stockValuation?.total_asset_cost ?? 0)}
-              </p>
-            </div>
 
-            <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground font-semibold uppercase tracking-wider text-xs">Nilai Retail (Harga Jual)</p>
-                <TrendingUp className="h-4 w-4 text-purple-500" />
+              <div className="p-5 border border-border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nilai Bahan Baku (Raw Materials)</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">Bahan Olahan</span>
+                </div>
+                <h4 className="text-2xl font-bold text-foreground mt-2">
+                  {formatIDR(stockValuation?.raw_material_asset_cost ?? 0)}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">Modal persediaan bahan baku & komponen resep di dapur/gudang</p>
               </div>
-              <p className="text-2xl font-bold text-foreground mt-2">
-                {formatIDR(stockValuation?.total_asset_retail ?? 0)}
-              </p>
-            </div>
-
-            <div className="p-5 border border-primary/20 rounded-xl bg-primary/5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-primary font-semibold uppercase tracking-wider text-xs">Potensi Laba Kotor</p>
-                <PieChart className="h-4 w-4 text-primary" />
-              </div>
-              <p className="text-2xl font-bold text-primary mt-2">
-                {formatIDR(stockValuation?.potential_gross_profit ?? 0)}
-              </p>
             </div>
           </div>
         )}

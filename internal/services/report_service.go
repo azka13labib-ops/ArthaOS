@@ -17,10 +17,15 @@ type ProfitLossReport struct {
 }
 
 type StockValuationReport struct {
-	TotalInventoryItems  int64 `json:"total_inventory_items"`
-	TotalAssetCost       int64 `json:"total_asset_cost"`
-	TotalAssetRetail     int64 `json:"total_asset_retail"`
-	PotentialGrossProfit int64 `json:"potential_gross_profit"`
+	TotalInventoryItems       int64 `json:"total_inventory_items"`
+	TotalAssetCost            int64 `json:"total_asset_cost"`
+	TotalAssetRetail          int64 `json:"total_asset_retail"`
+	PotentialGrossProfit      int64 `json:"potential_gross_profit"`
+	ProductAssetCost          int64 `json:"product_asset_cost"`
+	ProductAssetRetail        int64 `json:"product_asset_retail"`
+	ProductInventoryItems     int64 `json:"product_inventory_items"`
+	RawMaterialAssetCost      int64 `json:"raw_material_asset_cost"`
+	RawMaterialInventoryItems int64 `json:"raw_material_inventory_items"`
 	// Backwards compatibility aliases
 	TotalItems int64 `json:"total_items,omitempty"`
 	TotalValue int64 `json:"total_value,omitempty"`
@@ -133,15 +138,37 @@ func (s *reportService) GetStockValuation(storeID uint) (*StockValuationReport, 
 		return nil, err
 	}
 
-	potentialGrossProfit := result.TotalAssetRetail - result.TotalAssetCost
+	var rmResult struct {
+		TotalRawMaterialItems int64
+		TotalRawMaterialCost  int64
+	}
+	err = s.db.Raw(`
+		SELECT 
+			COALESCE(SUM(current_stock), 0) as total_raw_material_items,
+			COALESCE(SUM(current_stock * cost_per_unit), 0) as total_raw_material_cost
+		FROM raw_materials
+		WHERE store_id = ?
+	`, storeID).Scan(&rmResult).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	totalAssetCost := result.TotalAssetCost + rmResult.TotalRawMaterialCost
+	potentialGrossProfit := result.TotalAssetRetail - totalAssetCost
 
 	return &StockValuationReport{
-		TotalInventoryItems:  result.TotalInventoryItems,
-		TotalAssetCost:       result.TotalAssetCost,
-		TotalAssetRetail:     result.TotalAssetRetail,
-		PotentialGrossProfit: potentialGrossProfit,
-		TotalItems:           result.TotalInventoryItems,
-		TotalValue:           result.TotalAssetCost,
+		TotalInventoryItems:       result.TotalInventoryItems,
+		TotalAssetCost:            totalAssetCost,
+		TotalAssetRetail:          result.TotalAssetRetail,
+		PotentialGrossProfit:      potentialGrossProfit,
+		ProductAssetCost:          result.TotalAssetCost,
+		ProductAssetRetail:        result.TotalAssetRetail,
+		ProductInventoryItems:     result.TotalInventoryItems,
+		RawMaterialAssetCost:      rmResult.TotalRawMaterialCost,
+		RawMaterialInventoryItems: rmResult.TotalRawMaterialItems,
+		TotalItems:                result.TotalInventoryItems,
+		TotalValue:                totalAssetCost,
 	}, nil
 }
 

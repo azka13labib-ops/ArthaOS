@@ -454,8 +454,44 @@ Semua endpoint di bawah ini mewajibkan header `Authorization: Bearer <TOKEN>` da
 * **Success Response (`200 OK`):**
   ```json
   {
-    "total_items": 121,
-    "total_value": 6050000
+    "total_inventory_items": 121,
+    "total_asset_cost": 6050000,
+    "total_asset_retail": 8500000,
+    "potential_gross_profit": 2450000,
+    "product_asset_cost": 5000000,
+    "product_asset_retail": 8500000,
+    "product_inventory_items": 121,
+    "raw_material_asset_cost": 1050000,
+    "raw_material_inventory_items": 5000
+  }
+  ```
+
+---
+
+#### 3. Laporan Arus Kas (Cash Flow)
+* **Endpoint:** `GET /api/v1/stores/:storeId/reports/cash-flow`
+* **Query Params:**
+  - `start_date`: format `YYYY-MM-DD` (contoh: `2026-01-01`)
+  - `end_date`: format `YYYY-MM-DD` (contoh: `2026-12-31`)
+* **Auth:** `Bearer Token`
+* **Success Response (`200 OK`):**
+  ```json
+  {
+    "cash_in": 15000000,
+    "operating_expenses": 2500000,
+    "stock_purchases": 5000000,
+    "cash_out": 7500000,
+    "net_cash_flow": 7500000,
+    "payment_methods": [
+      {
+        "method": "cash",
+        "amount": 10000000
+      },
+      {
+        "method": "qris",
+        "amount": 5000000
+      }
+    ]
   }
   ```
 

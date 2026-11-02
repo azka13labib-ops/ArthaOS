@@ -689,6 +689,46 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "8.3 Cash Flow Report",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stores/{{storeId}}/reports/cash-flow?start_date=2026-01-01&end_date=2026-12-31",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{storeId}}",
+								"reports",
+								"cash-flow"
+							],
+							"query": [
+								{
+									"key": "start_date",
+									"value": "2026-01-01"
+								},
+								{
+									"key": "end_date",
+									"value": "2026-12-31"
+								}
+							]
+						}
+					}
 				}
 			]
 		},

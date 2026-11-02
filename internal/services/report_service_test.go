@@ -619,4 +619,282 @@ func TestReportService_SupplierDebtRepayment_Fixture(t *testing.T) {
 	}
 }
 
+func TestReportService_StockValuation_WithRawMaterials_Fixture(t *testing.T) {
+	db := getTestDB(t)
+
+	tx := db.Begin()
+	defer tx.Rollback()
+
+	testStoreID := uint(888807)
+	otherStoreID := uint(888808)
+
+	// Create test stores
+	tx.Create(&models.Store{ID: testStoreID, Name: "Store Resep & Retail"})
+	tx.Create(&models.Store{ID: otherStoreID, Name: "Store Lain (Isolation)"})
+
+	// Products for testStoreID:
+	// P1: stock 10, buy 5,000, sell 8,000 -> cost 50,000, retail 80,000
+	p1 := models.Product{
+		StoreID:      testStoreID,
+		Name:         "Product A",
+		SKU:          "SKU-PA-888807",
+		CurrentStock: 10,
+		BuyPrice:     5000,
+		SellPrice:    8000,
+		IsActive:     true,
+	}
+	// P2: stock 5, buy 10,000, sell 15,000 -> cost 50,000, retail 75,000
+	p2 := models.Product{
+		StoreID:      testStoreID,
+		Name:         "Product B",
+		SKU:          "SKU-PB-888807",
+		CurrentStock: 5,
+		BuyPrice:     10000,
+		SellPrice:    15000,
+		IsActive:     true,
+	}
+	// P3 (Inactive): must be excluded
+	pInactive := models.Product{
+		StoreID:      testStoreID,
+		Name:         "Product Inactive",
+		SKU:          "SKU-PINACT-888807",
+		CurrentStock: 100,
+		BuyPrice:     1000,
+		SellPrice:    2000,
+		IsActive:     false,
+	}
+	// Other store product: must be isolated
+	pOther := models.Product{
+		StoreID:      otherStoreID,
+		Name:         "Other Store Product",
+		SKU:          "SKU-OTHER-888808",
+		CurrentStock: 50,
+		BuyPrice:     20000,
+		SellPrice:    30000,
+		IsActive:     true,
+	}
+
+	tx.Create(&p1)
+	tx.Create(&p2)
+	tx.Create(&pInactive)
+	tx.Model(&pInactive).Update("is_active", false)
+	tx.Create(&pOther)
+
+	// Raw materials for testStoreID:
+	// RM1 (Kopi): stock 100, cost_per_unit 500 -> cost 50,000
+	rm1 := models.RawMaterial{
+		StoreID:      testStoreID,
+		Name:         "Biji Kopi",
+		SKU:          "RM-KOPI-888807",
+		Unit:         "gram",
+		CostPerUnit:  500,
+		CurrentStock: 100,
+	}
+	// RM2 (Susu): stock 200, cost_per_unit 50 -> cost 10,000
+	rm2 := models.RawMaterial{
+		StoreID:      testStoreID,
+		Name:         "Susu UHT",
+		SKU:          "RM-SUSU-888807",
+		Unit:         "ml",
+		CostPerUnit:  50,
+		CurrentStock: 200,
+	}
+	// Other store raw material: must be isolated
+	rmOther := models.RawMaterial{
+		StoreID:      otherStoreID,
+		Name:         "Other RM",
+		SKU:          "RM-OTHER-888808",
+		Unit:         "pcs",
+		CostPerUnit:  5000,
+		CurrentStock: 10,
+	}
+
+	tx.Create(&rm1)
+	tx.Create(&rm2)
+	tx.Create(&rmOther)
+
+	reportSvc := services.NewReportService(tx)
+	valuation, err := reportSvc.GetStockValuation(testStoreID)
+	if err != nil {
+		t.Fatalf("GetStockValuation failed: %v", err)
+	}
+
+	// 1. Verifikasi Nilai Produk Jadi:
+	// ProductAssetCost = 50,000 + 50,000 = 100,000
+	if valuation.ProductAssetCost != 100000 {
+		t.Errorf("ProductAssetCost mismatch: expected 100000, got %d", valuation.ProductAssetCost)
+	}
+	// ProductAssetRetail = 80,000 + 75,000 = 155,000
+	if valuation.ProductAssetRetail != 155000 {
+		t.Errorf("ProductAssetRetail mismatch: expected 155000, got %d", valuation.ProductAssetRetail)
+	}
+	if valuation.ProductInventoryItems != 15 {
+		t.Errorf("ProductInventoryItems mismatch: expected 15, got %d", valuation.ProductInventoryItems)
+	}
+
+	// 2. Verifikasi Nilai Bahan Baku:
+	// RawMaterialAssetCost = (100 * 500) + (200 * 50) = 50,000 + 10,000 = 60,000
+	if valuation.RawMaterialAssetCost != 60000 {
+		t.Errorf("RawMaterialAssetCost mismatch: expected 60000, got %d", valuation.RawMaterialAssetCost)
+	}
+	if valuation.RawMaterialInventoryItems != 300 {
+		t.Errorf("RawMaterialInventoryItems mismatch: expected 300, got %d", valuation.RawMaterialInventoryItems)
+	}
+
+	// 3. Verifikasi Total Keseluruhan:
+	// TotalAssetCost = ProductAssetCost (100,000) + RawMaterialAssetCost (60,000) = 160,000
+	if valuation.TotalAssetCost != 160000 {
+		t.Errorf("TotalAssetCost mismatch: expected 160000, got %d", valuation.TotalAssetCost)
+	}
+	if valuation.TotalAssetRetail != 155000 {
+		t.Errorf("TotalAssetRetail mismatch: expected 155000, got %d", valuation.TotalAssetRetail)
+	}
+	// PotentialGrossProfit = 155,000 - 160,000 = -5,000
+	if valuation.PotentialGrossProfit != -5000 {
+		t.Errorf("PotentialGrossProfit mismatch: expected -5000, got %d", valuation.PotentialGrossProfit)
+	}
+	if valuation.TotalInventoryItems != 15 {
+		t.Errorf("TotalInventoryItems mismatch: expected 15, got %d", valuation.TotalInventoryItems)
+	}
+	if valuation.TotalValue != 160000 {
+		t.Errorf("TotalValue alias mismatch: expected 160000, got %d", valuation.TotalValue)
+	}
+}
+
+func TestReportService_VoidedTransactions_Consistency_Fixture(t *testing.T) {
+	db := getTestDB(t)
+
+	tx := db.Begin()
+	defer tx.Rollback()
+
+	testStoreID := uint(888809)
+	todayStr := time.Now().Format("2006-01-02")
+
+	tx.Create(&models.Store{ID: testStoreID, Name: "Store Void Test"})
+
+	// Sale 1: Valid (Completed) -> Gross 100,000, COGS 60,000
+	trxSaleValid := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "sale",
+		Status:      "completed",
+		TotalAmount: 100000,
+		TotalCost:   60000,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxSaleValid)
+	tx.Create(&models.TransactionItem{
+		TransactionID: trxSaleValid.ID,
+		ProductID:     1,
+		Quantity:      1,
+		SellPrice:     100000,
+		CostPrice:     60000,
+		Subtotal:      100000,
+	})
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxSaleValid.ID,
+		PaymentMethod: "cash",
+		Amount:        100000,
+	})
+
+	// Sale 2: Voided -> Gross 50,000, COGS 30,000 (MUST BE IGNORED)
+	trxSaleVoid := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "sale",
+		Status:      "voided",
+		TotalAmount: 50000,
+		TotalCost:   30000,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxSaleVoid)
+	tx.Create(&models.TransactionItem{
+		TransactionID: trxSaleVoid.ID,
+		ProductID:     2,
+		Quantity:      1,
+		SellPrice:     50000,
+		CostPrice:     30000,
+		Subtotal:      50000,
+	})
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxSaleVoid.ID,
+		PaymentMethod: "cash",
+		Amount:        50000,
+	})
+
+	// Expense 1: Valid (Completed) -> 20,000
+	trxExpValid := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "expense",
+		Status:      "completed",
+		TotalAmount: 20000,
+		TotalCost:   0,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxExpValid)
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxExpValid.ID,
+		PaymentMethod: "cash",
+		Amount:        20000,
+	})
+
+	// Expense 2: Voided -> 15,000 (MUST BE IGNORED)
+	trxExpVoid := models.Transaction{
+		StoreID:     testStoreID,
+		Type:        "expense",
+		Status:      "voided",
+		TotalAmount: 15000,
+		TotalCost:   0,
+		OccurredAt:  time.Now(),
+	}
+	tx.Create(&trxExpVoid)
+	tx.Create(&models.TransactionPayment{
+		TransactionID: trxExpVoid.ID,
+		PaymentMethod: "cash",
+		Amount:        15000,
+	})
+
+	reportSvc := services.NewReportService(tx)
+
+	// Test Profit Loss
+	pl, err := reportSvc.GetProfitLoss(testStoreID, todayStr, todayStr)
+	if err != nil {
+		t.Fatalf("GetProfitLoss failed: %v", err)
+	}
+
+	if pl.GrossSales != 100000 {
+		t.Errorf("pl.GrossSales mismatch: expected 100000 (void ignored), got %d", pl.GrossSales)
+	}
+	if pl.COGS != 60000 {
+		t.Errorf("pl.COGS mismatch: expected 60000 (void ignored), got %d", pl.COGS)
+	}
+	if pl.GrossProfit != 40000 {
+		t.Errorf("pl.GrossProfit mismatch: expected 40000, got %d", pl.GrossProfit)
+	}
+	if pl.Expenses != 20000 {
+		t.Errorf("pl.Expenses mismatch: expected 20000 (void ignored), got %d", pl.Expenses)
+	}
+	if pl.NetProfit != 20000 {
+		t.Errorf("pl.NetProfit mismatch: expected 20000, got %d", pl.NetProfit)
+	}
+
+	// Test Cash Flow
+	cf, err := reportSvc.GetCashFlow(testStoreID, todayStr, todayStr)
+	if err != nil {
+		t.Fatalf("GetCashFlow failed: %v", err)
+	}
+
+	if cf.CashIn != 100000 {
+		t.Errorf("cf.CashIn mismatch: expected 100000 (void ignored), got %d", cf.CashIn)
+	}
+	if cf.OperatingExpenses != 20000 {
+		t.Errorf("cf.OperatingExpenses mismatch: expected 20000 (void ignored), got %d", cf.OperatingExpenses)
+	}
+	if cf.CashOut != 20000 {
+		t.Errorf("cf.CashOut mismatch: expected 20000, got %d", cf.CashOut)
+	}
+	if cf.NetCashFlow != 80000 {
+		t.Errorf("cf.NetCashFlow mismatch: expected 80000, got %d", cf.NetCashFlow)
+	}
+}
+
+
 

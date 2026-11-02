@@ -47,12 +47,17 @@ func (s *stubReportService) GetStockValuation(storeID uint) (*services.StockValu
 		return s.stockReport, nil
 	}
 	return &services.StockValuationReport{
-		TotalInventoryItems:  50,
-		TotalAssetCost:       500000,
-		TotalAssetRetail:     850000,
-		PotentialGrossProfit: 350000,
-		TotalItems:           50,
-		TotalValue:           500000,
+		TotalInventoryItems:       50,
+		TotalAssetCost:            500000,
+		TotalAssetRetail:          850000,
+		PotentialGrossProfit:      350000,
+		ProductAssetCost:          400000,
+		ProductAssetRetail:        850000,
+		ProductInventoryItems:     50,
+		RawMaterialAssetCost:      100000,
+		RawMaterialInventoryItems: 200,
+		TotalItems:                50,
+		TotalValue:                500000,
 	}, nil
 }
 
@@ -173,6 +178,8 @@ func TestReportHandler_GetStockValuation_JSONContract(t *testing.T) {
 		"total_asset_cost",
 		"total_asset_retail",
 		"potential_gross_profit",
+		"product_asset_cost",
+		"raw_material_asset_cost",
 	}
 	for _, key := range requiredKeys {
 		if _, exists := raw[key]; !exists {
@@ -188,6 +195,12 @@ func TestReportHandler_GetStockValuation_JSONContract(t *testing.T) {
 	}
 	if int64(raw["total_asset_retail"].(float64)) != 850000 {
 		t.Errorf("expected total_asset_retail 850000, got %v", raw["total_asset_retail"])
+	}
+	if int64(raw["product_asset_cost"].(float64)) != 400000 {
+		t.Errorf("expected product_asset_cost 400000, got %v", raw["product_asset_cost"])
+	}
+	if int64(raw["raw_material_asset_cost"].(float64)) != 100000 {
+		t.Errorf("expected raw_material_asset_cost 100000, got %v", raw["raw_material_asset_cost"])
 	}
 	if int64(raw["potential_gross_profit"].(float64)) != 350000 {
 		t.Errorf("expected potential_gross_profit 350000, got %v", raw["potential_gross_profit"])

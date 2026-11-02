@@ -115,6 +115,13 @@ export interface StockValuationReport {
   total_asset_cost: number;
   total_asset_retail: number;
   potential_gross_profit: number;
+  product_asset_cost?: number;
+  product_asset_retail?: number;
+  product_inventory_items?: number;
+  raw_material_asset_cost?: number;
+  raw_material_inventory_items?: number;
+  total_items?: number;
+  total_value?: number;
 }
 
 export interface CartItem {

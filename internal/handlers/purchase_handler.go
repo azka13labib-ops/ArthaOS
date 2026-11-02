@@ -93,3 +93,63 @@ func (h *PurchaseHandler) GetByID(c fiber.Ctx) error {
 
 	return c.JSON(purchase)
 }
+
+func (h *PurchaseHandler) AddPayment(c fiber.Ctx) error {
+	storeID, ok := c.Locals("store_id").(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized", "code": "UNAUTHORIZED"})
+	}
+
+	idParam := c.Params("id")
+	purchaseID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid purchase ID", "code": "INVALID_ID"})
+	}
+
+	var req services.CreateSupplierPaymentRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body", "code": "INVALID_BODY"})
+	}
+
+	if req.Amount <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Nominal pembayaran harus lebih dari 0",
+			"code":  "INVALID_AMOUNT",
+		})
+	}
+
+	payment, err := h.purchaseService.AddPayment(storeID, uint(purchaseID), req)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+			"code":  "PAYMENT_FAILED",
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(payment)
+}
+
+func (h *PurchaseHandler) GetPayments(c fiber.Ctx) error {
+	storeID, ok := c.Locals("store_id").(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized", "code": "UNAUTHORIZED"})
+	}
+
+	idParam := c.Params("id")
+	purchaseID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid purchase ID", "code": "INVALID_ID"})
+	}
+
+	payments, err := h.purchaseService.GetPayments(storeID, uint(purchaseID))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Gagal mengambil riwayat pembayaran",
+			"code":  "FETCH_FAILED",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": payments,
+	})
+}

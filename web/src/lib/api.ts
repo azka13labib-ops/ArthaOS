@@ -22,6 +22,7 @@ import {
   GenerateCaptionResponse,
   RenderPosterResponse,
   SocialAccount,
+  SupplierPayment,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -536,6 +537,19 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       });
+    },
+    async addPayment(
+      storeId: number,
+      purchaseId: number,
+      data: { amount: number; payment_method?: string; payment_date?: string; notes?: string }
+    ): Promise<SupplierPayment> {
+      return request(`/stores/${storeId}/purchases/${purchaseId}/payments`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    async getPayments(storeId: number, purchaseId: number): Promise<{ data: SupplierPayment[] }> {
+      return request(`/stores/${storeId}/purchases/${purchaseId}/payments`);
     },
   },
 

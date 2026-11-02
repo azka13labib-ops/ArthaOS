@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"app/internal/models"
+	"app/internal/repository"
 	"app/internal/services"
 
 	"github.com/joho/godotenv"
@@ -27,6 +28,17 @@ func getTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Skipf("cannot connect to database: %v", err)
 	}
+
+	_ = db.AutoMigrate(
+		&models.Store{},
+		&models.Product{},
+		&models.Transaction{},
+		&models.TransactionItem{},
+		&models.TransactionPayment{},
+		&models.Purchase{},
+		&models.PurchaseItem{},
+		&models.SupplierPayment{},
+	)
 
 	return db
 }
@@ -492,6 +504,115 @@ func TestReportService_CashFlow_WithStockPurchases_Fixture(t *testing.T) {
 	// Net profit: 100,000 - 50,000 = 50,000 (NOT reduced by 500,000 inventory purchase!)
 	if pl.NetProfit != 50000 {
 		t.Errorf("P&L NetProfit mismatch: expected 50000, got %d", pl.NetProfit)
+	}
+}
+
+func TestReportService_SupplierDebtRepayment_Fixture(t *testing.T) {
+	db := getTestDB(t)
+
+	tx := db.Begin()
+	defer tx.Rollback()
+
+	testStoreID := uint(888805)
+
+	store := models.Store{
+		ID:   testStoreID,
+		Name: "Test Store FASE 3",
+	}
+	if err := tx.Create(&store).Error; err != nil {
+		t.Fatalf("failed to create test store: %v", err)
+	}
+
+	dateJan01, _ := time.Parse("2006-01-02", "2026-01-01")
+
+	// 1. Pembelian tempo 1.000.000 pada 1 Januari (payment_status = 'pending')
+	purchase := models.Purchase{
+		StoreID:       testStoreID,
+		InvoiceNumber: "INV-TEMPO-001",
+		PurchaseDate:  dateJan01,
+		TotalAmount:   1000000,
+		PaymentStatus: "pending",
+		PaymentMethod: "debt",
+	}
+	tx.Create(&purchase)
+
+	purchaseRepo := repository.NewPurchaseRepository(tx)
+	purchaseSvc := services.NewPurchaseService(tx, purchaseRepo)
+	reportSvc := services.NewReportService(tx)
+
+	// Sebelum ada pembayaran:
+	// Laporan 1–31 Januari: kas keluar belanja stok = 0 (belum dibayar)
+	cfPre, err := reportSvc.GetCashFlow(testStoreID, "2026-01-01", "2026-01-31")
+	if err != nil {
+		t.Fatalf("GetCashFlow pre failed: %v", err)
+	}
+	if cfPre.StockPurchases != 0 {
+		t.Errorf("expected 0 stock purchases before payment, got %d", cfPre.StockPurchases)
+	}
+
+	// 2. Cicilan 400.000 pada 10 Januari via AddPayment
+	_, err = purchaseSvc.AddPayment(testStoreID, purchase.ID, services.CreateSupplierPaymentRequest{
+		Amount:        400000,
+		PaymentMethod: "transfer",
+		PaymentDate:   "2026-01-10",
+		Notes:         "Cicilan 1",
+	})
+	if err != nil {
+		t.Fatalf("AddPayment cicilan 1 failed: %v", err)
+	}
+
+	// 3. Pelunasan 600.000 pada 20 Januari via AddPayment
+	_, err = purchaseSvc.AddPayment(testStoreID, purchase.ID, services.CreateSupplierPaymentRequest{
+		Amount:        600000,
+		PaymentMethod: "cash",
+		PaymentDate:   "2026-01-20",
+		Notes:         "Pelunasan",
+	})
+	if err != nil {
+		t.Fatalf("AddPayment pelunasan failed: %v", err)
+	}
+
+	// Verifikasi purchase status menjadi 'paid' setelah pelunasan penuh
+	var updatedPurchase models.Purchase
+	tx.First(&updatedPurchase, purchase.ID)
+	if updatedPurchase.PaymentStatus != "paid" {
+		t.Errorf("expected purchase payment_status 'paid', got %q", updatedPurchase.PaymentStatus)
+	}
+
+	// 4. Laporan 1–15 Januari: kas keluar hanya 400.000
+	cfPart1, err := reportSvc.GetCashFlow(testStoreID, "2026-01-01", "2026-01-15")
+	if err != nil {
+		t.Fatalf("GetCashFlow part 1 failed: %v", err)
+	}
+	if cfPart1.StockPurchases != 400000 {
+		t.Errorf("Period 1-15 Jan: expected StockPurchases 400000, got %d", cfPart1.StockPurchases)
+	}
+
+	// 5. Laporan 16–31 Januari: kas keluar hanya 600.000
+	cfPart2, err := reportSvc.GetCashFlow(testStoreID, "2026-01-16", "2026-01-31")
+	if err != nil {
+		t.Fatalf("GetCashFlow part 2 failed: %v", err)
+	}
+	if cfPart2.StockPurchases != 600000 {
+		t.Errorf("Period 16-31 Jan: expected StockPurchases 600000, got %d", cfPart2.StockPurchases)
+	}
+
+	// 6. Laporan 1–31 Januari: total kas keluar 1.000.000
+	cfFull, err := reportSvc.GetCashFlow(testStoreID, "2026-01-01", "2026-01-31")
+	if err != nil {
+		t.Fatalf("GetCashFlow full failed: %v", err)
+	}
+	if cfFull.StockPurchases != 1000000 {
+		t.Errorf("Period 1-31 Jan: expected StockPurchases 1000000, got %d", cfFull.StockPurchases)
+	}
+
+	// 7. Di semua periode, laba rugi TIDAK terpengaruh pembayaran utang ini
+	plFull, err := reportSvc.GetProfitLoss(testStoreID, "2026-01-01", "2026-01-31")
+	if err != nil {
+		t.Fatalf("GetProfitLoss failed: %v", err)
+	}
+	if plFull.Expenses != 0 {
+		t.Errorf("P&L Expenses must remain 0, got %d", plFull.Expenses)
 	}
 }
 

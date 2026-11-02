@@ -261,6 +261,18 @@ export interface Purchase {
   updated_at?: string;
   supplier?: Supplier;
   items?: PurchaseItem[];
+  payments?: SupplierPayment[];
+}
+
+export interface SupplierPayment {
+  id: number;
+  store_id: number;
+  purchase_id: number;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  notes?: string;
+  created_at: string;
 }
 
 export interface CreatePurchaseRequest {

@@ -58,6 +58,7 @@ func (r *purchaseRepository) GetByID(id uint, storeID uint) (*models.Purchase, e
 		Preload("Supplier").
 		Preload("Items.Product").
 		Preload("Items.RawMaterial").
+		Preload("Payments").
 		First(&purchase).Error
 	if err != nil {
 		return nil, err

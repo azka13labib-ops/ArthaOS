@@ -32,10 +32,19 @@ type CreatePurchaseRequest struct {
 	Items         []CreatePurchaseItemRequest `json:"items"`
 }
 
+type CreateSupplierPaymentRequest struct {
+	Amount        int64  `json:"amount" validate:"required,gt=0"`
+	PaymentMethod string `json:"payment_method"`
+	PaymentDate   string `json:"payment_date"`
+	Notes         string `json:"notes"`
+}
+
 type PurchaseService interface {
 	Create(storeID uint, req CreatePurchaseRequest) (*models.Purchase, error)
 	List(storeID uint, limit, offset int) ([]models.Purchase, int64, error)
 	GetByID(id uint, storeID uint) (*models.Purchase, error)
+	AddPayment(storeID uint, purchaseID uint, req CreateSupplierPaymentRequest) (*models.SupplierPayment, error)
+	GetPayments(storeID uint, purchaseID uint) ([]models.SupplierPayment, error)
 }
 
 type purchaseService struct {
@@ -230,4 +239,85 @@ func (s *purchaseService) List(storeID uint, limit, offset int) ([]models.Purcha
 
 func (s *purchaseService) GetByID(id uint, storeID uint) (*models.Purchase, error) {
 	return s.purchaseRepo.GetByID(id, storeID)
+}
+
+func (s *purchaseService) AddPayment(storeID uint, purchaseID uint, req CreateSupplierPaymentRequest) (*models.SupplierPayment, error) {
+	if req.Amount <= 0 {
+		return nil, errors.New("nominal pembayaran harus lebih dari 0")
+	}
+
+	paymentMethod := strings.ToLower(strings.TrimSpace(req.PaymentMethod))
+	if paymentMethod == "" {
+		paymentMethod = "cash"
+	}
+
+	paymentDate := time.Now()
+	if req.PaymentDate != "" {
+		if t, err := time.Parse(time.RFC3339, req.PaymentDate); err == nil {
+			paymentDate = t
+		} else if t, err := time.Parse("2006-01-02", req.PaymentDate); err == nil {
+			paymentDate = t
+		}
+	}
+
+	var payment *models.SupplierPayment
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		var purchase models.Purchase
+		if err := tx.Where("id = ? AND store_id = ?", purchaseID, storeID).First(&purchase).Error; err != nil {
+			return errors.New("data faktur pembelian tidak ditemukan")
+		}
+
+		// Calculate existing total payments for this purchase
+		var existingPaid int64
+		if err := tx.Model(&models.SupplierPayment{}).
+			Where("purchase_id = ? AND store_id = ?", purchaseID, storeID).
+			Select("COALESCE(SUM(amount), 0)").
+			Scan(&existingPaid).Error; err != nil {
+			return err
+		}
+
+		remaining := purchase.TotalAmount - existingPaid
+		if remaining <= 0 {
+			return errors.New("faktur pembelian ini sudah lunas")
+		}
+
+		payment = &models.SupplierPayment{
+			StoreID:       storeID,
+			PurchaseID:    purchaseID,
+			Amount:        req.Amount,
+			PaymentMethod: paymentMethod,
+			PaymentDate:   paymentDate,
+			Notes:         strings.TrimSpace(req.Notes),
+		}
+
+		if err := tx.Create(payment).Error; err != nil {
+			return err
+		}
+
+		newTotalPaid := existingPaid + req.Amount
+		if newTotalPaid >= purchase.TotalAmount {
+			if err := tx.Model(&models.Purchase{}).
+				Where("id = ? AND store_id = ?", purchaseID, storeID).
+				Update("payment_status", "paid").Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return payment, nil
+}
+
+func (s *purchaseService) GetPayments(storeID uint, purchaseID uint) ([]models.SupplierPayment, error) {
+	var payments []models.SupplierPayment
+	err := s.db.Where("purchase_id = ? AND store_id = ?", purchaseID, storeID).
+		Order("payment_date ASC, id ASC").
+		Find(&payments).Error
+	return payments, err
 }

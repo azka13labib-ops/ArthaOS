@@ -72,6 +72,12 @@ export default function PurchasesPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [paymentNotes, setPaymentNotes] = useState<string>("");
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
   // Purchase Form State
   const [purchaseForm, setPurchaseForm] = useState<{
@@ -303,6 +309,38 @@ export default function PurchasesPage() {
       setErrorMsg(err.message || "Gagal menyimpan faktur pembelian");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleOpenPayment = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    const totalPaid = purchase.payments?.reduce((s, p) => s + p.amount, 0) || 0;
+    const remaining = Math.max(0, purchase.total_amount - totalPaid);
+    setPaymentAmount(remaining > 0 ? remaining : purchase.total_amount);
+    setPaymentMethod("cash");
+    setPaymentDate(new Date().toISOString().split("T")[0]);
+    setPaymentNotes("Pelunasan utang pembelian inventori");
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeStore || !selectedPurchase || paymentAmount <= 0) return;
+    setIsSubmittingPayment(true);
+    try {
+      await api.purchases.addPayment(activeStore.id, selectedPurchase.id, {
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        payment_date: paymentDate,
+        notes: paymentNotes,
+      });
+      setIsPaymentModalOpen(false);
+      setIsDetailModalOpen(false);
+      await loadData();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Gagal mencatat pembayaran faktur");
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -582,18 +620,31 @@ export default function PurchasesPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedPurchase(p);
-                              setIsDetailModalOpen(true);
-                            }}
-                            className="h-8 gap-1 text-xs"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            Detail
-                          </Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {p.payment_status === "pending" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenPayment(p)}
+                                className="h-8 gap-1 text-xs border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                              >
+                                <DollarSign className="h-3.5 w-3.5" />
+                                Bayar
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPurchase(p);
+                                setIsDetailModalOpen(true);
+                              }}
+                              className="h-8 gap-1 text-xs"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Detail
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1119,6 +1170,33 @@ export default function PurchasesPage() {
                 <span className="text-lg font-bold text-primary">{formatRupiah(selectedPurchase.total_amount)}</span>
               </div>
 
+              {/* Payment history if any */}
+              {selectedPurchase.payments && selectedPurchase.payments.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Riwayat Pembayaran / Cicilan:
+                  </h4>
+                  <div className="rounded-lg border border-border divide-y divide-border/60 bg-muted/20">
+                    {selectedPurchase.payments.map((pm) => (
+                      <div key={pm.id} className="p-2.5 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            {new Date(pm.payment_date).toLocaleDateString("id-ID", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            - <span className="uppercase text-muted-foreground">{pm.payment_method}</span>
+                          </div>
+                          {pm.notes && <div className="text-muted-foreground mt-0.5">{pm.notes}</div>}
+                        </div>
+                        <div className="font-bold text-emerald-600">+{formatRupiah(pm.amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {selectedPurchase.notes && (
                 <div className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">Catatan: </span>
@@ -1128,20 +1206,109 @@ export default function PurchasesPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
-              Tutup
-            </Button>
-            <Button
-              onClick={() => {
-                window.print();
-              }}
-              className="gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Cetak Nota Faktur
-            </Button>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div>
+              {selectedPurchase?.payment_status === "pending" && (
+                <Button
+                  onClick={() => {
+                    if (selectedPurchase) handleOpenPayment(selectedPurchase);
+                  }}
+                  className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs"
+                >
+                  <DollarSign className="h-4 w-4" />
+                  Catat Pelunasan Utang
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsDetailModalOpen(false)}>
+                Tutup
+              </Button>
+              <Button
+                onClick={() => {
+                  window.print();
+                }}
+                className="gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Cetak Nota Faktur
+              </Button>
+            </div>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Catat Pembayaran / Pelunasan Utang Supplier */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <DollarSign className="h-5 w-5 text-amber-600" />
+              Catat Pembayaran Faktur Supplier
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Masukkan nominal pembayaran kas/transfer untuk faktur {selectedPurchase?.invoice_number}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleRecordPayment} className="space-y-4 text-sm mt-2">
+            <div>
+              <Label className="text-xs font-semibold">Nominal Pembayaran (Rp) *</Label>
+              <Input
+                type="number"
+                min={1}
+                max={selectedPurchase?.total_amount}
+                value={paymentAmount || ""}
+                onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                placeholder="Contoh: 500000"
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Metode Pembayaran</Label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full mt-1.5 h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground"
+              >
+                <option value="cash">Tunai (Kas)</option>
+                <option value="transfer">Transfer Bank</option>
+              </select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Tanggal Pembayaran</Label>
+              <Input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="mt-1"
+                required
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Catatan / Referensi</Label>
+              <Input
+                type="text"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Contoh: Cicilan pertama via BCA"
+                className="mt-1"
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsPaymentModalOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit" disabled={isSubmittingPayment} className="bg-amber-600 hover:bg-amber-700 text-white">
+                {isSubmittingPayment ? "Menyimpan..." : "Simpan Pembayaran"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

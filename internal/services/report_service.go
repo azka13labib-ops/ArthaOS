@@ -175,13 +175,23 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 
 	var stockPurchases int64
 	err = s.db.Raw(`
-		SELECT COALESCE(SUM(total_amount), 0)
-		FROM purchases
-		WHERE store_id = ?
-			AND payment_status = 'paid'
-			AND payment_method != 'debt'
-			AND DATE(purchase_date) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&stockPurchases).Error
+		SELECT COALESCE(SUM(total), 0) FROM (
+			-- Direct upfront cash/transfer purchases (not credit/tempo, no separate installment payments)
+			SELECT COALESCE(SUM(total_amount), 0) AS total
+			FROM purchases
+			WHERE store_id = ?
+				AND payment_status = 'paid'
+				AND payment_method != 'debt'
+				AND id NOT IN (SELECT purchase_id FROM supplier_payments WHERE store_id = ?)
+				AND DATE(purchase_date) BETWEEN ? AND ?
+			UNION ALL
+			-- Supplier debt/tempo repayments recorded on actual payment_date
+			SELECT COALESCE(SUM(amount), 0) AS total
+			FROM supplier_payments
+			WHERE store_id = ?
+				AND DATE(payment_date) BETWEEN ? AND ?
+		) combined
+	`, storeID, storeID, startDate, endDate, storeID, startDate, endDate).Scan(&stockPurchases).Error
 	if err != nil {
 		return nil, err
 	}

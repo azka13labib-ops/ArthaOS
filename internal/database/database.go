@@ -50,6 +50,7 @@ func ConnectDB(dsn string) {
 		&models.Supplier{},
 		&models.Purchase{},
 		&models.PurchaseItem{},
+		&models.SupplierPayment{},
 		&models.TransactionVoid{},
 		&models.StoreAIUsage{},
 		&models.SocialAccount{},

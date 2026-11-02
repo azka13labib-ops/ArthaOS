@@ -15,8 +15,9 @@ type Purchase struct {
 	CreatedAt     time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt     time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 
-	Supplier      *Supplier      `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
-	Items         []PurchaseItem `gorm:"foreignKey:PurchaseID;constraint:OnDelete:CASCADE" json:"items,omitempty"`
+	Supplier      *Supplier         `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
+	Items         []PurchaseItem    `gorm:"foreignKey:PurchaseID;constraint:OnDelete:CASCADE" json:"items,omitempty"`
+	Payments      []SupplierPayment `gorm:"foreignKey:PurchaseID;constraint:OnDelete:CASCADE" json:"payments,omitempty"`
 }
 
 type PurchaseItem struct {

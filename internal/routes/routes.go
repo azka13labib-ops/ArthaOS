@@ -152,6 +152,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	tenantGroup.Get("/purchases", middleware.RequireRole("owner", "manager"), purchaseHandler.GetAll)
 	tenantGroup.Post("/purchases", middleware.RequireRole("owner", "manager"), purchaseHandler.Create)
 	tenantGroup.Get("/purchases/:id", middleware.RequireRole("owner", "manager"), purchaseHandler.GetByID)
+	tenantGroup.Post("/purchases/:id/payments", middleware.RequireRole("owner", "manager"), purchaseHandler.AddPayment)
+	tenantGroup.Get("/purchases/:id/payments", middleware.RequireRole("owner", "manager"), purchaseHandler.GetPayments)
 
 	tenantGroup.Get("/reports/profit-loss", middleware.RequireRole("owner", "manager"), reportHandler.GetProfitLoss)
 	tenantGroup.Get("/reports/stock-valuation", middleware.RequireRole("owner", "manager"), reportHandler.GetStockValuation)

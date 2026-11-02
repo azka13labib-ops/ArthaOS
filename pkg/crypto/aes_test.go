@@ -43,3 +43,4 @@ func TestDecryptWithWrongKey(t *testing.T) {
 		t.Fatalf("Expected decryption with wrong key to fail, but succeeded")
 	}
 }
+

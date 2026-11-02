@@ -75,3 +75,4 @@ func Decrypt(secretKey string, encodedCiphertext string) ([]byte, error) {
 
 	return plaintext, nil
 }
+

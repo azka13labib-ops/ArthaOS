@@ -17,6 +17,8 @@ type SocialRepository interface {
 
 	// Account management
 	GetAccountByStore(storeID uint) (*models.SocialAccount, error)
+	GetAccountByID(storeID uint, id uint) (*models.SocialAccount, error)
+	ListExpiringAccounts(withinDays int) ([]models.SocialAccount, error)
 	SaveAccount(account *models.SocialAccount) error
 	DeleteAccount(storeID uint, id uint) error
 
@@ -118,6 +120,23 @@ func (r *socialRepository) GetAccountByStore(storeID uint) (*models.SocialAccoun
 	return &acc, nil
 }
 
+func (r *socialRepository) GetAccountByID(storeID uint, id uint) (*models.SocialAccount, error) {
+	var acc models.SocialAccount
+	err := r.db.Where("store_id = ? AND id = ?", storeID, id).First(&acc).Error
+	if err != nil {
+		return nil, err
+	}
+	return &acc, nil
+}
+
+func (r *socialRepository) ListExpiringAccounts(withinDays int) ([]models.SocialAccount, error) {
+	var accounts []models.SocialAccount
+	cutoff := time.Now().AddDate(0, 0, withinDays)
+	err := r.db.Where("status = 'active' AND token_expires_at IS NOT NULL AND token_expires_at <= ?", cutoff).
+		Find(&accounts).Error
+	return accounts, err
+}
+
 func (r *socialRepository) SaveAccount(account *models.SocialAccount) error {
 	return r.db.Save(account).Error
 }
@@ -159,3 +178,4 @@ func (r *socialRepository) ListPosts(storeID uint, limit, offset int) ([]models.
 func (r *socialRepository) UpdatePost(post *models.SocialPost) error {
 	return r.db.Save(post).Error
 }
+

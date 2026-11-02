@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
-import { Product, PosterTemplate, SocialQuota } from "@/lib/types";
+import { Product, PosterTemplate, SocialQuota, SocialAccount } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,9 @@ import {
   Type,
   CloudUpload,
   Layers,
+  Unlink,
+  ShieldCheck,
+  Clock,
 } from "lucide-react";
 import {
   Dialog,
@@ -61,15 +65,40 @@ const COLOR_PRESETS = [
   { name: "Charcoal Dark", hex: "#1E293B" },
 ];
 
-export default function SocialMediaPage() {
+function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+function SocialContent() {
   const { activeStore } = useStore();
+  const searchParams = useSearchParams();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [templates, setTemplates] = useState<PosterTemplate[]>([]);
   const [quota, setQuota] = useState<SocialQuota | null>(null);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
+  const [isLoadingStoreData, setIsLoadingStoreData] = useState(false);
+
+  // Meta connection states
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [oauthFeedback, setOauthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Form states
   const [goal, setGoal] = useState("promo");
@@ -109,25 +138,42 @@ export default function SocialMediaPage() {
   const [isSavingBYOK, setIsSavingBYOK] = useState(false);
   const [byokSuccessMsg, setByokSuccessMsg] = useState("");
 
+  // Handle URL feedback from OAuth callback
+  useEffect(() => {
+    if (searchParams.get("connected") === "true") {
+      setOauthFeedback({
+        type: "success",
+        message: "Akun Instagram Business Anda berhasil terhubung!",
+      });
+    } else if (searchParams.get("error")) {
+      setOauthFeedback({
+        type: "error",
+        message: decodeURIComponent(searchParams.get("error") || "Gagal menghubungkan akun Instagram"),
+      });
+    }
+  }, [searchParams]);
+
   // Load initial store data
   const loadStoreData = useCallback(async () => {
     if (!activeStore) return;
-    setIsLoadingProducts(true);
+    setIsLoadingStoreData(true);
     try {
-      const [prods, tmpls, q] = await Promise.all([
+      const [prods, tmpls, q, accs] = await Promise.all([
         api.products.list(activeStore.id),
         api.social.getTemplates(activeStore.id),
         api.social.getQuota(activeStore.id),
+        api.social.getAccounts(activeStore.id),
       ]);
       setProducts(prods || []);
       if (tmpls?.templates) {
         setTemplates(tmpls.templates);
       }
       setQuota(q);
+      setAccounts(accs?.data || []);
     } catch (err: any) {
       console.error("Gagal memuat data sosial:", err);
     } finally {
-      setIsLoadingProducts(false);
+      setIsLoadingStoreData(false);
     }
   }, [activeStore]);
 
@@ -217,7 +263,7 @@ export default function SocialMediaPage() {
       ctx.textAlign = "center";
       ctx.fillText("PENAWARAN HEMAT", 250, cardY + 100);
 
-      // Headline (Big, High-contrast, Auto-wrap)
+      // Headline
       ctx.fillStyle = "#FFFFFF";
       ctx.textAlign = "left";
       ctx.font = "900 68px sans-serif";
@@ -284,7 +330,6 @@ export default function SocialMediaPage() {
       wrapText(ctx, subheadline, 120, cardY + 660, width - 240, 50, 4);
     } else {
       // tips-quote template
-      // Quote mark decoration
       ctx.fillStyle = brandColor;
       ctx.font = "bold 160px serif";
       ctx.fillText("“", 120, cardY + 160);
@@ -298,7 +343,7 @@ export default function SocialMediaPage() {
       ctx.fillStyle = brandColor;
       ctx.fillRect(120, cardY + 440, 160, 6);
 
-      // Subheadline / Advice body
+      // Subheadline
       ctx.fillStyle = "#E2E8F0";
       ctx.font = "400 38px sans-serif";
       wrapText(ctx, subheadline, 120, cardY + 520, width - 240, 56, 5);
@@ -328,14 +373,48 @@ export default function SocialMediaPage() {
     ctx.textAlign = "right";
     ctx.fillText("Instagram • ArthaOS", width - 130, footerY + 65);
 
-    // Generate preview data URL for standard <img> tag
     setPreviewImgUrl(canvas.toDataURL("image/jpeg", 0.92));
   }, [selectedTemplateId, headline, subheadline, priceText, brandColor, activeStore]);
 
-  // Trigger canvas redraw whenever inputs change
   useEffect(() => {
     redrawCanvas();
   }, [redrawCanvas]);
+
+  // Connect to Instagram via OAuth
+  const handleConnectInstagram = async () => {
+    if (!activeStore) return;
+    setIsConnecting(true);
+    try {
+      const res = await api.social.connectAccount(activeStore.id);
+      if (res.auth_url) {
+        window.location.href = res.auth_url;
+      }
+    } catch (err: any) {
+      alert("Gagal memulai koneksi Meta/Instagram: " + err.message);
+      setIsConnecting(false);
+    }
+  };
+
+  // Disconnect Instagram Account
+  const handleDisconnectInstagram = async (accId: number) => {
+    if (!activeStore) return;
+    if (!confirm("Apakah Anda yakin ingin memutuskan koneksi akun Instagram ini dari toko Anda?")) {
+      return;
+    }
+    setIsDisconnecting(true);
+    try {
+      await api.social.disconnectAccount(activeStore.id, accId);
+      await loadStoreData();
+      setOauthFeedback({
+        type: "success",
+        message: "Akun Instagram berhasil diputuskan.",
+      });
+    } catch (err: any) {
+      alert("Gagal memutuskan akun: " + err.message);
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
 
   // AI Content Generator handler
   const handleGenerateAI = async () => {
@@ -356,7 +435,6 @@ export default function SocialMediaPage() {
       if (res.caption) setCaption(res.caption);
       if (res.hashtags && Array.isArray(res.hashtags)) setHashtags(res.hashtags);
 
-      // Auto-populate price text if a product is selected
       if (selectedProductIds.length > 0) {
         const prod = products.find((p) => p.id === selectedProductIds[0]);
         if (prod && prod.sell_price > 0) {
@@ -364,7 +442,6 @@ export default function SocialMediaPage() {
         }
       }
 
-      // Refresh quota
       const newQuota = await api.social.getQuota(activeStore.id);
       setQuota(newQuota);
     } catch (err: any) {
@@ -394,7 +471,7 @@ export default function SocialMediaPage() {
     }
   };
 
-  // Save to Cloud Storage (POST /social/posters/render)
+  // Save to Cloud Storage
   const handleSaveToCloud = async () => {
     if (!activeStore) return;
     const canvas = canvasRef.current;
@@ -420,7 +497,7 @@ export default function SocialMediaPage() {
     }
   };
 
-  // Copy caption & hashtags to clipboard
+  // Copy caption & hashtags
   const handleCopyCaption = async () => {
     const fullText = `${caption}\n\n${hashtags.join(" ")}`;
     try {
@@ -458,6 +535,8 @@ export default function SocialMediaPage() {
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
+
+  const connectedAccount = accounts.length > 0 && accounts[0].status === "active" ? accounts[0] : null;
 
   return (
     <AppLayout>
@@ -505,6 +584,99 @@ export default function SocialMediaPage() {
             </Button>
           </div>
         </div>
+
+        {/* OAuth Feedback Alert if any */}
+        {oauthFeedback && (
+          <div
+            className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium ${
+              oauthFeedback.type === "success"
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "bg-destructive/10 text-destructive border-destructive/20"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {oauthFeedback.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              <span>{oauthFeedback.message}</span>
+            </div>
+            <button
+              onClick={() => setOauthFeedback(null)}
+              className="text-xs opacity-70 hover:opacity-100"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* INSTAGRAM ACCOUNT INTEGRATION CARD (FASE 2) */}
+        <Card className="border-border/80 bg-gradient-to-r from-card via-card to-muted/20 shadow-xs">
+          <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md shrink-0">
+                <InstagramIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm">Akun Instagram Bisnis</h3>
+                  {connectedAccount ? (
+                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[11px] gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      Terhubung
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                      Belum Terhubung
+                    </Badge>
+                  )}
+                </div>
+
+                {connectedAccount ? (
+                  <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="font-semibold text-foreground">@{connectedAccount.username}</span>
+                    <span className="flex items-center gap-1 text-[11px]">
+                      <Clock className="w-3 h-3 text-muted-foreground" />
+                      {connectedAccount.token_expires_at
+                        ? `Token aktif hingga ${new Date(connectedAccount.token_expires_at).toLocaleDateString("id-ID")}`
+                        : "Token aktif (60 hari)"}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Hubungkan akun Instagram Business untuk auto-post & penjadwalan. Anda tetap bisa mengunduh poster secara manual.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {connectedAccount ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDisconnectInstagram(connectedAccount.id)}
+                  disabled={isDisconnecting}
+                  className="text-xs text-destructive hover:bg-destructive/10 gap-1.5 h-9"
+                >
+                  <Unlink className="w-3.5 h-3.5" />
+                  {isDisconnecting ? "Memutuskan..." : "Putuskan Akun"}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleConnectInstagram}
+                  disabled={isConnecting}
+                  className="text-xs bg-gradient-to-r from-rose-500 to-purple-600 hover:from-rose-600 hover:to-purple-700 text-white gap-1.5 h-9 shadow-sm"
+                >
+                  <InstagramIcon className="w-3.5 h-3.5" />
+                  {isConnecting ? "Mengarahkan ke Meta..." : "Hubungkan Akun"}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Hidden high-res canvas for rendering */}
         <canvas ref={canvasRef} className="hidden" />
@@ -596,7 +768,7 @@ export default function SocialMediaPage() {
                       </button>
                     )}
                   </div>
-                  {isLoadingProducts ? (
+                  {isLoadingStoreData ? (
                     <div className="py-4 text-center text-xs text-muted-foreground">Memuat produk toko...</div>
                   ) : products.length === 0 ? (
                     <div className="p-3 bg-muted/40 rounded-lg text-xs text-muted-foreground text-center">
@@ -946,6 +1118,14 @@ export default function SocialMediaPage() {
         </DialogContent>
       </Dialog>
     </AppLayout>
+  );
+}
+
+export default function SocialMediaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <SocialContent />
+    </Suspense>
   );
 }
 

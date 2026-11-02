@@ -1,6 +1,10 @@
 package routes
 
 import (
+	"context"
+	"log"
+	"time"
+
 	"app/internal/config"
 	"app/internal/handlers"
 	"app/internal/middleware"
@@ -12,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Pool) {
+func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Pool, scheduler *worker.Scheduler) {
 
 	userRepo := repository.NewUserRepository(db)
 	storeRepo := repository.NewStoreRepository(db)
@@ -64,8 +68,23 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	if socialEncryptionKey == "" {
 		socialEncryptionKey = cfg.BackupEncryptionKey
 	}
-	socialService := services.NewSocialService(db, socialRepo, productRepo, storeRepo, auditRepo, llmService, socialEncryptionKey, cfg.AppBaseURL, "./uploads/posters")
+	metaService := services.NewMetaService(cfg.MetaAppID, cfg.MetaAppSecret, cfg.MetaRedirectURI, socialEncryptionKey)
+	socialService := services.NewSocialService(db, socialRepo, productRepo, storeRepo, auditRepo, llmService, metaService, pushService, socialEncryptionKey, cfg.AppBaseURL, "./uploads/posters")
 	socialHandler := handlers.NewSocialHandler(socialService)
+
+	if scheduler != nil {
+		scheduler.Every(12*time.Hour, func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			log.Println("[SOCIAL SCHEDULER] Memindai dan memperbarui token Meta/Instagram yang akan kedaluwarsa...")
+			refreshed, failed, err := socialService.RefreshExpiringTokens(ctx)
+			if err != nil {
+				log.Printf("[SOCIAL SCHEDULER ERROR] Gagal memperbarui token: %v", err)
+			} else {
+				log.Printf("[SOCIAL SCHEDULER] Selesai: %d diperbarui, %d kedaluwarsa", refreshed, failed)
+			}
+		})
+	}
 
 	var backupHandler *handlers.BackupHandler
 	if cfg.BackupEncryptionKey != "" {
@@ -154,6 +173,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	tenantGroup.Post("/social/captions/generate", socialHandler.GenerateCaption)
 	tenantGroup.Post("/social/posters/render", socialHandler.RenderPoster)
 	tenantGroup.Post("/social/byok", middleware.RequireRole("owner"), socialHandler.SetBYOKKey)
+	tenantGroup.Get("/social/accounts", socialHandler.GetAccounts)
+	tenantGroup.Post("/social/accounts/connect", middleware.RequireRole("owner"), socialHandler.ConnectAccount)
+	tenantGroup.Delete("/social/accounts/:id", middleware.RequireRole("owner"), socialHandler.DisconnectAccount)
 
 	settingsHandler := handlers.NewSettingsHandler(settingsRepo, cfg, auditRepo, db)
 
@@ -163,6 +185,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	// Public invite endpoints (no auth needed to read invite, auth needed to accept)
 	api.Get("/invitations/:token", settingsHandler.GetInvitation)
 	api.Post("/invitations/:token/accept", authMiddleware, settingsHandler.AcceptInvitation)
+
+	// Public Meta/Instagram OAuth callback (state verified)
+	api.Get("/social/accounts/callback", socialHandler.OAuthCallback)
 
 	// VAPID public key (auth required, not store-scoped)
 	api.Get("/push/vapid-public-key", authMiddleware, settingsHandler.GetVAPIDPublicKey)

@@ -323,3 +323,15 @@ export interface RenderPosterResponse {
   file_size: number;
 }
 
+export interface SocialAccount {
+  id: number;
+  store_id: number;
+  platform: "instagram";
+  external_account_id: string;
+  username: string;
+  token_expires_at?: string | null;
+  status: "active" | "expired" | "revoked";
+  created_at: string;
+  updated_at: string;
+}
+

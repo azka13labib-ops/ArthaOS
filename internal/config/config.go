@@ -24,6 +24,9 @@ type Config struct {
 	BackupEncryptionKey      string
 	BackupDir                string
 	SocialTokenEncryptionKey string
+	MetaAppID                string
+	MetaAppSecret            string
+	MetaRedirectURI          string
 }
 
 func LoadConfig() Config {
@@ -57,6 +60,9 @@ func LoadConfig() Config {
 		BackupEncryptionKey:      os.Getenv("BACKUP_ENCRYPTION_KEY"),
 		BackupDir:                os.Getenv("BACKUP_DIR"),
 		SocialTokenEncryptionKey: os.Getenv("SOCIAL_TOKEN_ENCRYPTION_KEY"),
+		MetaAppID:                os.Getenv("META_APP_ID"),
+		MetaAppSecret:            os.Getenv("META_APP_SECRET"),
+		MetaRedirectURI:          os.Getenv("META_REDIRECT_URI"),
 	}
 
 	if len(cfg.JWTSecret) < 32 {

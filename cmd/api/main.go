@@ -94,7 +94,7 @@ func main() {
 		return c.SendFile(filepath.Join("./uploads", cleanPath))
 	})
 
-	routes.SetupRoutes(app, database.DB, cfg, workerPool)
+	routes.SetupRoutes(app, database.DB, cfg, workerPool, scheduler)
 
 	port := cfg.Port
 	if port == "" {

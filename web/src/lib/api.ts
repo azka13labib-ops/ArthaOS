@@ -21,6 +21,7 @@ import {
   SocialQuota,
   GenerateCaptionResponse,
   RenderPosterResponse,
+  SocialAccount,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -589,6 +590,19 @@ export const api = {
       return request(`/stores/${storeId}/social/byok`, {
         method: "POST",
         body: JSON.stringify({ api_key: apiKey, provider }),
+      });
+    },
+    async getAccounts(storeId: number): Promise<{ data: SocialAccount[]; total: number }> {
+      return request(`/stores/${storeId}/social/accounts`);
+    },
+    async connectAccount(storeId: number): Promise<{ auth_url: string }> {
+      return request(`/stores/${storeId}/social/accounts/connect`, {
+        method: "POST",
+      });
+    },
+    async disconnectAccount(storeId: number, accountId: number): Promise<{ message: string }> {
+      return request(`/stores/${storeId}/social/accounts/${accountId}`, {
+        method: "DELETE",
       });
     },
   },

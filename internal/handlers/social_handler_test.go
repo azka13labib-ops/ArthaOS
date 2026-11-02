@@ -73,6 +73,35 @@ func (s *stubSocialService) SetBYOKKey(storeID uint, apiKey string, provider str
 	return nil
 }
 
+func (s *stubSocialService) GetAccounts(storeID uint) ([]services.SocialAccountDTO, error) {
+	return []services.SocialAccountDTO{
+		{
+			ID:                1,
+			StoreID:           storeID,
+			Platform:          "instagram",
+			ExternalAccountID: "178414000123456",
+			Username:          "warkop.azka",
+			Status:            "active",
+		},
+	}, nil
+}
+
+func (s *stubSocialService) GetConnectURL(storeID uint, userID uint) (string, error) {
+	return "https://www.facebook.com/v21.0/dialog/oauth?client_id=123&state=test", nil
+}
+
+func (s *stubSocialService) HandleOAuthCallback(ctx context.Context, code string, state string) (uint, error) {
+	return 1, nil
+}
+
+func (s *stubSocialService) DisconnectAccount(storeID uint, accountID uint, userID uint) error {
+	return nil
+}
+
+func (s *stubSocialService) RefreshExpiringTokens(ctx context.Context) (int, int, error) {
+	return 1, 0, nil
+}
+
 func TestSocialHandler_GetTemplates(t *testing.T) {
 	app := fiber.New()
 	stub := &stubSocialService{}
@@ -142,6 +171,71 @@ func TestSocialHandler_RenderPoster(t *testing.T) {
 	req := httptest.NewRequest("POST", "/stores/1/social/posters/render", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestSocialHandler_GetAccounts(t *testing.T) {
+	app := fiber.New()
+	stub := &stubSocialService{}
+	handler := handlers.NewSocialHandler(stub)
+
+	app.Get("/stores/:storeId/social/accounts", func(c fiber.Ctx) error {
+		c.Locals("store_id", uint(1))
+		return handler.GetAccounts(c)
+	})
+
+	req := httptest.NewRequest("GET", "/stores/1/social/accounts", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestSocialHandler_ConnectAccount(t *testing.T) {
+	app := fiber.New()
+	stub := &stubSocialService{}
+	handler := handlers.NewSocialHandler(stub)
+
+	app.Post("/stores/:storeId/social/accounts/connect", func(c fiber.Ctx) error {
+		c.Locals("store_id", uint(1))
+		c.Locals("user_id", uint(42))
+		return handler.ConnectAccount(c)
+	})
+
+	req := httptest.NewRequest("POST", "/stores/1/social/accounts/connect", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestSocialHandler_DisconnectAccount(t *testing.T) {
+	app := fiber.New()
+	stub := &stubSocialService{}
+	handler := handlers.NewSocialHandler(stub)
+
+	app.Delete("/stores/:storeId/social/accounts/:id", func(c fiber.Ctx) error {
+		c.Locals("store_id", uint(1))
+		c.Locals("user_id", uint(42))
+		return handler.DisconnectAccount(c)
+	})
+
+	req := httptest.NewRequest("DELETE", "/stores/1/social/accounts/1", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("Request failed: %v", err)

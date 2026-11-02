@@ -26,12 +26,31 @@ import (
 	"gorm.io/gorm"
 )
 
+type SocialAccountDTO struct {
+	ID                uint       `json:"id"`
+	StoreID           uint       `json:"store_id"`
+	Platform          string     `json:"platform"`
+	ExternalAccountID string     `json:"external_account_id"`
+	Username          string     `json:"username"`
+	TokenExpiresAt    *time.Time `json:"token_expires_at"`
+	Status            string     `json:"status"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+}
+
 type SocialService interface {
 	GetTemplates() []models.PosterTemplate
 	GetQuota(storeID uint) (*SocialQuotaResponse, error)
 	GenerateCaption(ctx context.Context, storeID uint, userID uint, req GenerateCaptionRequest) (*GenerateCaptionResponse, error)
 	RenderPoster(ctx context.Context, storeID uint, req RenderPosterRequest) (*RenderPosterResponse, error)
 	SetBYOKKey(storeID uint, apiKey string, provider string) error
+
+	// Account management (FASE 2)
+	GetAccounts(storeID uint) ([]SocialAccountDTO, error)
+	GetConnectURL(storeID uint, userID uint) (string, error)
+	HandleOAuthCallback(ctx context.Context, code string, state string) (storeID uint, err error)
+	DisconnectAccount(storeID uint, accountID uint, userID uint) error
+	RefreshExpiringTokens(ctx context.Context) (refreshedCount int, failedCount int, err error)
 }
 
 type SocialQuotaResponse struct {
@@ -87,15 +106,17 @@ type RenderPosterResponse struct {
 }
 
 type socialService struct {
-	db             *gorm.DB
-	socialRepo     repository.SocialRepository
-	productRepo    repository.ProductRepository
-	storeRepo      repository.StoreRepository
-	auditRepo      repository.AuditRepository
-	llmService     LLMService
-	encryptionKey  string
-	appBaseURL     string
-	uploadsDir     string
+	db            *gorm.DB
+	socialRepo    repository.SocialRepository
+	productRepo   repository.ProductRepository
+	storeRepo     repository.StoreRepository
+	auditRepo     repository.AuditRepository
+	llmService    LLMService
+	metaService   MetaService
+	pushService   PushService
+	encryptionKey string
+	appBaseURL    string
+	uploadsDir    string
 }
 
 func NewSocialService(
@@ -105,6 +126,8 @@ func NewSocialService(
 	storeRepo repository.StoreRepository,
 	auditRepo repository.AuditRepository,
 	llmService LLMService,
+	metaService MetaService,
+	pushService PushService,
 	encryptionKey string,
 	appBaseURL string,
 	uploadsDir string,
@@ -125,6 +148,8 @@ func NewSocialService(
 		storeRepo:     storeRepo,
 		auditRepo:     auditRepo,
 		llmService:    llmService,
+		metaService:   metaService,
+		pushService:   pushService,
 		encryptionKey: encryptionKey,
 		appBaseURL:    strings.TrimSuffix(appBaseURL, "/"),
 		uploadsDir:    uploadsDir,
@@ -478,4 +503,172 @@ func generateServerPoster(req RenderPosterRequest) image.Image {
 	draw.Draw(img, footerRect, &image.Uniform{footerColor}, image.Point{}, draw.Src)
 
 	return img
+}
+
+func (s *socialService) GetAccounts(storeID uint) ([]SocialAccountDTO, error) {
+	acc, err := s.socialRepo.GetAccountByStore(storeID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []SocialAccountDTO{}, nil
+		}
+		return nil, fmt.Errorf("gagal membaca akun sosial toko: %w", err)
+	}
+
+	return []SocialAccountDTO{
+		{
+			ID:                acc.ID,
+			StoreID:           acc.StoreID,
+			Platform:          acc.Platform,
+			ExternalAccountID: acc.ExternalAccountID,
+			Username:          acc.Username,
+			TokenExpiresAt:    acc.TokenExpiresAt,
+			Status:            acc.Status,
+			CreatedAt:         acc.CreatedAt,
+			UpdatedAt:         acc.UpdatedAt,
+		},
+	}, nil
+}
+
+func (s *socialService) GetConnectURL(storeID uint, userID uint) (string, error) {
+	if s.metaService == nil {
+		return "", errors.New("layanan Meta belum aktif di server")
+	}
+	return s.metaService.GenerateAuthURL(storeID, userID)
+}
+
+func (s *socialService) HandleOAuthCallback(ctx context.Context, code string, state string) (uint, error) {
+	if s.metaService == nil {
+		return 0, errors.New("layanan Meta belum aktif di server")
+	}
+
+	storeID, userID, err := s.metaService.ValidateState(state)
+	if err != nil {
+		return 0, fmt.Errorf("validasi state gagal: %w", err)
+	}
+
+	token, expiresIn, err := s.metaService.ExchangeCodeForToken(ctx, code)
+	if err != nil {
+		return storeID, fmt.Errorf("pertukaran token Meta gagal: %w", err)
+	}
+
+	accountID, username, err := s.metaService.GetInstagramAccount(ctx, token)
+	if err != nil {
+		return storeID, err
+	}
+
+	encToken, err := crypto.Encrypt(s.encryptionKey, []byte(token))
+	if err != nil {
+		return storeID, fmt.Errorf("enkripsi token gagal: %w", err)
+	}
+
+	expiresAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
+
+	existing, _ := s.socialRepo.GetAccountByStore(storeID)
+	if existing != nil {
+		existing.ExternalAccountID = accountID
+		existing.Username = username
+		existing.AccessTokenEncrypted = encToken
+		existing.TokenExpiresAt = &expiresAt
+		existing.Status = "active"
+		if err := s.socialRepo.SaveAccount(existing); err != nil {
+			return storeID, fmt.Errorf("gagal memperbarui akun Instagram: %w", err)
+		}
+	} else {
+		newAcc := models.SocialAccount{
+			StoreID:              storeID,
+			Platform:             "instagram",
+			ExternalAccountID:    accountID,
+			Username:             username,
+			AccessTokenEncrypted: encToken,
+			TokenExpiresAt:       &expiresAt,
+			Status:               "active",
+		}
+		if err := s.socialRepo.SaveAccount(&newAcc); err != nil {
+			return storeID, fmt.Errorf("gagal menyimpan akun Instagram: %w", err)
+		}
+	}
+
+	// Audit log
+	go func() {
+		meta := fmt.Sprintf(`{"user_id":%d,"username":%q,"account_id":%q}`, userID, username, accountID)
+		if logErr := s.auditRepo.Log(s.db, storeID, "user", "instagram_connect", "social_account", userID, &meta); logErr != nil {
+			log.Printf("[AUDIT ERROR] instagram_connect: %v", logErr)
+		}
+	}()
+
+	return storeID, nil
+}
+
+func (s *socialService) DisconnectAccount(storeID uint, accountID uint, userID uint) error {
+	acc, err := s.socialRepo.GetAccountByID(storeID, accountID)
+	if err != nil {
+		return fmt.Errorf("akun tidak ditemukan: %w", err)
+	}
+
+	if err := s.socialRepo.DeleteAccount(storeID, accountID); err != nil {
+		return fmt.Errorf("gagal memutuskan akun: %w", err)
+	}
+
+	go func() {
+		meta := fmt.Sprintf(`{"user_id":%d,"username":%q,"account_id":%q}`, userID, acc.Username, acc.ExternalAccountID)
+		if logErr := s.auditRepo.Log(s.db, storeID, "user", "instagram_disconnect", "social_account", userID, &meta); logErr != nil {
+			log.Printf("[AUDIT ERROR] instagram_disconnect: %v", logErr)
+		}
+	}()
+
+	return nil
+}
+
+func (s *socialService) RefreshExpiringTokens(ctx context.Context) (int, int, error) {
+	if s.metaService == nil {
+		return 0, 0, nil
+	}
+
+	accounts, err := s.socialRepo.ListExpiringAccounts(7)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	refreshed := 0
+	failed := 0
+
+	for _, acc := range accounts {
+		tokenBytes, decErr := crypto.Decrypt(s.encryptionKey, acc.AccessTokenEncrypted)
+		if decErr != nil {
+			log.Printf("[META REFRESH WARN] Decrypt failed for acc %d: %v", acc.ID, decErr)
+			acc.Status = "expired"
+			_ = s.socialRepo.SaveAccount(&acc)
+			failed++
+			continue
+		}
+
+		newToken, expiresIn, refErr := s.metaService.RefreshToken(ctx, string(tokenBytes))
+		if refErr != nil {
+			log.Printf("[META REFRESH WARN] Meta API refresh failed for acc @%s: %v", acc.Username, refErr)
+			acc.Status = "expired"
+			_ = s.socialRepo.SaveAccount(&acc)
+			failed++
+
+			if s.pushService != nil {
+				_ = s.pushService.BroadcastToStore(ctx, acc.StoreID, PushPayload{
+					Title: "Koneksi Instagram Terputus",
+					Body:  fmt.Sprintf("Token akun Instagram @%s telah kedaluwarsa. Silakan hubungkan ulang di menu Media Sosial.", acc.Username),
+					URL:   "/social",
+				})
+			}
+			continue
+		}
+
+		newEnc, encErr := crypto.Encrypt(s.encryptionKey, []byte(newToken))
+		if encErr == nil {
+			expiresAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
+			acc.AccessTokenEncrypted = newEnc
+			acc.TokenExpiresAt = &expiresAt
+			acc.Status = "active"
+			_ = s.socialRepo.SaveAccount(&acc)
+			refreshed++
+		}
+	}
+
+	return refreshed, failed, nil
 }

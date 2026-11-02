@@ -22,7 +22,7 @@ func (m *mockLLM) GenerateSocialCaption(ctx context.Context, input services.Gene
 }
 
 func TestSocialService_GetTemplates(t *testing.T) {
-	svc := services.NewSocialService(nil, nil, nil, nil, nil, nil, "key", "http://localhost:8080", "./uploads/posters")
+	svc := services.NewSocialService(nil, nil, nil, nil, nil, nil, nil, nil, "key", "http://localhost:8080", "./uploads/posters")
 	templates := svc.GetTemplates()
 
 	if len(templates) < 3 {
@@ -60,7 +60,7 @@ func TestSocialService_RenderPoster(t *testing.T) {
 	testDir := "./test_uploads_posters"
 	defer os.RemoveAll(testDir)
 
-	svc := services.NewSocialService(nil, nil, nil, nil, nil, nil, "key", "http://localhost:8080", testDir)
+	svc := services.NewSocialService(nil, nil, nil, nil, nil, nil, nil, nil, "key", "http://localhost:8080", testDir)
 
 	req := services.RenderPosterRequest{
 		TemplateID:  "promo-deal",

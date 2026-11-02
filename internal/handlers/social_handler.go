@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"app/internal/services"
@@ -137,6 +140,95 @@ func (h *SocialHandler) SetBYOKKey(c fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Konfigurasi API Key kustom (BYOK) berhasil disimpan",
+		"status":  "success",
+	})
+}
+
+// GetAccounts handles GET /api/v1/stores/:storeId/social/accounts
+func (h *SocialHandler) GetAccounts(c fiber.Ctx) error {
+	storeID, ok := c.Locals("store_id").(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	accounts, err := h.socialService.GetAccounts(storeID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"data":  accounts,
+		"total": len(accounts),
+	})
+}
+
+// ConnectAccount handles POST /api/v1/stores/:storeId/social/accounts/connect (Owner only)
+func (h *SocialHandler) ConnectAccount(c fiber.Ctx) error {
+	storeID, ok := c.Locals("store_id").(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	userID, _ := c.Locals("user_id").(uint)
+
+	authURL, err := h.socialService.GetConnectURL(storeID, userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+			"code":  "CONNECT_FAILED",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"auth_url": authURL,
+	})
+}
+
+// OAuthCallback handles GET /api/v1/social/accounts/callback
+func (h *SocialHandler) OAuthCallback(c fiber.Ctx) error {
+	code := c.Query("code")
+	state := c.Query("state")
+	errorReason := c.Query("error_description")
+
+	frontendURL := "http://localhost:3000/social"
+
+	if errorReason != "" {
+		return c.Redirect().To(fmt.Sprintf("%s?error=%s", frontendURL, url.QueryEscape(errorReason)))
+	}
+
+	if code == "" || state == "" {
+		return c.Redirect().To(fmt.Sprintf("%s?error=%s", frontendURL, url.QueryEscape("Kode otorisasi atau state kosong")))
+	}
+
+	storeID, err := h.socialService.HandleOAuthCallback(c.Context(), code, state)
+	if err != nil {
+		return c.Redirect().To(fmt.Sprintf("%s?error=%s", frontendURL, url.QueryEscape(err.Error())))
+	}
+
+	_ = storeID
+	return c.Redirect().To(fmt.Sprintf("%s?connected=true", frontendURL))
+}
+
+// DisconnectAccount handles DELETE /api/v1/stores/:storeId/social/accounts/:id (Owner only)
+func (h *SocialHandler) DisconnectAccount(c fiber.Ctx) error {
+	storeID, ok := c.Locals("store_id").(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	userID, _ := c.Locals("user_id").(uint)
+	accountIDStr := c.Params("id")
+	accountID, err := strconv.ParseUint(accountIDStr, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ID akun tidak valid"})
+	}
+
+	if err := h.socialService.DisconnectAccount(storeID, uint(accountID), userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Akun Instagram berhasil diputuskan",
 		"status":  "success",
 	})
 }

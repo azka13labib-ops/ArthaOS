@@ -60,3 +60,4 @@ type PosterTemplate struct {
 	Width             int    `json:"width"`        // 1080
 	Height            int    `json:"height"`       // 1350
 }
+

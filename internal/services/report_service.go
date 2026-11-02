@@ -4,11 +4,57 @@ import (
 	"gorm.io/gorm"
 )
 
+type ProfitLossReport struct {
+	GrossSales    int64 `json:"gross_sales"`
+	COGS          int64 `json:"cogs"`
+	GrossProfit   int64 `json:"gross_profit"`
+	Expenses      int64 `json:"expenses"`
+	NetProfit     int64 `json:"net_profit"`
+	// Backwards compatibility aliases
+	TotalSales    int64 `json:"total_sales,omitempty"`
+	TotalCost     int64 `json:"total_cost,omitempty"`
+	TotalExpenses int64 `json:"total_expenses,omitempty"`
+}
+
+type StockValuationReport struct {
+	TotalInventoryItems  int64 `json:"total_inventory_items"`
+	TotalAssetCost       int64 `json:"total_asset_cost"`
+	TotalAssetRetail     int64 `json:"total_asset_retail"`
+	PotentialGrossProfit int64 `json:"potential_gross_profit"`
+	// Backwards compatibility aliases
+	TotalItems int64 `json:"total_items,omitempty"`
+	TotalValue int64 `json:"total_value,omitempty"`
+}
+
+type PaymentBreakdown struct {
+	Method string `json:"method"`
+	Amount int64  `json:"amount"`
+}
+
+type CashFlowReport struct {
+	CashIn         int64              `json:"cash_in"`
+	CashOut        int64              `json:"cash_out"`
+	NetCashFlow    int64              `json:"net_cash_flow"`
+	PaymentMethods []PaymentBreakdown `json:"payment_methods"`
+}
+
+type TopProduct struct {
+	Name     string `json:"name"`
+	Quantity int    `json:"quantity"`
+}
+
+type DashboardMetrics struct {
+	TodaySales        int64        `json:"today_sales"`
+	TodayExpenses     int64        `json:"today_expenses"`
+	TodayTransactions int64        `json:"today_transactions"`
+	TopProducts       []TopProduct `json:"top_products"`
+}
+
 type ReportService interface {
-	GetProfitLoss(storeID uint, startDate, endDate string) (map[string]interface{}, error)
-	GetStockValuation(storeID uint) (map[string]interface{}, error)
-	GetCashFlow(storeID uint, startDate, endDate string) (map[string]interface{}, error)
-	GetDashboardMetrics(storeID uint) (map[string]interface{}, error)
+	GetProfitLoss(storeID uint, startDate, endDate string) (*ProfitLossReport, error)
+	GetStockValuation(storeID uint) (*StockValuationReport, error)
+	GetCashFlow(storeID uint, startDate, endDate string) (*CashFlowReport, error)
+	GetDashboardMetrics(storeID uint) (*DashboardMetrics, error)
 }
 
 type reportService struct {
@@ -19,59 +65,64 @@ func NewReportService(db *gorm.DB) ReportService {
 	return &reportService{db}
 }
 
-func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
-	var totalSales int64
+func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (*ProfitLossReport, error) {
+	var grossSales int64
 	err := s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
 		WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&totalSales).Error
+	`, storeID, startDate, endDate).Scan(&grossSales).Error
 	if err != nil {
 		return nil, err
 	}
 
-	var totalCost int64
+	var cogs int64
 	err = s.db.Raw(`
 		SELECT COALESCE(SUM(ti.cost_price * ti.quantity), 0)
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
 		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' AND DATE(t.occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&totalCost).Error
+	`, storeID, startDate, endDate).Scan(&cogs).Error
 	if err != nil {
 		return nil, err
 	}
 
-	var totalExpenses int64
+	var expenses int64
 	err = s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'expense' AND DATE(occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&totalExpenses).Error
+		WHERE store_id = ? AND type = 'expense' AND status != 'voided' AND DATE(occurred_at) BETWEEN ? AND ?
+	`, storeID, startDate, endDate).Scan(&expenses).Error
 	if err != nil {
 		return nil, err
 	}
 
-	grossProfit := totalSales - totalCost
-	netProfit := grossProfit - totalExpenses
+	grossProfit := grossSales - cogs
+	netProfit := grossProfit - expenses
 
-	return map[string]interface{}{
-		"total_sales":    totalSales,
-		"total_cost":     totalCost,
-		"gross_profit":   grossProfit,
-		"total_expenses": totalExpenses,
-		"net_profit":     netProfit,
+	return &ProfitLossReport{
+		GrossSales:    grossSales,
+		COGS:          cogs,
+		GrossProfit:   grossProfit,
+		Expenses:      expenses,
+		NetProfit:     netProfit,
+		TotalSales:    grossSales,
+		TotalCost:     cogs,
+		TotalExpenses: expenses,
 	}, nil
 }
 
-func (s *reportService) GetStockValuation(storeID uint) (map[string]interface{}, error) {
+func (s *reportService) GetStockValuation(storeID uint) (*StockValuationReport, error) {
 	var result struct {
-		TotalItems int64
-		TotalValue int64
+		TotalInventoryItems int64
+		TotalAssetCost      int64
+		TotalAssetRetail    int64
 	}
 	err := s.db.Raw(`
 		SELECT 
-			COALESCE(SUM(current_stock), 0) as total_items,
-			COALESCE(SUM(current_stock * buy_price), 0) as total_value
+			COALESCE(SUM(current_stock), 0) as total_inventory_items,
+			COALESCE(SUM(current_stock * buy_price), 0) as total_asset_cost,
+			COALESCE(SUM(current_stock * sell_price), 0) as total_asset_retail
 		FROM products
 		WHERE store_id = ? AND is_active = true
 	`, storeID).Scan(&result).Error
@@ -80,13 +131,19 @@ func (s *reportService) GetStockValuation(storeID uint) (map[string]interface{},
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"total_items": result.TotalItems,
-		"total_value": result.TotalValue,
+	potentialGrossProfit := result.TotalAssetRetail - result.TotalAssetCost
+
+	return &StockValuationReport{
+		TotalInventoryItems:  result.TotalInventoryItems,
+		TotalAssetCost:       result.TotalAssetCost,
+		TotalAssetRetail:     result.TotalAssetRetail,
+		PotentialGrossProfit: potentialGrossProfit,
+		TotalItems:           result.TotalInventoryItems,
+		TotalValue:           result.TotalAssetCost,
 	}, nil
 }
 
-func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (map[string]interface{}, error) {
+func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*CashFlowReport, error) {
 	// Cash flow follows actual payment methods, not sale totals: debt is receivable, not cash in.
 	var cashIn int64
 	err := s.db.Raw(`
@@ -114,11 +171,6 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 		return nil, err
 	}
 
-	type PaymentBreakdown struct {
-		Method string `json:"method"`
-		Amount int64  `json:"amount"`
-	}
-
 	var paymentMethods []PaymentBreakdown
 	if err := s.db.Raw(`
 		SELECT tp.payment_method AS method, COALESCE(SUM(tp.amount), 0) AS amount
@@ -136,15 +188,15 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (ma
 
 	netCashFlow := cashIn - cashOut
 
-	return map[string]interface{}{
-		"cash_in":         cashIn,
-		"cash_out":        cashOut,
-		"net_cash_flow":   netCashFlow,
-		"payment_methods": paymentMethods,
+	return &CashFlowReport{
+		CashIn:         cashIn,
+		CashOut:        cashOut,
+		NetCashFlow:    netCashFlow,
+		PaymentMethods: paymentMethods,
 	}, nil
 }
 
-func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{}, error) {
+func (s *reportService) GetDashboardMetrics(storeID uint) (*DashboardMetrics, error) {
 	// A summary for the dashboard
 	var totalSales int64
 	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalSales).Error; err != nil {
@@ -161,10 +213,6 @@ func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{
 		return nil, err
 	}
 
-	type TopProduct struct {
-		Name     string `json:"name"`
-		Quantity int    `json:"quantity"`
-	}
 	var topProducts []TopProduct
 	if err := s.db.Raw(`
 		SELECT p.name, COALESCE(SUM(ti.quantity), 0) as quantity
@@ -179,10 +227,10 @@ func (s *reportService) GetDashboardMetrics(storeID uint) (map[string]interface{
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"today_sales":        totalSales,
-		"today_expenses":     totalExpenses,
-		"today_transactions": totalTransactions,
-		"top_products":       topProducts,
+	return &DashboardMetrics{
+		TodaySales:        totalSales,
+		TodayExpenses:     totalExpenses,
+		TodayTransactions: totalTransactions,
+		TopProducts:       topProducts,
 	}, nil
 }

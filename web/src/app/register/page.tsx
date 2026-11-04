@@ -89,7 +89,7 @@ function RegisterContent() {
       <div className="w-full max-w-sm">
         {/* Brand mark */}
         <div className="flex items-center gap-2.5 justify-center mb-8">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-foreground font-bold text-sm">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
             A
           </div>
           <span className="font-semibold text-base text-foreground">ArthaOS</span>

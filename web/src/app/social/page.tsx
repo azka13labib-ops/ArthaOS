@@ -389,8 +389,11 @@ function SocialContent() {
       if (res.auth_url) {
         window.location.href = res.auth_url;
       }
-    } catch (err: any) {
-      alert("Gagal memulai koneksi Meta/Instagram: " + err.message);
+    } catch (err: unknown) {
+      setOauthFeedback({
+        type: "error",
+        message: "Gagal memulai koneksi Meta/Instagram: " + (err instanceof Error ? err.message : "Terjadi kesalahan"),
+      });
       setIsConnecting(false);
     }
   };
@@ -398,9 +401,6 @@ function SocialContent() {
   // Disconnect Instagram Account
   const handleDisconnectInstagram = async (accId: number) => {
     if (!activeStore) return;
-    if (!confirm("Apakah Anda yakin ingin memutuskan koneksi akun Instagram ini dari toko Anda?")) {
-      return;
-    }
     setIsDisconnecting(true);
     try {
       await api.social.disconnectAccount(activeStore.id, accId);
@@ -409,8 +409,11 @@ function SocialContent() {
         type: "success",
         message: "Akun Instagram berhasil diputuskan.",
       });
-    } catch (err: any) {
-      alert("Gagal memutuskan akun: " + err.message);
+    } catch (err: unknown) {
+      setOauthFeedback({
+        type: "error",
+        message: "Gagal memutuskan akun: " + (err instanceof Error ? err.message : "Terjadi kesalahan"),
+      });
     } finally {
       setIsDisconnecting(false);
     }
@@ -490,8 +493,8 @@ function SocialContent() {
       });
 
       setCloudUrl(res.full_url || res.url);
-    } catch (err: any) {
-      alert("Gagal menyimpan ke cloud: " + err.message);
+    } catch (err: unknown) {
+      setErrorMsg("Gagal menyimpan ke cloud: " + (err instanceof Error ? err.message : "Terjadi kendala jaringan"));
     } finally {
       setIsUploading(false);
     }
@@ -523,8 +526,8 @@ function SocialContent() {
         setByokModalOpen(false);
         setByokSuccessMsg("");
       }, 1200);
-    } catch (err: any) {
-      alert("Gagal menyimpan key: " + err.message);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Gagal menyimpan key");
     } finally {
       setIsSavingBYOK(false);
     }

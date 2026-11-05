@@ -231,7 +231,7 @@ export default function ExpensesPage() {
                         {exp.description || "Pengeluaran Operasional"}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="inline-block px-2 py-1 bg-slate-100 text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+                        <span className="inline-block px-2 py-1 bg-muted text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           {exp.payments?.[0]?.payment_method || "TUNAI"}
                         </span>
                       </td>

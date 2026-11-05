@@ -338,7 +338,7 @@ export default function PurchasesPage() {
       setIsDetailModalOpen(false);
       await loadData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Gagal mencatat pembayaran faktur");
+      setErrorMsg(err instanceof Error ? err.message : "Gagal mencatat pembayaran faktur");
     } finally {
       setIsSubmittingPayment(false);
     }
@@ -376,12 +376,11 @@ export default function PurchasesPage() {
   // Handle Delete Supplier
   const handleDeleteSupplier = async (supplierId: number) => {
     if (!activeStore) return;
-    if (!confirm("Apakah Anda yakin ingin menghapus pemasok ini?")) return;
     try {
       await api.suppliers.delete(activeStore.id, supplierId);
       await loadData();
-    } catch (err: any) {
-      alert(err.message || "Gagal menghapus pemasok");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Gagal menghapus pemasok");
     }
   };
 

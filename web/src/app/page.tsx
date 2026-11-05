@@ -21,7 +21,7 @@ export default function GatewayPage() {
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-background">
       <div className="w-full max-w-sm px-6 flex flex-col items-center text-center">
         {/* Simple Clean Logo */}
-        <div className="mb-8 flex items-center justify-center w-12 h-12 rounded-lg bg-primary text-foreground font-serif italic text-2xl">
+        <div className="mb-8 flex items-center justify-center w-12 h-12 rounded-lg bg-primary text-primary-foreground font-serif italic text-2xl font-bold">
           A
         </div>
 
@@ -48,7 +48,7 @@ export default function GatewayPage() {
               </div>
 
               <Link href="/dashboard" className="block w-full">
-                <button className="w-full bg-primary hover:bg-primary/90 text-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
+                <button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-md font-medium text-sm transition-colors cursor-pointer">
                   Masuk ke Ruang Kerja
                 </button>
               </Link>
@@ -64,7 +64,7 @@ export default function GatewayPage() {
           ) : (
             <div className="flex flex-col gap-3 w-full">
               <Link href="/login" className="w-full">
-                <button className="w-full bg-primary hover:bg-primary/90 text-foreground py-2.5 rounded-md font-medium text-sm transition-colors">
+                <button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-md font-medium text-sm transition-colors cursor-pointer">
                   Masuk ke Akun
                 </button>
               </Link>

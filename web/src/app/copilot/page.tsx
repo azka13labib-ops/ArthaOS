@@ -281,7 +281,7 @@ export default function AICopilotPage() {
       .filter((item) => item.matched_product_id)
       .map((item) => `${item.matched_product_id}:${item.quantity}`);
     if (draftItems.length === 0) {
-      alert("Tidak ada item yang cocok dengan produk di katalog. Tambahkan item secara manual di kasir.");
+      setExtractOrderError("Tidak ada item yang cocok dengan produk di katalog. Tambahkan item secara manual di kasir.");
       return;
     }
     const params = new URLSearchParams();
@@ -457,7 +457,7 @@ export default function AICopilotPage() {
                 {insights.lowStockCount} SKU
               </span>
             </div>
-            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.lowStockCount > 0 ? 'bg-rose-500/10 text-rose-700' : 'bg-slate-100 text-muted-foreground'}`}>
+            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase ${insights.lowStockCount > 0 ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400' : 'bg-muted text-muted-foreground'}`}>
               {insights.lowStockCount > 0 ? 'Perlu Restock' : 'Aman'}
             </span>
           </div>
@@ -538,7 +538,7 @@ export default function AICopilotPage() {
                                 )}) dengan diskon hemat untuk pelanggan setia.`
                               );
                             }}
-                            className="px-3 py-1.5 bg-muted hover:bg-slate-100 text-muted-foreground border border-border text-xs transition-colors"
+                            className="px-3 py-1.5 bg-muted hover:bg-accent hover:text-accent-foreground text-muted-foreground border border-border text-xs transition-colors"
                           >
                             + {prod.name}
                           </button>
@@ -604,7 +604,7 @@ export default function AICopilotPage() {
                           href={createWhatsAppLink(storeWhatsAppPhone, generatedPromo)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 py-3 px-4 bg-slate-100 hover:bg-border text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-border"
+                          className="flex-1 py-3 px-4 bg-muted hover:bg-accent text-foreground font-semibold text-sm transition-colors flex items-center justify-center gap-2 border border-border"
                         >
                           <Phone className="w-4 h-4" /> Uji Kirim
                         </a>
@@ -810,7 +810,7 @@ export default function AICopilotPage() {
                       <button
                         key={idx}
                         onClick={() => handleSendMessage(prompt)}
-                        className="w-full p-4 border border-border bg-muted hover:bg-slate-100 text-left text-xs text-muted-foreground transition-colors flex items-center justify-between group"
+                        className="w-full p-4 border border-border bg-muted/50 hover:bg-muted text-left text-xs text-muted-foreground transition-colors flex items-center justify-between group"
                       >
                         <span className="pr-4">{prompt}</span>
                         <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0" />
@@ -874,13 +874,13 @@ export default function AICopilotPage() {
                   </div>
                 ) : extractedOrder ? (
                   <div className="bg-card border border-border p-6 space-y-6">
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div className="flex items-center justify-between pb-4 border-b border-border">
                       <h3 className="font-semibold text-foreground">Draft Transaksi</h3>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold tracking-widest uppercase">
+                        <span className="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold tracking-widest uppercase">
                           Perlu Verifikasi Kasir
                         </span>
-                        <span className="px-2 py-1 bg-slate-100 text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+                        <span className="px-2 py-1 bg-muted text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           Skor: {(extractedOrder.confidence_score * 100).toFixed(0)}%
                         </span>
                       </div>

@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ArthaOS — Sistem Kasir & Manajemen Bisnis",
+  title: "ArthaOS - Sistem Kasir & Manajemen Bisnis",
   description:
     "Point of Sale, Inventori FIFO, Buku Kasbon, dan Laporan Keuangan untuk UMKM Indonesia.",
 };

@@ -144,7 +144,7 @@ function PosContent() {
     if (paymentParam === "cash" || paymentParam === "transfer" || paymentParam === "qris" || paymentParam === "debt") {
       setPaymentMethod(paymentParam);
     }
-  // Only run when products load — not on every searchParams change.
+  // Only run when products load, not on every searchParams change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
 

@@ -70,7 +70,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
 
-// Navigation items — every href must have a real destination (R-24)
+// Navigation items: every href must have a real destination (R-24)
 const navigation = [
   { name: "Ringkasan", href: "/dashboard", icon: LayoutDashboard, group: "Utama" },
   { name: "Kasir POS", href: "/pos", icon: ShoppingCart, group: "Utama" },
@@ -160,7 +160,7 @@ function AppSidebarInner({ pathname }: { pathname: string }) {
             className="flex items-center gap-2.5 h-full"
             aria-label="ArthaOS beranda"
           >
-            {/* Logo mark — product name as text, no generated asset (R-23) */}
+            {/* Logo mark: product name as text, no generated asset (R-23) */}
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0 text-primary-foreground font-bold text-sm">
               A
             </div>
@@ -390,7 +390,7 @@ function AppSidebarInner({ pathname }: { pathname: string }) {
   );
 }
 
-// Mobile top bar — shown only on small screens
+// Mobile top bar: shown only on small screens
 function MobileHeader({
   onMenuOpen,
 }: {

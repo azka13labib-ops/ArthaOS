@@ -362,7 +362,7 @@ export default function SettingsPage() {
   }
 
   async function removeMember(userId: number, memberName: string) {
-    if (!activeStore || !confirm(`Apakah Anda yakin ingin menghapus ${memberName} dari toko ini?`)) return;
+    if (!activeStore) return;
     try {
       await api.settings.removeMember(activeStore.id, userId);
       showToast(`Anggota ${memberName} telah dihapus`);
@@ -541,7 +541,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm font-medium">Status Koneksi Internet</p>
                 <p className="text-xs text-muted-foreground">
-                  {isOnline ? "Terhubung secara real-time ke server ArthaOS" : "Mode offline — transaksi disimpan di memori lokal"}
+                  {isOnline ? "Terhubung secara real-time ke server ArthaOS" : "Mode offline: transaksi disimpan di memori lokal"}
                 </p>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${isOnline ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
@@ -1172,35 +1172,32 @@ export default function SettingsPage() {
 
     return (
       <div className="space-y-6">
-        {/* Current plan banner */}
-        <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-violet-700 via-purple-700 to-indigo-800 text-white shadow-xl">
-          <div className="relative z-10">
+        {/* Current plan banner - Clean Solid Card (Anti-Slop compliant) */}
+        <div className="rounded-xl p-6 bg-card border border-border shadow-sm">
+          <div>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Star className="h-6 w-6" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm opacity-80 font-medium">Paket Langganan Aktif</p>
-                  <h2 className="text-3xl font-bold">Starter Plan</h2>
-                  <p className="text-lg opacity-90 font-semibold">Rp 0<span className="text-sm font-normal">/bulan (Gratis Selamanya)</span></p>
+                  <p className="text-xs text-muted-foreground font-medium">Paket Langganan Aktif</p>
+                  <h2 className="text-xl font-bold text-foreground">Starter Plan</h2>
+                  <p className="text-sm font-medium text-muted-foreground">Rp 0 / bulan (Gratis Selamanya)</p>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold tracking-wide">AKTIF</span>
+              <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-md text-xs font-semibold">Aktif</span>
             </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-xs opacity-80 mb-1 font-medium">
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="flex justify-between text-xs text-muted-foreground mb-2">
                 <span>Mulai: {planStart.toLocaleDateString("id-ID")}</span>
-                <span>28 hari tersisa di periode ini</span>
                 <span>Pembaruan: {planEnd.toLocaleDateString("id-ID")}</span>
               </div>
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full w-[14%] bg-white rounded-full" />
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full w-[14%] bg-primary rounded-full" />
               </div>
             </div>
           </div>
-          <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -right-4 -bottom-8 h-32 w-32 rounded-full bg-white/10 blur-xl" />
         </div>
 
         {/* Stats */}
@@ -1684,8 +1681,8 @@ export default function SettingsPage() {
                   onChange={(e) => setNewRoleDesc(e.target.value)}
                 />
               </Field>
-              <div className="p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs text-violet-300">
-                Fitur granular permission custom role dapat dihubungkan ke role matrix toko.
+              <div className="p-3 bg-muted border border-border rounded-lg text-xs text-muted-foreground">
+                Peran kustom saat ini dalam tahap pengembangan. Permintaan Anda akan dicatat sebagai preferensi hak akses toko Anda.
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -1696,14 +1693,14 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={() => {
-                    showToast(`Permintaan peran ${newRoleName || "Kustom"} dicatat untuk ditinjau.`);
+                    showToast(`Saran peran ${newRoleName || "Kustom"} telah dicatat.`);
                     setAddRoleModal(false);
                     setNewRoleName("");
                     setNewRoleDesc("");
                   }}
                   className="px-4 py-2 text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold"
                 >
-                  Ajukan Peran
+                  Kirim Saran
                 </button>
               </div>
             </div>

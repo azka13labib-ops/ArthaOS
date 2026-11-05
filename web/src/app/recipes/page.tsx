@@ -129,13 +129,11 @@ export default function RecipesPage() {
 
   const handleDeleteRecipeItem = async (itemId: number) => {
     if (!activeStore || !selectedProduct) return;
-    if (!confirm("Hapus bahan ini dari resep?")) return;
-
     try {
       await api.recipes.deleteItem(activeStore.id, itemId);
       await loadRecipe(selectedProduct);
     } catch (err) {
-      alert("Gagal menghapus bahan dari resep");
+      setError(err instanceof Error ? err.message : "Gagal menghapus bahan dari resep");
       console.error(err);
     }
   };

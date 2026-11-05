@@ -630,12 +630,17 @@ export default function WhatsAppHubPage() {
                   type="button"
                   variant="outline"
                   className="rounded-none border-border text-xs px-4 h-10"
-                  onClick={() => {
-                    navigator.clipboard.writeText(closingMessage);
-                    alert("Disalin!");
-                  }}
+                  onClick={() => handleCopy(closingMessage, 9999)}
                 >
-                  <Copy className="w-3.5 h-3.5 mr-2" /> Salin Teks
+                  {copiedIndex === 9999 ? (
+                    <span className="text-emerald-500 font-semibold flex items-center">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Tersalin ke Clipboard
+                    </span>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 mr-2" /> Salin Teks
+                    </>
+                  )}
                 </Button>
                 {phone && (
                   <a

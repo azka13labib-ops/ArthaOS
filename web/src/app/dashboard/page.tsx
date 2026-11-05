@@ -60,7 +60,7 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 280, damping: 24 } },
 };
 
-// KPI card data — maps to a single KPI block
+// KPI card data: maps to a single KPI block
 interface KpiCardProps {
   title: string;
   value: string;
@@ -195,7 +195,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Empty state — no store selected (R-27)
+  // Empty state: no store selected (R-27)
   if (!activeStore) {
     return (
       <AppLayout>

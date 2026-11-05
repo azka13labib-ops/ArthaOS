@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
 import { Supplier, Purchase, Product, RawMaterial, CreatePurchaseRequest } from "@/lib/types";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   Truck,
   Plus,
@@ -52,8 +56,16 @@ function formatRupiah(amount: number): string {
 }
 
 export default function PurchasesPage() {
+  const router = useRouter();
+  const { token, isLoading: authLoading } = useAuth();
   const { activeStore } = useStore();
   const [activeTab, setActiveTab] = useState<"purchases" | "suppliers">("purchases");
+
+  useEffect(() => {
+    if (!authLoading && !token) {
+      router.push("/login");
+    }
+  }, [token, authLoading, router]);
 
   // Data states
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -384,8 +396,23 @@ export default function PurchasesPage() {
     }
   };
 
+  if (!activeStore) {
+    return (
+      <AppLayout>
+        <div className="p-8 max-w-3xl mx-auto mt-12">
+          <EmptyState
+            icon={<Truck className="w-8 h-8 text-muted-foreground" />}
+            title="Pilih Toko Terlebih Dahulu"
+            description="Silakan pilih outlet aktif Anda dari menu samping untuk mengelola pembelian dan pemasok."
+          />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
-    <div className="space-y-6 pb-12">
+    <AppLayout>
+      <div className="space-y-6 pb-12">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -1310,6 +1337,7 @@ export default function PurchasesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

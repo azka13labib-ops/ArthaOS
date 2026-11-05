@@ -262,3 +262,56 @@ CREATE TABLE push_subscriptions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ==========================================
+-- 7. SUPPLIER PAYMENTS & SOCIAL MARKETING
+-- ==========================================
+CREATE TABLE supplier_payments (
+    id SERIAL PRIMARY KEY,
+    purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    amount BIGINT NOT NULL,
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'cash',
+    payment_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE social_accounts (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    platform VARCHAR(50) NOT NULL,
+    platform_user_id VARCHAR(255) NOT NULL,
+    username VARCHAR(255) NOT NULL,
+    access_token TEXT NOT NULL,
+    token_expires_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE social_posts (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    social_account_id INTEGER REFERENCES social_accounts(id) ON DELETE SET NULL,
+    caption TEXT NOT NULL,
+    image_url TEXT,
+    post_type VARCHAR(50) DEFAULT 'feed',
+    status VARCHAR(50) DEFAULT 'draft',
+    scheduled_at TIMESTAMP WITH TIME ZONE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE store_ai_usages (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    year_month VARCHAR(7) NOT NULL,
+    captions_generated INTEGER DEFAULT 0,
+    posters_rendered INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (store_id, year_month)
+);

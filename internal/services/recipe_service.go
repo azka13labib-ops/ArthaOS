@@ -11,7 +11,6 @@ type RecipeService interface {
 	Create(storeID, productID, rawMaterialID uint, quantity int) (*models.RecipeItem, error)
 	GetByProductID(storeID, productID uint) ([]models.RecipeItem, error)
 	Delete(storeID, id uint) error
-	DeleteByProductID(productID uint) error
 }
 
 type recipeService struct {
@@ -58,8 +57,4 @@ func (s *recipeService) GetByProductID(storeID, productID uint) ([]models.Recipe
 
 func (s *recipeService) Delete(storeID, id uint) error {
 	return s.recipeRepo.Delete(storeID, id)
-}
-
-func (s *recipeService) DeleteByProductID(productID uint) error {
-	return s.recipeRepo.DeleteByProductID(productID)
 }

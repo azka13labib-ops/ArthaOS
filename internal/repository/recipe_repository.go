@@ -10,7 +10,6 @@ type RecipeRepository interface {
 	Create(recipeItem *models.RecipeItem) error
 	GetByProductID(storeID, productID uint) ([]models.RecipeItem, error)
 	Delete(storeID, id uint) error
-	DeleteByProductID(productID uint) error
 }
 
 type recipeRepo struct {
@@ -41,8 +40,4 @@ func (r *recipeRepo) Delete(storeID, id uint) error {
 			AND recipe_items.product_id = products.id
 			AND products.store_id = ?
 	`, id, storeID).Error
-}
-
-func (r *recipeRepo) DeleteByProductID(productID uint) error {
-	return r.db.Where("product_id = ?", productID).Delete(&models.RecipeItem{}).Error
 }

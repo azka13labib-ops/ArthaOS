@@ -217,15 +217,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	tenantGroup.Post("/settings/push/subscribe", settingsHandler.SubscribePush)
 	tenantGroup.Post("/settings/push/unsubscribe", settingsHandler.UnsubscribePush)
 
-	adminGroup := tenantGroup.Group("/admin", middleware.RequireRole("owner"))
-
 	if backupHandler != nil {
 		tenantGroup.Post("/backups", middleware.RequireRole("owner"), backupHandler.Create)
 		tenantGroup.Get("/backups", middleware.RequireRole("owner"), backupHandler.List)
 		tenantGroup.Post("/backups/restore", middleware.RequireRole("owner"), backupHandler.Restore)
-
-		adminGroup.Post("/backups", backupHandler.Create)
-		adminGroup.Get("/backups", backupHandler.List)
-		adminGroup.Post("/backups/restore", backupHandler.Restore)
 	}
 }

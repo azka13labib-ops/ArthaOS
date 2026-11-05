@@ -780,70 +780,83 @@ export default function PurchasesPage() {
 
       {/* Modal 1: Catat Pembelian Baru */}
       <Dialog open={isPurchaseModalOpen} onOpenChange={setIsPurchaseModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              Catat Pembelian Masuk / Kulakan (PO)
-            </DialogTitle>
-            <DialogDescription>
-              Input faktur stok masuk. Stok produk atau bahan baku akan otomatis bertambah ke sistem.
-            </DialogDescription>
+        <DialogContent className="w-full sm:max-w-4xl max-h-[92vh] overflow-y-auto p-6 sm:p-8 rounded-2xl border border-border shadow-2xl bg-card">
+          <DialogHeader className="pb-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
+                  Catat Pembelian Masuk (Kulakan / PO)
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Input faktur belanja grosir. Stok produk atau bahan baku akan otomatis bertambah ke inventori toko.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           {errorMsg && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg flex items-center gap-2">
+            <div className="p-3.5 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl flex items-center gap-2.5">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{errorMsg}</span>
+              <span className="font-medium text-xs sm:text-sm">{errorMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmitPurchase} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-semibold">Pilih Pemasok (Supplier)</Label>
-                <select
-                  value={purchaseForm.supplier_id || ""}
-                  onChange={(e) =>
-                    setPurchaseForm({
-                      ...purchaseForm,
-                      supplier_id: e.target.value ? Number(e.target.value) : null,
-                    })
-                  }
-                  className="w-full mt-1.5 h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="">-- Tanpa Pemasok / Beli Lepas --</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} {s.phone ? `(${s.phone})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <form onSubmit={handleSubmitPurchase} className="space-y-6 pt-2">
+            {/* Informasi Faktur & Supplier */}
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/70 space-y-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-primary" /> Informasi Faktur & Supplier
+              </h4>
 
-              <div>
-                <Label className="text-xs font-semibold">Nomor Faktur / Nota Pembelian</Label>
-                <Input
-                  placeholder="Contoh: INV-SUP-009 (Kosongkan utk auto)"
-                  value={purchaseForm.invoice_number}
-                  onChange={(e) => setPurchaseForm({ ...purchaseForm, invoice_number: e.target.value })}
-                  className="mt-1.5 h-9"
-                />
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold">Tanggal Pembelian</Label>
-                <Input
-                  type="date"
-                  value={purchaseForm.purchase_date}
-                  onChange={(e) => setPurchaseForm({ ...purchaseForm, purchase_date: e.target.value })}
-                  className="mt-1.5 h-9"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold">Status Bayar</Label>
+                  <Label className="text-xs font-medium text-foreground">Pemasok (Supplier)</Label>
+                  <select
+                    value={purchaseForm.supplier_id || ""}
+                    onChange={(e) =>
+                      setPurchaseForm({
+                        ...purchaseForm,
+                        supplier_id: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                    className="w-full mt-1.5 h-10 px-3 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  >
+                    <option value="">-- Beli Lepas (Tanpa Pemasok) --</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} {s.phone ? `• ${s.phone}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-foreground">Nomor Nota / Faktur</Label>
+                  <Input
+                    placeholder="Contoh: INV-SUP-001"
+                    value={purchaseForm.invoice_number}
+                    onChange={(e) => setPurchaseForm({ ...purchaseForm, invoice_number: e.target.value })}
+                    className="mt-1.5 h-10 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium text-foreground">Tanggal Faktur</Label>
+                  <Input
+                    type="date"
+                    value={purchaseForm.purchase_date}
+                    onChange={(e) => setPurchaseForm({ ...purchaseForm, purchase_date: e.target.value })}
+                    className="mt-1.5 h-10 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <Label className="text-xs font-medium text-foreground">Status Pembayaran Faktur</Label>
                   <select
                     value={purchaseForm.payment_status}
                     onChange={(e) =>
@@ -852,14 +865,15 @@ export default function PurchasesPage() {
                         payment_status: e.target.value as "paid" | "pending",
                       })
                     }
-                    className="w-full mt-1.5 h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground"
+                    className="w-full mt-1.5 h-10 px-3 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
-                    <option value="paid">Lunas</option>
-                    <option value="pending">Tempo / Hutang</option>
+                    <option value="paid">✓ Lunas Sekarang</option>
+                    <option value="pending">⏳ Jatuh Tempo (Hutang Usaha)</option>
                   </select>
                 </div>
+
                 <div>
-                  <Label className="text-xs font-semibold">Metode</Label>
+                  <Label className="text-xs font-medium text-foreground">Metode Pembayaran</Label>
                   <select
                     value={purchaseForm.payment_method}
                     onChange={(e) =>
@@ -868,23 +882,31 @@ export default function PurchasesPage() {
                         payment_method: e.target.value as "cash" | "transfer" | "debt",
                       })
                     }
-                    className="w-full mt-1.5 h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground"
+                    className="w-full mt-1.5 h-10 px-3 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
                     <option value="cash">Tunai (Cash)</option>
-                    <option value="transfer">Transfer Bank</option>
-                    <option value="debt">Kasbon / Tempo</option>
+                    <option value="transfer">Transfer Rekening Bank</option>
+                    <option value="debt">Kasbon / Tempo Supplier</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Item Selector Section */}
-            <div className="pt-3 border-t border-border">
-              <Label className="text-xs font-semibold mb-2 block">Pilih Barang yang Masuk:</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            {/* Pemilihan Barang Masuk */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5 text-primary" /> Rincian Item Barang Masuk
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Pilih produk jadi atau bahan baku dari katalog toko
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/20 border border-border/80 rounded-xl">
                 <div>
-                  <span className="text-[11px] text-muted-foreground flex items-center gap-1 mb-1">
-                    <Package className="h-3 w-3" /> Tambah Produk Jadi:
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1.5">
+                    <Package className="h-3.5 w-3.5 text-blue-500" /> Tambah Produk Jadi (Retail)
                   </span>
                   <select
                     onChange={(e) => {
@@ -893,20 +915,20 @@ export default function PurchasesPage() {
                         e.target.value = "";
                       }
                     }}
-                    className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs text-foreground"
+                    className="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
-                    <option value="">+ Pilih Produk...</option>
+                    <option value="">+ Klik untuk memilih produk jadi...</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} (Stok: {p.current_stock})
+                        {p.name} (Stok Saat Ini: {p.current_stock})
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-muted-foreground flex items-center gap-1 mb-1">
-                    <Wheat className="h-3 w-3" /> Tambah Bahan Baku:
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5 mb-1.5">
+                    <Wheat className="h-3.5 w-3.5 text-amber-500" /> Tambah Bahan Baku (Resep)
                   </span>
                   <select
                     onChange={(e) => {
@@ -915,12 +937,12 @@ export default function PurchasesPage() {
                         e.target.value = "";
                       }
                     }}
-                    className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs text-foreground"
+                    className="w-full h-9 px-3 rounded-lg border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
-                    <option value="">+ Pilih Bahan Baku...</option>
+                    <option value="">+ Klik untuk memilih bahan baku...</option>
                     {rawMaterials.map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.name} ({r.unit} - Stok: {r.current_stock})
+                        {r.name} ({r.unit} • Stok: {r.current_stock})
                       </option>
                     ))}
                   </select>
@@ -928,65 +950,75 @@ export default function PurchasesPage() {
               </div>
 
               {/* Items Table */}
-              <div className="rounded-lg border border-border overflow-hidden">
+              <div className="rounded-xl border border-border overflow-hidden shadow-xs">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-muted/60 border-b border-border uppercase tracking-wider text-muted-foreground">
+                  <thead className="bg-muted/70 border-b border-border uppercase tracking-wider text-muted-foreground font-semibold">
                     <tr>
-                      <th className="py-2 px-3">Nama Barang</th>
-                      <th className="py-2 px-3 w-28">Kuantitas</th>
-                      <th className="py-2 px-3 w-36">Harga Beli Satuan</th>
-                      <th className="py-2 px-3 w-32 text-right">Subtotal</th>
-                      <th className="py-2 px-3 w-10 text-center"></th>
+                      <th className="py-2.5 px-4">Nama Barang</th>
+                      <th className="py-2.5 px-3 w-32">Kuantitas</th>
+                      <th className="py-2.5 px-3 w-40">Harga Beli Satuan</th>
+                      <th className="py-2.5 px-4 w-36 text-right">Subtotal</th>
+                      <th className="py-2.5 px-2 w-12 text-center"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/60">
+                  <tbody className="divide-y divide-border/60 bg-card">
                     {purchaseForm.items.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-6 text-center text-muted-foreground italic">
-                          Belum ada item barang yang dipilih di atas.
+                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                          <Package className="h-6 w-6 mx-auto mb-2 opacity-40" />
+                          <p className="font-medium">Belum ada item barang yang dipilih</p>
+                          <p className="text-[11px] opacity-75 mt-0.5">Gunakan dropdown di atas untuk memasukkan barang kulakan ke daftar</p>
                         </td>
                       </tr>
                     ) : (
                       purchaseForm.items.map((it, idx) => (
-                        <tr key={`${it.item_type}-${it.id}-${idx}`}>
-                          <td className="py-2 px-3 font-medium text-foreground">
-                            <span className="flex items-center gap-1.5">
-                              {it.item_type === "product" ? (
-                                <Package className="h-3.5 w-3.5 text-blue-500" />
-                              ) : (
-                                <Wheat className="h-3.5 w-3.5 text-amber-500" />
-                              )}
-                              {it.name}
-                            </span>
+                        <tr key={`${it.item_type}-${it.id}-${idx}`} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-2.5 px-4 font-medium text-foreground">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase shrink-0 ${
+                                  it.item_type === "product"
+                                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                }`}
+                              >
+                                {it.item_type === "product" ? "Produk" : "Bahan"}
+                              </span>
+                              <span className="truncate">{it.name}</span>
+                            </div>
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-2.5 px-3">
                             <Input
                               type="number"
                               min={1}
                               value={it.quantity}
                               onChange={(e) => handleUpdateItemQty(idx, parseInt(e.target.value) || 1)}
-                              className="h-7 w-24 text-xs"
+                              className="h-8 w-28 text-xs font-semibold rounded-md"
                             />
                           </td>
-                          <td className="py-2 px-3">
-                            <Input
-                              type="number"
-                              min={0}
-                              value={it.buy_price}
-                              onChange={(e) => handleUpdateItemPrice(idx, parseInt(e.target.value) || 0)}
-                              className="h-7 w-32 text-xs"
-                            />
+                          <td className="py-2.5 px-3">
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-semibold">Rp</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={it.buy_price}
+                                onChange={(e) => handleUpdateItemPrice(idx, parseInt(e.target.value) || 0)}
+                                className="h-8 w-36 text-xs pl-7 font-semibold rounded-md"
+                              />
+                            </div>
                           </td>
-                          <td className="py-2 px-3 text-right font-semibold text-foreground">
+                          <td className="py-2.5 px-4 text-right font-bold text-foreground text-sm">
                             {formatRupiah(it.quantity * it.buy_price)}
                           </td>
-                          <td className="py-2 px-3 text-center">
+                          <td className="py-2.5 px-2 text-center">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveItem(idx)}
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                              title="Hapus item"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -998,29 +1030,54 @@ export default function PurchasesPage() {
                 </table>
               </div>
 
-              {/* Total Summary */}
-              <div className="mt-3 flex items-center justify-between bg-muted/40 p-3 rounded-lg border border-border/60">
-                <span className="text-xs font-semibold text-muted-foreground">Total Tagihan Faktur:</span>
-                <span className="text-lg font-bold text-foreground">{formatRupiah(totalPurchaseCalc)}</span>
+              {/* Total Summary Highlight Card */}
+              <div className="flex items-center justify-between bg-primary/5 p-4 rounded-xl border border-primary/20">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Total Tagihan Faktur</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {purchaseForm.items.length} jenis barang siap dimasukkan ke stok toko
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-extrabold tracking-tight text-primary">
+                    {formatRupiah(totalPurchaseCalc)}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div>
-              <Label className="text-xs font-semibold">Catatan Tambahan (Opsional)</Label>
+              <Label className="text-xs font-medium text-foreground">Catatan Faktur (Opsional)</Label>
               <Input
-                placeholder="Misal: Barang diantar via kurir toko, jatuh tempo 14 hari"
+                placeholder="Contoh: Barang tiba via kargo, nomor resi EXP-88992"
                 value={purchaseForm.notes}
                 onChange={(e) => setPurchaseForm({ ...purchaseForm, notes: e.target.value })}
-                className="mt-1.5 h-9"
+                className="mt-1.5 h-10 rounded-lg text-sm"
               />
             </div>
 
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsPurchaseModalOpen(false)}>
+            <DialogFooter className="pt-4 border-t border-border flex sm:justify-end gap-2.5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsPurchaseModalOpen(false)}
+                className="h-10 px-5 rounded-lg text-xs font-medium"
+              >
                 Batal
               </Button>
-              <Button type="submit" disabled={submitting || purchaseForm.items.length === 0}>
-                {submitting ? "Menyimpan..." : "Simpan & Tambah Stok"}
+              <Button
+                type="submit"
+                disabled={submitting || purchaseForm.items.length === 0}
+                className="h-10 px-6 rounded-lg text-xs font-semibold gap-2 shadow-sm"
+              >
+                {submitting ? (
+                  "Menyimpan Faktur..."
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Simpan & Tambah Stok
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>
@@ -1029,7 +1086,7 @@ export default function PurchasesPage() {
 
       {/* Modal 2: Tambah / Edit Supplier */}
       <Dialog open={isSupplierModalOpen} onOpenChange={setIsSupplierModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-full sm:max-w-md rounded-2xl p-6 bg-card border border-border shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
@@ -1115,7 +1172,7 @@ export default function PurchasesPage() {
 
       {/* Modal 3: Detail Faktur Pembelian */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-card border border-border shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center justify-between">
               <span className="flex items-center gap-2">
@@ -1266,7 +1323,7 @@ export default function PurchasesPage() {
 
       {/* Modal Catat Pembayaran / Pelunasan Utang Supplier */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-full sm:max-w-md rounded-2xl p-6 bg-card border border-border shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <DollarSign className="h-5 w-5 text-amber-600" />

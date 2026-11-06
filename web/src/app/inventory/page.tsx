@@ -9,21 +9,24 @@ import {
   SlidersHorizontal,
   History,
   AlertCircle,
-  TrendingUp,
   RefreshCw,
   X,
-  FileSpreadsheet,
+  Layers,
+  Coins,
+  CheckCircle2,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Spinner } from "@/components/ui/Spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
-import { formatIDR, formatDate } from "@/lib/utils";
+import { formatIDR, formatDate, cn } from "@/lib/utils";
 import { Product, InventoryMovement } from "@/lib/types";
 
 export default function InventoryPage() {
@@ -35,6 +38,16 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<"all" | "low" | "out">("all");
+
+  // Toast feedback state
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
 
   // Add Product Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -76,6 +89,7 @@ export default function InventoryPage() {
       setProducts(Array.isArray(data) ? data : []);
     } catch {
       setProducts([]);
+      showToast("Gagal memuat katalog produk toko", "error");
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +131,7 @@ export default function InventoryPage() {
       setNewProductBuyPrice("");
       setNewProductSellPrice("");
       setNewProductInitialStock("");
+      showToast("Produk baru berhasil ditambahkan ke katalog");
     } catch (err: unknown) {
       setProductError(
         err instanceof Error ? err.message : "Gagal menambahkan produk baru"
@@ -139,7 +154,7 @@ export default function InventoryPage() {
     const finalDelta = adjustmentType === "add" ? Math.abs(deltaNumber) : -Math.abs(deltaNumber);
 
     if (adjustmentType === "reduce" && Math.abs(finalDelta) > selectedProduct.current_stock) {
-      setAdjustError("Jumlah pengurangan melebihi stok yang tersedia saat ini");
+      setAdjustError("Jumlah pengurangan melebihi sisa stok yang tersedia");
       return;
     }
 
@@ -159,6 +174,7 @@ export default function InventoryPage() {
       setSelectedProduct(null);
       setAdjustmentDelta("");
       setAdjustmentNotes("");
+      showToast(`Stok ${selectedProduct.name} berhasil diperbarui`);
     } catch (err: unknown) {
       setAdjustError(
         err instanceof Error ? err.message : "Gagal menyesuaikan stok"
@@ -180,6 +196,7 @@ export default function InventoryPage() {
       setMovements(Array.isArray(data) ? data : []);
     } catch {
       setMovements([]);
+      showToast("Gagal memuat log mutasi stok", "error");
     } finally {
       setIsLoadingMovements(false);
     }
@@ -209,31 +226,59 @@ export default function InventoryPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-8 w-full">
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          role="status"
+          className={cn(
+            "fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-xl text-sm transition-all animate-in fade-in slide-in-from-bottom-2 duration-200 bg-card",
+            toast.type === "success"
+              ? "border-emerald-500/30 text-foreground"
+              : "border-destructive/30 text-destructive"
+          )}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+          )}
+          <span className="font-medium">{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="ml-2 text-muted-foreground hover:text-foreground transition-colors p-1"
+            aria-label="Tutup notifikasi"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      <div className="space-y-6 sm:space-y-8 w-full max-w-7xl mx-auto">
         {/* Header Title & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-6 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Stok & Katalog Produk
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               Kelola daftar SKU, penetapan harga jual, mutasi stok, dan audit pergerakan barang.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <Button
               variant="outline"
               onClick={loadProducts}
               disabled={isLoading}
-              className="h-10 px-4 shadow-sm"
+              className="h-11 sm:h-10 px-4 min-h-[44px] sm:min-h-[40px] rounded-lg border-border hover:bg-muted text-sm font-medium"
               title="Segarkan daftar produk"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={cn("w-4 h-4 mr-2", isLoading && "animate-spin")} />
               Segarkan
             </Button>
             <Button
               variant="default"
-              className="h-10 px-6 shadow-sm"
+              className="h-11 sm:h-10 px-5 min-h-[44px] sm:min-h-[40px] rounded-lg shadow-sm text-sm font-medium"
               onClick={() => {
                 setProductError("");
                 setIsAddModalOpen(true);
@@ -246,44 +291,93 @@ export default function InventoryPage() {
 
         {/* 3 Overview Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
-            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Variasi SKU</p>
-            <h3 className="text-3xl font-medium text-foreground tracking-tight">
-              {products.length} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Item</span>
-            </h3>
-          </div>
+          {isLoading ? (
+            <>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 space-y-3">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 space-y-3">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-9 w-24" />
+              </div>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 space-y-3">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 flex flex-col justify-between hover:border-border/80 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Total Variasi SKU
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Package className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tracking-tight text-foreground">
+                    {products.length}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium">SKU</span>
+                </div>
+              </div>
 
-          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
-            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Total Unit Tersedia</p>
-            <h3 className="text-3xl font-medium text-foreground tracking-tight">
-              {totalStockCount} <span className="text-sm text-muted-foreground font-normal tracking-normal lowercase">Pcs</span>
-            </h3>
-          </div>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 flex flex-col justify-between hover:border-border/80 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Total Unit Tersedia
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tracking-tight text-foreground">
+                    {totalStockCount}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium">Pcs fisik</span>
+                </div>
+              </div>
 
-          <div className="bg-card border border-border rounded-xl shadow-sm p-6 md:p-8 flex flex-col justify-between hover:border-primary/50 transition-colors">
-            <p className="text-[13px] font-medium text-muted-foreground mb-6 uppercase tracking-wider">Nilai Aset Tersimpan</p>
-            <h3 className="text-3xl font-medium text-primary tracking-tight">
-              {formatIDR(totalValuation)}
-            </h3>
-          </div>
+              <div className="bg-card border border-border rounded-xl p-5 sm:p-6 flex flex-col justify-between hover:border-border/80 transition-colors">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Nilai Aset Tersimpan
+                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Coins className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-primary">
+                    {formatIDR(totalValuation)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Search & Stock Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full sm:w-96 group">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="relative flex-1 max-w-md group">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors pointer-events-none" />
             <input
               type="text"
               placeholder="Cari nama produk, SKU, barcode..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 text-sm bg-background text-foreground border border-border rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary hover:border-primary/50 transition-colors placeholder:text-muted-foreground"
+              className="w-full h-11 sm:h-10 pl-10 pr-9 text-sm bg-card text-foreground border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-muted-foreground"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors"
+                aria-label="Bersihkan pencarian"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -291,84 +385,104 @@ export default function InventoryPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center w-full sm:w-auto border border-border bg-card rounded-md shadow-sm overflow-hidden p-1 gap-1">
+          <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border gap-1 overflow-x-auto shrink-0">
             <button
               type="button"
               onClick={() => setStockFilter("all")}
-              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
+              className={cn(
+                "h-9 px-3.5 rounded-md text-xs font-medium transition-all min-h-[36px] flex items-center justify-center shrink-0",
                 stockFilter === "all"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+                  ? "bg-card text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+              )}
             >
               Semua ({products.length})
             </button>
             <button
               type="button"
               onClick={() => setStockFilter("low")}
-              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
+              className={cn(
+                "h-9 px-3.5 rounded-md text-xs font-medium transition-all min-h-[36px] flex items-center justify-center shrink-0",
                 stockFilter === "low"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+                  ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+              )}
             >
               Menipis (≤5)
             </button>
             <button
               type="button"
               onClick={() => setStockFilter("out")}
-              className={`px-4 py-1.5 text-xs font-semibold tracking-wide rounded-sm transition-colors ${
+              className={cn(
+                "h-9 px-3.5 rounded-md text-xs font-medium transition-all min-h-[36px] flex items-center justify-center shrink-0",
                 stockFilter === "out"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+                  ? "bg-destructive/15 text-destructive font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+              )}
             >
               Habis (0)
             </button>
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        {/* Products Table Card */}
+        <div className="bg-card border border-border rounded-xl shadow-xs overflow-hidden">
           {isLoading ? (
-            <div className="p-12">
-              <Spinner size="md" />
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between pb-4 border-b border-border">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-6 w-16 rounded-md" />
+                  <Skeleton className="h-9 w-24 rounded-lg" />
+                </div>
+              ))}
             </div>
           ) : filteredProducts.length === 0 ? (
-            <EmptyState
-              icon={<Package className="w-8 h-8 text-muted-foreground" />}
-              title="Tidak Ada Produk"
-              description={
-                searchQuery || stockFilter !== "all"
-                  ? "Tidak ada produk yang sesuai dengan kriteria pencarian/filter."
-                  : "Katalog produk Anda masih kosong."
-              }
-              actionLabel={
-                searchQuery || stockFilter !== "all"
-                  ? "Reset Filter"
-                  : "Tambah Produk Baru"
-              }
-              onAction={() => {
-                if (searchQuery || stockFilter !== "all") {
-                  setSearchQuery("");
-                  setStockFilter("all");
-                } else {
-                  setIsAddModalOpen(true);
+            <div className="p-8 sm:p-12">
+              <EmptyState
+                icon={<Package className="w-8 h-8 text-muted-foreground" />}
+                title="Tidak Ada Produk"
+                description={
+                  searchQuery || stockFilter !== "all"
+                    ? "Tidak ada produk yang cocok dengan pencarian atau filter yang dipilih."
+                    : "Katalog produk toko Anda masih kosong. Daftarkan produk untuk mulai mengelola stok."
                 }
-              }}
-            />
+                actionLabel={
+                  searchQuery || stockFilter !== "all"
+                    ? "Reset Pencarian & Filter"
+                    : "Tambah Produk Baru"
+                }
+                onAction={() => {
+                  if (searchQuery || stockFilter !== "all") {
+                    setSearchQuery("");
+                    setStockFilter("all");
+                  } else {
+                    setIsAddModalOpen(true);
+                  }
+                }}
+              />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="text-muted-foreground border-b border-border">
+                <thead className="bg-muted/40 text-muted-foreground border-b border-border text-xs font-semibold uppercase tracking-wider">
                   <tr>
-                    <th className="px-6 py-4 font-medium">SKU & Barcode</th>
-                    <th className="px-6 py-4 font-medium">Nama Produk</th>
-                    <th className="px-6 py-4 font-medium text-right">Harga Beli</th>
-                    <th className="px-6 py-4 font-medium text-right">Harga Jual</th>
-                    <th className="px-6 py-4 font-medium text-right">Margin Laba</th>
-                    <th className="px-6 py-4 font-medium text-center">Stok Fisik</th>
-                    <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                    <th className="px-5 sm:px-6 py-3.5">SKU & Barcode</th>
+                    <th className="px-5 sm:px-6 py-3.5">Nama Produk</th>
+                    <th className="px-5 sm:px-6 py-3.5 text-right">Harga Beli</th>
+                    <th className="px-5 sm:px-6 py-3.5 text-right">Harga Jual</th>
+                    <th className="px-5 sm:px-6 py-3.5 text-right">Margin Laba</th>
+                    <th className="px-5 sm:px-6 py-3.5 text-center">Stok Fisik</th>
+                    <th className="px-5 sm:px-6 py-3.5 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -379,53 +493,56 @@ export default function InventoryPage() {
                         : 0;
 
                     return (
-                      <tr key={p.id} className="hover:bg-card transition-colors">
-                        <td className="px-6 py-4 font-mono">
-                          <span className="font-semibold text-foreground block">{p.sku}</span>
+                      <tr key={p.id} className="hover:bg-muted/40 transition-colors">
+                        <td className="px-5 sm:px-6 py-4 font-mono">
+                          <span className="font-semibold text-foreground block text-sm">{p.sku}</span>
                           <span className="text-[11px] text-muted-foreground block tracking-wider mt-0.5">
                             {p.barcode || "-"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-medium text-foreground max-w-[200px] truncate">
+                        <td className="px-5 sm:px-6 py-4 font-medium text-foreground max-w-[240px] truncate">
                           {p.name}
                         </td>
-                        <td className="px-6 py-4 text-right text-muted-foreground">
+                        <td className="px-5 sm:px-6 py-4 text-right text-muted-foreground">
                           {formatIDR(p.buy_price)}
                         </td>
-                        <td className="px-6 py-4 text-right font-semibold text-foreground">
+                        <td className="px-5 sm:px-6 py-4 text-right font-semibold text-foreground">
                           {formatIDR(p.sell_price)}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 sm:px-6 py-4 text-right">
                           <span
-                            className={`inline-block px-2 py-0.5 text-[11px] font-bold tracking-wider ${
+                            className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border",
                               margin >= 30
-                                ? "bg-emerald-500/10 text-primary"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                                 : margin > 0
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-rose-500/10 text-rose-700"
-                            }`}
+                                ? "bg-muted text-muted-foreground border-border"
+                                : "bg-destructive/10 text-destructive border-destructive/20"
+                            )}
                           >
-                            +{margin}%
+                            {margin > 0 ? `+${margin}%` : `${margin}%`}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-5 sm:px-6 py-4 text-center">
                           <span
-                            className={`inline-block px-2 py-0.5 text-xs font-bold ${
+                            className={cn(
+                              "inline-flex items-center justify-center min-w-[28px] px-2.5 py-1 rounded-md text-xs font-semibold border",
                               p.current_stock === 0
-                                ? "bg-rose-100 text-rose-700"
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
                                 : p.current_stock <= 5
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-muted text-foreground"
-                            }`}
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                : "bg-muted text-foreground border-border"
+                            )}
                           >
                             {p.current_stock}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 sm:px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
-                              className="h-9 text-xs px-3.5"
+                              size="sm"
+                              className="h-10 sm:h-9 px-3 min-h-[40px] sm:min-h-[36px] rounded-lg text-xs font-medium border-border hover:bg-muted"
                               onClick={() => {
                                 setSelectedProduct(p);
                                 setAdjustmentType("add");
@@ -433,15 +550,16 @@ export default function InventoryPage() {
                                 setAdjustError("");
                                 setIsAdjustModalOpen(true);
                               }}
-                              title="Sesuaikan stok / restock"
+                              title="Sesuaikan stok atau restock"
                             >
-                              <SlidersHorizontal className="w-3 h-3 mr-1.5" /> Adjust
+                              <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" /> Adjust
                             </Button>
                             <button
                               type="button"
-                              className="h-9 w-9 rounded-md flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              className="h-10 w-10 sm:h-9 sm:w-9 min-h-[40px] min-w-[40px] sm:min-h-[36px] sm:min-w-[36px] rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               onClick={() => handleViewMovements(p)}
                               title="Riwayat mutasi stok"
+                              aria-label={`Riwayat mutasi untuk ${p.name}`}
                             >
                               <History className="w-4 h-4" />
                             </button>
@@ -464,76 +582,119 @@ export default function InventoryPage() {
         title="Tambah Produk Baru"
         description="Daftarkan SKU baru dengan harga pokok (HPP) dan harga jual."
         maxWidth="lg"
+        className="sm:max-w-xl rounded-2xl p-6 shadow-xl border border-border bg-card"
       >
-        <form onSubmit={handleCreateProduct} className="space-y-5 pt-2">
+        <form onSubmit={handleCreateProduct} className="space-y-4 pt-1">
           {productError && (
-            <div className="p-3 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20">
-              {productError}
+            <div className="p-3 rounded-lg text-xs text-destructive bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{productError}</span>
             </div>
           )}
 
-          <Input
-            label="Nama Produk"
-            placeholder="Contoh: Kopi Susu Gula Aren 250ml"
-            value={newProductName}
-            onChange={(e) => setNewProductName(e.target.value)}
-            required
-            autoFocus
-          />
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              Nama Produk <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Contoh: Kopi Susu Gula Aren 250ml"
+              value={newProductName}
+              onChange={(e) => setNewProductName(e.target.value)}
+              required
+              autoFocus
+              className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+            />
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Kode SKU (Unik)"
-              placeholder="Contoh: KOP-001"
-              value={newProductSKU}
-              onChange={(e) => setNewProductSKU(e.target.value)}
-              required
-            />
-            <Input
-              label="Barcode / EAN (Opsional)"
-              placeholder="Contoh: 899123456789"
-              value={newProductBarcode}
-              onChange={(e) => setNewProductBarcode(e.target.value)}
-            />
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Kode SKU (Unik) <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: KOP-001"
+                value={newProductSKU}
+                onChange={(e) => setNewProductSKU(e.target.value)}
+                required
+                className="w-full h-11 px-3 text-sm font-mono bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground uppercase"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Barcode / EAN (Opsional)
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: 899123456789"
+                value={newProductBarcode}
+                onChange={(e) => setNewProductBarcode(e.target.value)}
+                className="w-full h-11 px-3 text-sm font-mono bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Harga Beli (Rp)"
-              type="number"
-              placeholder="0"
-              value={newProductBuyPrice}
-              onChange={(e) => setNewProductBuyPrice(Number(e.target.value))}
-              required
-            />
-            <Input
-              label="Harga Jual (Rp)"
-              type="number"
-              placeholder="0"
-              value={newProductSellPrice}
-              onChange={(e) => setNewProductSellPrice(Number(e.target.value))}
-              required
-            />
-            <Input
-              label="Stok Awal (pcs)"
-              type="number"
-              placeholder="0"
-              value={newProductInitialStock}
-              onChange={(e) => setNewProductInitialStock(Number(e.target.value))}
-              required
-            />
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Harga Beli (Rp) <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                value={newProductBuyPrice}
+                onChange={(e) => setNewProductBuyPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                required
+                className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Harga Jual (Rp) <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                value={newProductSellPrice}
+                onChange={(e) => setNewProductSellPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                required
+                className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Stok Awal (pcs) <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="number"
+                placeholder="0"
+                min="0"
+                value={newProductInitialStock}
+                onChange={(e) => setNewProductInitialStock(e.target.value === "" ? "" : Number(e.target.value))}
+                required
+                className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+              />
+            </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="px-6"
+              className="h-11 sm:h-10 px-5 rounded-lg border-border hover:bg-muted min-h-[44px] sm:min-h-[40px]"
               onClick={() => setIsAddModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmittingProduct}>
+            <Button
+              type="submit"
+              variant="default"
+              className="h-11 sm:h-10 px-6 rounded-lg min-h-[44px] sm:min-h-[40px] shadow-sm"
+              isLoading={isSubmittingProduct}
+            >
               Simpan Produk
             </Button>
           </div>
@@ -545,74 +706,100 @@ export default function InventoryPage() {
         isOpen={isAdjustModalOpen}
         onClose={() => setIsAdjustModalOpen(false)}
         title="Penyesuaian Stok"
-        description={`Item: ${selectedProduct?.name} (${selectedProduct?.sku}) • Stok: ${selectedProduct?.current_stock} pcs`}
+        description={
+          selectedProduct
+            ? `Item: ${selectedProduct.name} (${selectedProduct.sku}) - Sisa Stok: ${selectedProduct.current_stock} pcs`
+            : "Sesuaikan jumlah unit stok fisik."
+        }
+        maxWidth="lg"
+        className="sm:max-w-xl rounded-2xl p-6 shadow-xl border border-border bg-card"
       >
-        <form onSubmit={handleAdjustStock} className="space-y-5 pt-2">
+        <form onSubmit={handleAdjustStock} className="space-y-4 pt-1">
           {adjustError && (
-            <div className="p-3 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/20">
-              {adjustError}
+            <div className="p-3 rounded-lg text-xs text-destructive bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{adjustError}</span>
             </div>
           )}
 
           {/* Type Switcher */}
           <div>
-            <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-2">
+            <label className="block text-xs font-medium text-foreground mb-1.5 uppercase tracking-wider">
               Tipe Penyesuaian
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setAdjustmentType("add")}
-                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border ${
+                className={cn(
+                  "h-11 px-3 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors border flex items-center justify-center gap-1.5 min-h-[44px]",
                   adjustmentType === "add"
-                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    ? "border-primary bg-primary/10 text-primary shadow-xs"
                     : "border-border bg-card text-muted-foreground hover:bg-muted"
-                }`}
+                )}
               >
-                (+) Masuk
+                <ArrowUpRight className="w-4 h-4" /> Masuk (Restock)
               </button>
               <button
                 type="button"
                 onClick={() => setAdjustmentType("reduce")}
-                className={`py-3 px-3 rounded-md text-xs font-semibold tracking-wider uppercase transition-colors border ${
+                className={cn(
+                  "h-11 px-3 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors border flex items-center justify-center gap-1.5 min-h-[44px]",
                   adjustmentType === "reduce"
-                    ? "border-primary bg-primary/5 text-primary shadow-sm"
+                    ? "border-destructive bg-destructive/10 text-destructive shadow-xs"
                     : "border-border bg-card text-muted-foreground hover:bg-muted"
-                }`}
+                )}
               >
-                (-) Keluar
+                <ArrowDownRight className="w-4 h-4" /> Keluar (Koreksi)
               </button>
             </div>
           </div>
 
-          <Input
-            label="Jumlah Unit (pcs)"
-            type="number"
-            placeholder="Contoh: 10"
-            value={adjustmentDelta}
-            onChange={(e) => setAdjustmentDelta(Number(e.target.value))}
-            required
-            autoFocus
-          />
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              Jumlah Unit (pcs) <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="number"
+              placeholder="Contoh: 10"
+              min="1"
+              value={adjustmentDelta}
+              onChange={(e) => setAdjustmentDelta(e.target.value === "" ? "" : Number(e.target.value))}
+              required
+              autoFocus
+              className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+            />
+          </div>
 
-          <Input
-            label="Alasan / Catatan"
-            placeholder="Contoh: Pembelian supplier / Barang pecah"
-            value={adjustmentNotes}
-            onChange={(e) => setAdjustmentNotes(e.target.value)}
-          />
+          <div>
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              Alasan atau Catatan (Opsional)
+            </label>
+            <input
+              type="text"
+              placeholder="Contoh: Restock supplier, barang rusak, atau opname"
+              value={adjustmentNotes}
+              onChange={(e) => setAdjustmentNotes(e.target.value)}
+              className="w-full h-11 px-3 text-sm bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-foreground"
+            />
+          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border mt-6">
             <Button
               type="button"
               variant="outline"
-              className="px-6"
+              className="h-11 sm:h-10 px-5 rounded-lg border-border hover:bg-muted min-h-[44px] sm:min-h-[40px]"
               onClick={() => setIsAdjustModalOpen(false)}
             >
               Batal
             </Button>
-            <Button type="submit" variant="default" className="px-6 shadow-sm" isLoading={isSubmittingAdjust}>
-              Konfirmasi
+            <Button
+              type="submit"
+              variant="default"
+              className="h-11 sm:h-10 px-6 rounded-lg min-h-[44px] sm:min-h-[40px] shadow-sm"
+              isLoading={isSubmittingAdjust}
+            >
+              Konfirmasi Perubahan
             </Button>
           </div>
         </form>
@@ -623,25 +810,42 @@ export default function InventoryPage() {
         isOpen={isMovementsModalOpen}
         onClose={() => setIsMovementsModalOpen(false)}
         title="Riwayat Pergerakan Stok"
-        description={`Audit log untuk: ${movementProduct?.name}`}
+        description={
+          movementProduct
+            ? `Audit log mutasi untuk: ${movementProduct.name} (${movementProduct.sku})`
+            : "Catatan riwayat transaksi dan penyesuaian stok."
+        }
         maxWidth="lg"
+        className="sm:max-w-xl rounded-2xl p-6 shadow-xl border border-border bg-card"
       >
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-1">
           {isLoadingMovements ? (
-            <div className="p-8">
-              <Spinner size="md" />
+            <div className="py-8 space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="p-3 border border-border rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              ))}
             </div>
           ) : movements.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground bg-card border border-solid border-border">
-              Belum ada riwayat mutasi stok untuk produk ini.
+            <div className="py-10 text-center text-sm text-muted-foreground border border-border rounded-xl bg-muted/20">
+              <Package className="w-8 h-8 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="font-medium text-foreground">Belum ada riwayat mutasi</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Transaksi kasir atau penyesuaian stok akan tercatat otomatis di sini.
+              </p>
             </div>
           ) : (
-            <div className="max-h-80 overflow-y-auto border border-border divide-y divide-slate-100">
+            <div className="max-h-80 overflow-y-auto divide-y divide-border border border-border rounded-xl">
               {movements.map((m) => (
-                <div key={m.id} className="p-4 flex items-center justify-between text-sm bg-card">
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-foreground uppercase text-xs tracking-wider">
+                <div key={m.id} className="p-3.5 flex items-center justify-between text-sm bg-card hover:bg-muted/30 transition-colors">
+                  <div className="pr-3">
+                    <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                      <span className="font-medium text-foreground text-xs uppercase tracking-wider">
                         {m.movement_type === "sale"
                           ? "Penjualan Kasir"
                           : m.movement_type === "restock"
@@ -658,11 +862,12 @@ export default function InventoryPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <span
-                      className={`inline-block px-2 py-1 font-mono text-xs font-bold ${
+                      className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded-md font-mono text-xs font-bold border",
                         m.quantity_delta > 0
-                          ? "bg-emerald-500/10 text-primary"
-                          : "bg-rose-500/10 text-rose-700"
-                      }`}
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : "bg-destructive/10 text-destructive border-destructive/20"
+                      )}
                     >
                       {m.quantity_delta > 0 ? `+${m.quantity_delta}` : m.quantity_delta}
                     </span>
@@ -676,7 +881,7 @@ export default function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="px-8"
+              className="h-11 sm:h-10 px-6 rounded-lg border-border hover:bg-muted min-h-[44px] sm:min-h-[40px]"
               onClick={() => setIsMovementsModalOpen(false)}
             >
               Tutup
@@ -687,5 +892,3 @@ export default function InventoryPage() {
     </AppLayout>
   );
 }
-
-

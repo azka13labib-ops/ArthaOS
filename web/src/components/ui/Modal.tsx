@@ -70,7 +70,7 @@ export function Modal({
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between pb-4 mb-4 border-b border-slate-100">
+        <div className="flex items-start justify-between pb-4 mb-4 border-b border-border">
           <div>
             {title && (
               <h3 id="modal-title" className="text-lg font-bold text-foreground leading-6">
@@ -85,7 +85,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Tutup dialog"
-            className="rounded-lg p-1.5 text-muted-foreground hover:text-muted-foreground hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="w-5 h-5" />
           </button>

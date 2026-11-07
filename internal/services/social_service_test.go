@@ -25,8 +25,8 @@ func TestSocialService_GetTemplates(t *testing.T) {
 	svc := services.NewSocialService(nil, nil, nil, nil, nil, nil, nil, nil, "key", "http://localhost:8080", "./uploads/posters")
 	templates := svc.GetTemplates()
 
-	if len(templates) < 3 {
-		t.Fatalf("Expected at least 3 templates, got %d", len(templates))
+	if len(templates) < 6 {
+		t.Fatalf("Expected at least 6 curated templates, got %d", len(templates))
 	}
 
 	foundPromo := false
@@ -88,5 +88,19 @@ func TestSocialService_RenderPoster(t *testing.T) {
 	filePath := testDir + "/" + res.Filename
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		t.Errorf("Rendered file was not found on disk: %s", filePath)
+	}
+
+	// Verify 9:16 Story / WA Status dimensions
+	storyRes, err := svc.RenderPoster(context.Background(), 1, services.RenderPosterRequest{
+		TemplateID:  "editorial-fnb",
+		Headline:    "Kopi Susu Gula Aren",
+		AspectRatio: "9:16",
+		Theme:       "cream",
+	})
+	if err != nil {
+		t.Fatalf("RenderPoster 9:16 failed: %v", err)
+	}
+	if storyRes.Width != 1080 || storyRes.Height != 1920 {
+		t.Errorf("Expected 1080x1920 for 9:16, got %dx%d", storyRes.Width, storyRes.Height)
 	}
 }

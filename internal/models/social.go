@@ -55,9 +55,11 @@ type PosterTemplate struct {
 	Name              string `json:"name"`
 	Category          string `json:"category"` // promo, new_product, education
 	DefaultBrandColor string `json:"default_brand_color"`
+	DefaultTheme      string `json:"default_theme,omitempty"` // light, cream, dark
+	DefaultFont       string `json:"default_font,omitempty"`  // modern, editorial, promo-bold, warm-casual
 	Description       string `json:"description"`
-	AspectRatio       string `json:"aspect_ratio"` // "4:5"
-	Width             int    `json:"width"`        // 1080
-	Height            int    `json:"height"`       // 1350
+	AspectRatio       string `json:"aspect_ratio"` // default "4:5"
+	Width             int    `json:"width"`        // default 1080
+	Height            int    `json:"height"`       // default 1350
 }
 

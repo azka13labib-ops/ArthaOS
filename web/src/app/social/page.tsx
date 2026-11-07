@@ -1,71 +1,111 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useStore } from "@/context/StoreContext";
 import { api } from "@/lib/api";
-import { Product, PosterTemplate, SocialQuota, SocialAccount } from "@/lib/types";
+import {
+  Product,
+  SocialQuota,
+  GenerateCaptionResponse,
+  RenderPosterResponse,
+  SocialAccount,
+} from "@/lib/types";
+import {
+  ASPECT_RATIO_SPECS,
+  CURATED_TEMPLATES,
+  FONT_PRESETS,
+  POSTER_THEMES,
+  PosterAspectRatio,
+  PosterFontPresetId,
+  PosterTemplateId,
+  PosterThemeId,
+  computeDiscountPercent,
+  renderPosterToCanvas,
+} from "@/components/social/poster-engine";
+import { TemplateThumbnail } from "@/components/social/TemplateThumbnail";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-  Sparkles,
-  Download,
-  Copy,
-  Check,
-  RefreshCw,
-  Tag,
-  Palette,
-  Key,
-  Flame,
-  CheckCircle2,
-  AlertCircle,
-  Share2,
-  ExternalLink,
-  Sliders,
-  Type,
-  CloudUpload,
-  Layers,
-  Unlink,
-  ShieldCheck,
-  Clock,
-} from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Share2,
+  Download,
+  Copy,
+  Check,
+  Key,
+  Palette,
+  Type,
+  Tag,
+  ShoppingBag,
+  MessageCircleHeart,
+  Lightbulb,
+  CloudUpload,
+  RefreshCw,
+  AlertCircle,
+  ExternalLink,
+  Unlink,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  ImagePlus,
+  Trash2,
+  RotateCcw,
+  Search,
+  Wand2,
+  Move,
+  Store as StoreIcon,
+  Plus,
+  X,
+} from "lucide-react";
+
+type StudioTab = "design" | "media" | "content" | "ai";
+type StageTab = "canvas" | "caption";
 
 const GOAL_OPTIONS = [
-  { id: "promo", label: "Promo Diskon / Flash Sale", icon: Flame, desc: "Penawaran hemat, diskon terbatas, & promo paket" },
-  { id: "new_product", label: "Produk Baru / Menu Baru", icon: Sparkles, desc: "Pengumuman menu atau varian baru yang hadir" },
-  { id: "testimonial", label: "Testimoni & Terima Kasih", icon: CheckCircle2, desc: "Apresiasi pelanggan setia & bukti kualitas" },
-  { id: "education", label: "Tips & Edukasi Pelanggan", icon: Tag, desc: "Kutipan inspiratif, tips memilih, & wawasan toko" },
-];
+  { id: "promo", label: "Promo & Diskon", icon: Tag, desc: "Tarik pembeli dengan potongan harga atau paket hemat" },
+  { id: "new_product", label: "Produk / Menu Baru", icon: ShoppingBag, desc: "Kenalkan menu baru atau stok yang baru tiba" },
+  { id: "testimonial", label: "Apresiasi Pelanggan", icon: MessageCircleHeart, desc: "Bangun kedekatan dengan pelanggan setia toko" },
+  { id: "education", label: "Info & Tips Toko", icon: Lightbulb, desc: "Bagikan info jam buka, tips produk, atau kutipan" },
+] as const;
 
 const TONE_OPTIONS = [
-  { id: "santai", label: "Santai & Akrab", hint: "Bahasa tongkrongan akrab, hangat" },
-  { id: "ramah", label: "Ramah & Sopan", hint: "Sopan, hangat untuk keluarga & umum" },
-  { id: "profesional", label: "Profesional & Elegan", hint: "Berwibawa, rapi & terpercaya" },
+  { id: "santai", label: "Santai & Akrab" },
+  { id: "profesional", label: "Profesional" },
+  { id: "ramah", label: "Ramah & Hangat" },
+] as const;
+
+const BRAND_COLOR_SWATCHES = [
+  { name: "Merah Promo", hex: "#E11D48" },
+  { name: "Terakota Kuliner", hex: "#C2410C" },
+  { name: "Kuning Amber", hex: "#D97706" },
+  { name: "Hijau Zamrud", hex: "#059669" },
+  { name: "Toska Butik", hex: "#0F766E" },
+  { name: "Biru Kobalt", hex: "#2563EB" },
+  { name: "Ungu Kalibra", hex: "#9333EA" },
+  { name: "Hitam Arang", hex: "#18181B" },
 ];
 
-const COLOR_PRESETS = [
-  { name: "Crimson Rose", hex: "#E11D48" },
-  { name: "Royal Indigo", hex: "#4F46E5" },
-  { name: "Emerald Green", hex: "#059669" },
-  { name: "Amber Gold", hex: "#D97706" },
-  { name: "Midnight Violet", hex: "#7C3AED" },
-  { name: "Charcoal Dark", hex: "#1E293B" },
+const BADGE_QUICK_CHIPS = [
+  "PROMO SPESIAL",
+  "MENU BARU",
+  "TERLARIS",
+  "DISKON GAJIAN",
+  "INFO TOKO",
 ];
 
-function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
+function InstagramIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -75,6 +115,7 @@ function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
@@ -83,95 +124,155 @@ function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function SocialContent() {
-  const { activeStore } = useStore();
-  const searchParams = useSearchParams();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+function formatIdr(value: number): string {
+  return `Rp ${value.toLocaleString("id-ID")}`;
+}
 
-  // Data states
+function SocialStudioContent() {
+  const { activeStore, isLoadingStores } = useStore();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Store & API data
   const [products, setProducts] = useState<Product[]>([]);
-  const [templates, setTemplates] = useState<PosterTemplate[]>([]);
   const [quota, setQuota] = useState<SocialQuota | null>(null);
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [isLoadingStoreData, setIsLoadingStoreData] = useState(false);
 
-  // Meta connection states
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
-  const [oauthFeedback, setOauthFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  // Studio UI Navigation
+  const [activeTab, setActiveTab] = useState<StudioTab>("design");
+  const [stageTab, setStageTab] = useState<StageTab>("canvas");
+  const [toastBanner, setToastBanner] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Form states
-  const [goal, setGoal] = useState("promo");
-  const [tone, setTone] = useState("santai");
+  // Poster Visual State
+  const [selectedTemplateId, setSelectedTemplateId] = useState<PosterTemplateId>("editorial-fnb");
+  const [aspectRatio, setAspectRatio] = useState<PosterAspectRatio>("4:5");
+  const [themeId, setThemeId] = useState<PosterThemeId>("cream");
+  const [fontPresetId, setFontPresetId] = useState<PosterFontPresetId>("editorial");
+  const [brandColor, setBrandColor] = useState<string>("#C2410C");
+
+  // Poster Content State
+  const [posterStoreName, setPosterStoreName] = useState<string>("");
+  const [badgeText, setBadgeText] = useState<string>("SPESIAL HARI INI");
+  const [headline, setHeadline] = useState<string>("Kopi Susu Gula Aren Segar Setiap Pagi");
+  const [subheadline, setSubheadline] = useState<string>(
+    "Racikan biji kopi pilihan dan gula aren murni. Siap menemani aktivitas harian Anda."
+  );
+  const [promoPrice, setPromoPrice] = useState<string>("Rp 18.000");
+  const [originalPrice, setOriginalPrice] = useState<string>("Rp 24.000");
+  const [showFooter, setShowFooter] = useState<boolean>(true);
+  const [ctaText, setCtaText] = useState<string>("Pesan Sekarang & Kunjungi Outlet");
+  const [contactText, setContactText] = useState<string>("");
+
+  // Product Photo State
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
+  const [uploadedPhotoName, setUploadedPhotoName] = useState<string>("");
+  const [loadedImageEl, setLoadedImageEl] = useState<HTMLImageElement | null>(null);
+  const [imageZoom, setImageZoom] = useState<number>(1);
+  const [imagePanX, setImagePanX] = useState<number>(0);
+  const [imagePanY, setImagePanY] = useState<number>(0);
+  const [isDraggingDropzone, setIsDraggingDropzone] = useState<boolean>(false);
+  const [isPanningCanvas, setIsPanningCanvas] = useState<boolean>(false);
+  const panDragStartRef = useRef<{ startX: number; startY: number; origPanX: number; origPanY: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Store Product Picker & AI Copy State
+  const [productSearch, setProductSearch] = useState<string>("");
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
-  const [extraNote, setExtraNote] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [goal, setGoal] = useState<string>("promo");
+  const [tone, setTone] = useState<string>("santai");
+  const [extraNote, setExtraNote] = useState<string>("");
+  const [applyAiToPoster, setApplyAiToPoster] = useState<boolean>(true);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-  // Editor states (live-synced with canvas)
-  const [selectedTemplateId, setSelectedTemplateId] = useState("promo-deal");
-  const [headline, setHeadline] = useState("PROMO SPESIAL HARI INI");
-  const [subheadline, setSubheadline] = useState("Nikmati produk favorit pilihan dengan harga hemat terbaik minggu ini.");
-  const [priceText, setPriceText] = useState("Mulai Rp 15.000");
-  const [brandColor, setBrandColor] = useState("#E11D48");
-  const [caption, setCaption] = useState(
-    "Promo spesial terbatas di toko kami! Nikmati menu andalan dengan penawaran terbaik hari ini.\n\nStok terbatas setiap hari, yuk mampir dan pesan sekarang!"
+  // Caption & Hashtag State
+  const [caption, setCaption] = useState<string>(
+    "Awali harimu dengan segelas Kopi Susu Gula Aren segar dari toko kami. Manisnya pas, kopinya terasa, dan harganya lebih hemat khusus minggu ini. Yuk mampir ke outlet atau pesan langsung sekarang!"
   );
   const [hashtags, setHashtags] = useState<string[]>([
-    "#promospesial",
-    "#diskonhariini",
-    "#umkmindonesia",
+    "#kopisusu",
     "#kulinerlokal",
-    "#belanjamurah",
+    "#promohariini",
+    "#umkmindonesia",
   ]);
+  const [newTagInput, setNewTagInput] = useState<string>("");
+  const [copiedMode, setCopiedMode] = useState<"all" | "caption" | null>(null);
 
-  // Action states
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [cloudUrl, setCloudUrl] = useState("");
-  const [previewImgUrl, setPreviewImgUrl] = useState("");
+  // Export & Cloud State
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [previewImgUrl, setPreviewImgUrl] = useState<string>("");
+  const [fontsReadyTick, setFontsReadyTick] = useState<number>(0);
+  const [isUploadingCloud, setIsUploadingCloud] = useState<boolean>(false);
+  const [cloudUrl, setCloudUrl] = useState<string>("");
+  const [isSharing, setIsSharing] = useState<boolean>(false);
 
-  // BYOK Modal
-  const [byokModalOpen, setByokModalOpen] = useState(false);
-  const [byokKey, setByokKey] = useState("");
-  const [isSavingBYOK, setIsSavingBYOK] = useState(false);
-  const [byokSuccessMsg, setByokSuccessMsg] = useState("");
+  // Modals: Instagram Account & BYOK
+  const [igDialogOpen, setIgDialogOpen] = useState<boolean>(false);
+  const [confirmDisconnectId, setConfirmDisconnectId] = useState<number | null>(null);
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [isDisconnecting, setIsDisconnecting] = useState<boolean>(false);
 
-  // Handle URL feedback from OAuth callback
+  const [byokModalOpen, setByokModalOpen] = useState<boolean>(false);
+  const [byokKey, setByokKey] = useState<string>("");
+  const [isSavingBYOK, setIsSavingBYOK] = useState<boolean>(false);
+
+  const showToast = useCallback((type: "success" | "error", message: string) => {
+    setToastBanner({ type, message });
+  }, []);
+
   useEffect(() => {
-    if (searchParams.get("connected") === "true") {
-      setOauthFeedback({
-        type: "success",
-        message: "Akun Instagram Business Anda berhasil terhubung!",
-      });
-    } else if (searchParams.get("error")) {
-      setOauthFeedback({
-        type: "error",
-        message: decodeURIComponent(searchParams.get("error") || "Gagal menghubungkan akun Instagram"),
+    if (!toastBanner) return;
+    const timer = setTimeout(() => setToastBanner(null), 4500);
+    return () => clearTimeout(timer);
+  }, [toastBanner]);
+
+  // Sync default store name & address when active store changes
+  useEffect(() => {
+    if (!activeStore) return;
+    setPosterStoreName(activeStore.name);
+    setContactText((prev) => {
+      if (prev.trim()) return prev;
+      return activeStore.address?.trim() || "";
+    });
+  }, [activeStore]);
+
+  // Ensure web fonts trigger a crisp Canvas redraw once loaded
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.fonts) {
+      document.fonts.ready.then(() => {
+        setFontsReadyTick((t) => t + 1);
       });
     }
-  }, [searchParams]);
+  }, []);
 
-  // Load initial store data
+  // Load Store Products, Quota, and Connected Accounts
   const loadStoreData = useCallback(async () => {
     if (!activeStore) return;
     setIsLoadingStoreData(true);
     try {
-      const [prods, tmpls, q, accs] = await Promise.all([
+      const [prodRes, quotaRes, accRes] = await Promise.allSettled([
         api.products.list(activeStore.id),
-        api.social.getTemplates(activeStore.id),
         api.social.getQuota(activeStore.id),
         api.social.getAccounts(activeStore.id),
       ]);
-      setProducts(prods || []);
-      if (tmpls?.templates) {
-        setTemplates(tmpls.templates);
+
+      if (prodRes.status === "fulfilled") {
+        const val = prodRes.value as Product[] | { products?: Product[]; data?: Product[] };
+        const list = Array.isArray(val) ? val : val.products || val.data || [];
+        setProducts(list.filter((p: Product) => p.is_active !== false));
       }
-      setQuota(q);
-      setAccounts(accs?.data || []);
-    } catch (err: any) {
-      console.error("Gagal memuat data sosial:", err);
+
+      if (quotaRes.status === "fulfilled") {
+        setQuota(quotaRes.value);
+      }
+
+      if (accRes.status === "fulfilled" && accRes.value?.data) {
+        setAccounts(accRes.value.data);
+        const activeAcc = accRes.value.data.find((a: SocialAccount) => a.status === "active");
+        if (activeAcc) {
+          setContactText((prev) => prev.trim() || `@${activeAcc.username}`);
+        }
+      }
     } finally {
       setIsLoadingStoreData(false);
     }
@@ -181,206 +282,379 @@ function SocialContent() {
     loadStoreData();
   }, [loadStoreData]);
 
-  // Redraw canvas whenever poster parameters change
-  const redrawCanvas = useCallback(() => {
+  // Handle OAuth Redirect Query Params
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const oauthError = searchParams.get("error");
+
+    if (connected === "true") {
+      showToast("success", "Akun Instagram Bisnis berhasil dihubungkan ke toko Anda.");
+      loadStoreData();
+      router.replace("/social");
+    } else if (oauthError) {
+      showToast("error", `Gagal menghubungkan Instagram: ${oauthError}`);
+      router.replace("/social");
+    }
+  }, [searchParams, router, loadStoreData, showToast]);
+
+  // Clean up object URL on unmount or photo change
+  useEffect(() => {
+    return () => {
+      if (uploadedPhotoUrl && uploadedPhotoUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(uploadedPhotoUrl);
+      }
+    };
+  }, [uploadedPhotoUrl]);
+
+  const connectedAccount = useMemo(
+    () => accounts.find((acc) => acc.status === "active") ?? null,
+    [accounts]
+  );
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q))
+    );
+  }, [products, productSearch]);
+
+  const discountPercent = useMemo(
+    () => computeDiscountPercent(originalPrice, promoPrice),
+    [originalPrice, promoPrice]
+  );
+
+  // Redraw Poster Canvas whenever visual or text state updates
+  const redrawPoster = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
 
-    const width = 1080;
-    const height = 1350;
-    canvas.width = width;
-    canvas.height = height;
-
-    const storeName = activeStore ? activeStore.name.toUpperCase() : "ARTHA STORE";
-
-    // 1. Background gradient
-    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-    if (selectedTemplateId === "promo-deal") {
-      bgGradient.addColorStop(0, "#0F172A");
-      bgGradient.addColorStop(0.5, "#1E1B4B");
-      bgGradient.addColorStop(1, "#090D16");
-    } else if (selectedTemplateId === "new-arrival") {
-      bgGradient.addColorStop(0, "#09090B");
-      bgGradient.addColorStop(0.6, "#18181B");
-      bgGradient.addColorStop(1, "#030712");
-    } else {
-      // tips-quote
-      bgGradient.addColorStop(0, "#042F2E");
-      bgGradient.addColorStop(0.6, "#0F172A");
-      bgGradient.addColorStop(1, "#021A1A");
-    }
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // 2. Decorative Top Accent Bar
-    ctx.fillStyle = brandColor;
-    ctx.fillRect(0, 0, width, 28);
-
-    // 3. Header badge / store label
-    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-    roundRect(ctx, 80, 80, width - 160, 80, 20);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 34px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(storeName, 120, 132);
-
-    ctx.fillStyle = brandColor;
-    ctx.font = "bold 24px sans-serif";
-    ctx.textAlign = "right";
-    const categoryTag =
-      selectedTemplateId === "promo-deal"
-        ? "PROMO SPESIAL"
-        : selectedTemplateId === "new-arrival"
-        ? "MENU BARU"
-        : "TIPS TOKO";
-    ctx.fillText(categoryTag, width - 120, 130);
-
-    // 4. Central card
-    const cardY = 200;
-    const cardHeight = 880;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-    roundRect(ctx, 80, cardY, width - 160, cardHeight, 32);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.stroke();
-
-    // Template specific graphics
-    if (selectedTemplateId === "promo-deal") {
-      // Bold discount badge
-      ctx.fillStyle = brandColor;
-      roundRect(ctx, 120, cardY + 60, 260, 60, 16);
-      ctx.fill();
-
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 26px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("PENAWARAN HEMAT", 250, cardY + 100);
-
-      // Headline
-      ctx.fillStyle = "#FFFFFF";
-      ctx.textAlign = "left";
-      ctx.font = "900 68px sans-serif";
-      wrapText(ctx, headline || "PROMO SPESIAL", 120, cardY + 220, width - 240, 82, 4);
-
-      // Price Tag Pill
-      if (priceText.trim()) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-        roundRect(ctx, 120, cardY + 460, width - 240, 120, 24);
-        ctx.fill();
-        ctx.strokeStyle = brandColor;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = "#F8FAFC";
-        ctx.font = "bold 32px sans-serif";
-        ctx.fillText("Harga Spesial:", 160, cardY + 532);
-
-        ctx.fillStyle = brandColor;
-        ctx.font = "900 48px sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(priceText, width - 160, cardY + 536);
-        ctx.textAlign = "left";
-      }
-
-      // Subheadline
-      ctx.fillStyle = "#CBD5E1";
-      ctx.font = "400 36px sans-serif";
-      wrapText(ctx, subheadline, 120, cardY + 640, width - 240, 52, 4);
-    } else if (selectedTemplateId === "new-arrival") {
-      // New arrival template
-      ctx.fillStyle = brandColor;
-      roundRect(ctx, 120, cardY + 60, 240, 56, 14);
-      ctx.fill();
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 24px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("KINI TERSEDIA", 240, cardY + 98);
-
-      // Headline
-      ctx.fillStyle = "#FFFFFF";
-      ctx.textAlign = "left";
-      ctx.font = "800 64px sans-serif";
-      wrapText(ctx, headline || "MENU BARU KAMI", 120, cardY + 220, width - 240, 78, 4);
-
-      // Visual focal box
-      const frameY = cardY + 380;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
-      roundRect(ctx, 120, frameY, width - 240, 220, 24);
-      ctx.fill();
-      ctx.strokeStyle = brandColor;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.fillStyle = "#E2E8F0";
-      ctx.font = "bold 44px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(priceText ? priceText : "Kualitas & Cita Rasa Terbaik", width / 2, frameY + 125);
-      ctx.textAlign = "left";
-
-      // Subheadline
-      ctx.fillStyle = "#94A3B8";
-      ctx.font = "400 34px sans-serif";
-      wrapText(ctx, subheadline, 120, cardY + 660, width - 240, 50, 4);
-    } else {
-      // tips-quote template
-      ctx.fillStyle = brandColor;
-      ctx.font = "bold 160px serif";
-      ctx.fillText("“", 120, cardY + 160);
-
-      // Headline
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "700 58px sans-serif";
-      wrapText(ctx, headline || "TIPS SEHARI-HARI", 120, cardY + 240, width - 240, 74, 4);
-
-      // Divider line
-      ctx.fillStyle = brandColor;
-      ctx.fillRect(120, cardY + 440, 160, 6);
-
-      // Subheadline
-      ctx.fillStyle = "#E2E8F0";
-      ctx.font = "400 38px sans-serif";
-      wrapText(ctx, subheadline, 120, cardY + 520, width - 240, 56, 5);
-
-      if (priceText.trim()) {
-        ctx.fillStyle = brandColor;
-        ctx.font = "bold 32px sans-serif";
-        ctx.fillText(priceText, 120, cardY + 800);
-      }
-    }
-
-    // 5. Footer CTA Bar
-    const footerY = height - 190;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-    roundRect(ctx, 80, footerY, width - 160, 110, 24);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-    ctx.stroke();
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 30px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText("Kunjungi Outlet & Pesan Sekarang", 130, footerY + 65);
-
-    ctx.fillStyle = brandColor;
-    ctx.font = "bold 26px sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText("Instagram • ArthaOS", width - 130, footerY + 65);
+    renderPosterToCanvas(canvas, {
+      templateId: selectedTemplateId,
+      aspectRatio,
+      themeId,
+      fontPresetId,
+      brandColor,
+      storeName: posterStoreName || activeStore?.name || "Toko Kami",
+      badgeText,
+      headline,
+      subheadline,
+      promoPrice,
+      originalPrice,
+      showFooter,
+      ctaText,
+      contactText,
+      productImage: loadedImageEl,
+      imageZoom,
+      imagePanX,
+      imagePanY,
+    });
 
     setPreviewImgUrl(canvas.toDataURL("image/jpeg", 0.92));
-  }, [selectedTemplateId, headline, subheadline, priceText, brandColor, activeStore]);
+  }, [
+    selectedTemplateId,
+    aspectRatio,
+    themeId,
+    fontPresetId,
+    brandColor,
+    posterStoreName,
+    activeStore,
+    badgeText,
+    headline,
+    subheadline,
+    promoPrice,
+    originalPrice,
+    showFooter,
+    ctaText,
+    contactText,
+    loadedImageEl,
+    imageZoom,
+    imagePanX,
+    imagePanY,
+  ]);
 
   useEffect(() => {
-    redrawCanvas();
-  }, [redrawCanvas]);
+    redrawPoster();
+  }, [redrawPoster, fontsReadyTick]);
 
-  // Connect to Instagram via OAuth
+  // Template Selection Handler (applies curated defaults smoothly)
+  const handleSelectTemplate = (tmplId: PosterTemplateId) => {
+    const meta = CURATED_TEMPLATES.find((t) => t.id === tmplId);
+    setSelectedTemplateId(tmplId);
+    if (meta) {
+      setThemeId(meta.defaultTheme);
+      setFontPresetId(meta.defaultFont);
+      setBrandColor(meta.defaultBrandColor);
+    }
+    setCloudUrl("");
+  };
+
+  // Product Photo File Loader
+  const handlePhotoFile = (file: File | null | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("error", "Format file harus berupa gambar (JPG, PNG, atau WebP).");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("error", "Ukuran foto maksimal 15 MB agar pemrosesan tetap lancar.");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      setUploadedPhotoUrl((prev) => {
+        if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return objectUrl;
+      });
+      setUploadedPhotoName(file.name);
+      setLoadedImageEl(img);
+      setImageZoom(1);
+      setImagePanX(0);
+      setImagePanY(0);
+      setCloudUrl("");
+      setStageTab("canvas");
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      showToast("error", "Gagal memuat file gambar. Silakan coba foto lain.");
+    };
+    img.src = objectUrl;
+  };
+
+  const handleClearPhoto = () => {
+    if (uploadedPhotoUrl && uploadedPhotoUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(uploadedPhotoUrl);
+    }
+    setUploadedPhotoUrl(null);
+    setUploadedPhotoName("");
+    setLoadedImageEl(null);
+    setImageZoom(1);
+    setImagePanX(0);
+    setImagePanY(0);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Direct Drag-to-Pan on Live Poster Preview
+  const handleStagePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!loadedImageEl) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsPanningCanvas(true);
+    panDragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origPanX: imagePanX,
+      origPanY: imagePanY,
+    };
+  };
+
+  const handleStagePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isPanningCanvas || !panDragStartRef.current || !loadedImageEl) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = (e.clientX - panDragStartRef.current.startX) / Math.max(120, rect.width * 0.5);
+    const dy = (e.clientY - panDragStartRef.current.startY) / Math.max(120, rect.height * 0.5);
+    // Dragging right moves image right (reduces crop offset or shifts center naturally)
+    const nextPanX = Math.max(-1, Math.min(1, panDragStartRef.current.origPanX + dx));
+    const nextPanY = Math.max(-1, Math.min(1, panDragStartRef.current.origPanY + dy));
+    setImagePanX(Number(nextPanX.toFixed(2)));
+    setImagePanY(Number(nextPanY.toFixed(2)));
+  };
+
+  const handleStagePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isPanningCanvas) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore if pointer capture was already released
+      }
+      setIsPanningCanvas(false);
+      panDragStartRef.current = null;
+    }
+  };
+
+  // Instant Product Fill + AI Selection
+  const handleSelectStoreProduct = (product: Product) => {
+    const alreadySelected = selectedProductIds.includes(product.id);
+    if (alreadySelected) {
+      setSelectedProductIds((prev) => prev.filter((id) => id !== product.id));
+      return;
+    }
+
+    setSelectedProductIds((prev) => [...prev, product.id]);
+    // Immediately populate poster headline & price without requiring AI quota
+    setHeadline(product.name);
+    setPromoPrice(formatIdr(product.sell_price));
+    setOriginalPrice("");
+    setStageTab("canvas");
+    showToast("success", `"${product.name}" langsung diterapkan ke judul dan harga poster.`);
+  };
+
+  // AI Content Generator
+  const handleGenerateAI = async () => {
+    if (!activeStore) return;
+    setIsGenerating(true);
+    setCloudUrl("");
+
+    try {
+      const res: GenerateCaptionResponse = await api.social.generateCaption(activeStore.id, {
+        product_ids: selectedProductIds,
+        goal,
+        tone,
+        extra_note: extraNote,
+      });
+
+      if (applyAiToPoster) {
+        if (res.headline) setHeadline(res.headline);
+        if (res.subheadline) setSubheadline(res.subheadline);
+      }
+      if (res.caption) setCaption(res.caption);
+      if (res.hashtags && res.hashtags.length > 0) setHashtags(res.hashtags);
+
+      if (quota && !res.is_byok) {
+        setQuota({
+          ...quota,
+          caption_left: res.quota_left,
+          caption_used: quota.caption_used + 1,
+        });
+      }
+
+      showToast(
+        "success",
+        applyAiToPoster
+          ? "Judul poster dan caption AI berhasil diperbarui."
+          : "Caption dan tagar AI berhasil dibuat."
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal menghasilkan teks dengan AI.";
+      showToast("error", message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Download Poster as PNG or JPEG
+  const handleDownloadPoster = (format: "png" | "jpeg") => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    redrawPoster();
+
+    const mime = format === "png" ? "image/png" : "image/jpeg";
+    const dataUrl = format === "png" ? canvas.toDataURL(mime) : canvas.toDataURL(mime, 0.94);
+    const ratioSlug = aspectRatio.replace(":", "x");
+    const storeSlug = (activeStore?.name || "artha").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const ext = format === "png" ? "png" : "jpg";
+
+    const link = document.createElement("a");
+    link.download = `poster-${storeSlug}-${ratioSlug}-${Date.now()}.${ext}`;
+    link.href = dataUrl;
+    link.click();
+
+    showToast("success", `Poster resolusi penuh (${ASPECT_RATIO_SPECS[aspectRatio].sublabel}) berhasil diunduh.`);
+  };
+
+  // Quick Share via Web Share API (Mobile WA / IG) or Clipboard + Download Fallback
+  const handleQuickShare = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    setIsSharing(true);
+
+    try {
+      redrawPoster();
+      const fullCaption = `${caption.trim()}\n\n${hashtags.join(" ")}`.trim();
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+
+      if (blob && typeof navigator !== "undefined" && navigator.share) {
+        const file = new File([blob], `poster-promo-${Date.now()}.png`, { type: "image/png" });
+        const canShareFiles =
+          typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+
+        if (canShareFiles) {
+          await navigator.share({
+            title: headline || "Poster Toko",
+            text: fullCaption,
+            files: [file],
+          });
+          showToast("success", "Poster dan caption siap dibagikan.");
+          return;
+        }
+      }
+
+      // Desktop fallback: copy caption to clipboard and download PNG
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(fullCaption);
+      }
+      handleDownloadPoster("png");
+      showToast("success", "Poster diunduh & caption otomatis disalin ke clipboard untuk ditempel ke WA/IG.");
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+      showToast("error", "Gagal membuka menu bagikan perangkat.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Save Rendered Poster to ArthaOS Cloud
+  const handleSaveToCloud = async () => {
+    if (!activeStore || !canvasRef.current) return;
+    setIsUploadingCloud(true);
+    try {
+      redrawPoster();
+      const imageData = canvasRef.current.toDataURL("image/jpeg", 0.92);
+      const res: RenderPosterResponse = await api.social.renderPoster(activeStore.id, {
+        template_id: selectedTemplateId,
+        headline,
+        subheadline,
+        price_text: promoPrice,
+        brand_color: brandColor,
+        theme: themeId,
+        aspect_ratio: aspectRatio,
+        store_name: posterStoreName || activeStore.name,
+        image_data: imageData,
+      });
+      setCloudUrl(res.full_url);
+      showToast("success", "Poster berhasil disimpan ke penyimpanan cloud toko.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal menyimpan poster ke server.";
+      showToast("error", message);
+    } finally {
+      setIsUploadingCloud(false);
+    }
+  };
+
+  // Copy Caption Helpers
+  const handleCopyText = async (mode: "all" | "caption") => {
+    const textToCopy =
+      mode === "all"
+        ? `${caption.trim()}\n\n${hashtags.join(" ")}`.trim()
+        : caption.trim();
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedMode(mode);
+      setTimeout(() => setCopiedMode(null), 2000);
+    } catch {
+      showToast("error", "Gagal menyalin teks ke clipboard.");
+    }
+  };
+
+  const handleAddHashtag = () => {
+    const raw = newTagInput.trim().replace(/\s+/g, "");
+    if (!raw) return;
+    const formatted = raw.startsWith("#") ? raw : `#${raw}`;
+    if (!hashtags.includes(formatted)) {
+      setHashtags((prev) => [...prev, formatted]);
+    }
+    setNewTagInput("");
+  };
+
+  // Instagram Connect & Disconnect
   const handleConnectInstagram = async () => {
     if (!activeStore) return;
     setIsConnecting(true);
@@ -390,731 +664,1397 @@ function SocialContent() {
         window.location.href = res.auth_url;
       }
     } catch (err: unknown) {
-      setOauthFeedback({
-        type: "error",
-        message: "Gagal memulai koneksi Meta/Instagram: " + (err instanceof Error ? err.message : "Terjadi kesalahan"),
-      });
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Gagal menghubungkan akun Instagram. Pastikan META_APP_ID sudah diatur di server.";
+      showToast("error", message);
       setIsConnecting(false);
     }
   };
 
-  // Disconnect Instagram Account
-  const handleDisconnectInstagram = async (accId: number) => {
+  const handleDisconnectInstagram = async (accountId: number) => {
     if (!activeStore) return;
     setIsDisconnecting(true);
     try {
-      await api.social.disconnectAccount(activeStore.id, accId);
-      await loadStoreData();
-      setOauthFeedback({
-        type: "success",
-        message: "Akun Instagram berhasil diputuskan.",
-      });
+      await api.social.disconnectAccount(activeStore.id, accountId);
+      setAccounts([]);
+      setConfirmDisconnectId(null);
+      showToast("success", "Koneksi akun Instagram Bisnis berhasil diputuskan.");
     } catch (err: unknown) {
-      setOauthFeedback({
-        type: "error",
-        message: "Gagal memutuskan akun: " + (err instanceof Error ? err.message : "Terjadi kesalahan"),
-      });
+      const message = err instanceof Error ? err.message : "Gagal memutuskan akun Instagram.";
+      showToast("error", message);
     } finally {
       setIsDisconnecting(false);
     }
   };
 
-  // AI Content Generator handler
-  const handleGenerateAI = async () => {
-    if (!activeStore) return;
-    setIsGenerating(true);
-    setErrorMsg("");
-
-    try {
-      const res = await api.social.generateCaption(activeStore.id, {
-        goal,
-        tone,
-        product_ids: selectedProductIds,
-        extra_note: extraNote,
-      });
-
-      if (res.headline) setHeadline(res.headline);
-      if (res.subheadline) setSubheadline(res.subheadline);
-      if (res.caption) setCaption(res.caption);
-      if (res.hashtags && Array.isArray(res.hashtags)) setHashtags(res.hashtags);
-
-      if (selectedProductIds.length > 0) {
-        const prod = products.find((p) => p.id === selectedProductIds[0]);
-        if (prod && prod.sell_price > 0) {
-          setPriceText(`Rp ${prod.sell_price.toLocaleString("id-ID")}`);
-        }
-      }
-
-      const newQuota = await api.social.getQuota(activeStore.id);
-      setQuota(newQuota);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Gagal membuat materi konten AI. Silakan coba lagi.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // Download JPEG to local device
-  const handleDownloadPoster = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    setIsDownloading(true);
-
-    try {
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-      const link = document.createElement("a");
-      const safeStore = activeStore ? activeStore.name.toLowerCase().replace(/\s+/g, "-") : "artha";
-      link.download = `poster-${safeStore}-${goal}-${Date.now()}.jpg`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error("Gagal unduh gambar:", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // Save to Cloud Storage
-  const handleSaveToCloud = async () => {
-    if (!activeStore) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    setIsUploading(true);
-
-    try {
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      const res = await api.social.renderPoster(activeStore.id, {
-        template_id: selectedTemplateId,
-        headline,
-        subheadline,
-        price_text: priceText,
-        brand_color: brandColor,
-        image_data: dataUrl,
-      });
-
-      setCloudUrl(res.full_url || res.url);
-    } catch (err: unknown) {
-      setErrorMsg("Gagal menyimpan ke cloud: " + (err instanceof Error ? err.message : "Terjadi kendala jaringan"));
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Copy caption & hashtags
-  const handleCopyCaption = async () => {
-    const fullText = `${caption}\n\n${hashtags.join(" ")}`;
-    try {
-      await navigator.clipboard.writeText(fullText);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2500);
-    } catch (err) {
-      console.error("Gagal menyalin:", err);
-    }
-  };
-
-  // Save BYOK Key
+  // BYOK Save
   const handleSaveBYOK = async () => {
     if (!activeStore) return;
     setIsSavingBYOK(true);
-    setByokSuccessMsg("");
     try {
       await api.social.setBYOK(activeStore.id, byokKey.trim(), "groq");
-      setByokSuccessMsg("API Key berhasil disimpan!");
-      const q = await api.social.getQuota(activeStore.id);
-      setQuota(q);
-      setTimeout(() => {
-        setByokModalOpen(false);
-        setByokSuccessMsg("");
-      }, 1200);
+      const updatedQuota = await api.social.getQuota(activeStore.id);
+      setQuota(updatedQuota);
+      setByokKey("");
+      setByokModalOpen(false);
+      showToast(
+        "success",
+        byokKey.trim()
+          ? "API Key pribadi (BYOK) aktif. Pembuatan caption AI kini tanpa batas."
+          : "Kembali menggunakan kuota AI standar toko."
+      );
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Gagal menyimpan key");
+      const message = err instanceof Error ? err.message : "Gagal menyimpan pengaturan API Key.";
+      showToast("error", message);
     } finally {
       setIsSavingBYOK(false);
     }
   };
 
-  const toggleProductSelect = (id: number) => {
-    setSelectedProductIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const connectedAccount = accounts.length > 0 && accounts[0].status === "active" ? accounts[0] : null;
+  const activeRatioSpec = ASPECT_RATIO_SPECS[aspectRatio];
+  const fallbackStoreName = activeStore?.name || "Toko Pilihan";
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50">
+      {/* Hidden font preloader spans so browser fetches curated poster typefaces immediately on /social */}
+      <div className="sr-only" aria-hidden="true">
+        <span style={{ fontFamily: "var(--font-jakarta)", fontWeight: 800 }}>ArthaPoster</span>
+        <span style={{ fontFamily: "var(--font-playfair)", fontWeight: 700 }}>ArthaPoster</span>
+        <span style={{ fontFamily: "var(--font-grotesk)", fontWeight: 700 }}>ArthaPoster</span>
+        <span style={{ fontFamily: "var(--font-dmsans)", fontWeight: 700 }}>ArthaPoster</span>
+      </div>
+
+      {/* Offscreen High-DPI Render Canvas */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      <div className="space-y-5">
+        {/* Studio Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border">
           <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-primary/10 text-primary rounded-xl">
-                <Share2 className="w-6 h-6" />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">Konten Media Sosial</h1>
-              <Badge variant="secondary" className="text-xs">
-                Instagram 4:5
-              </Badge>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Studio Poster & Konten Sosial
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Buat poster visual dan caption profesional bertenaga AI untuk menarik pelanggan ke toko Anda.
+              Desain materi promosi siap unggah untuk Feed Instagram, Status WhatsApp, dan katalog produk toko.
             </p>
           </div>
 
-          {/* Quota & BYOK Status Badge */}
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-2 bg-muted/60 rounded-xl border border-border/60 text-xs flex items-center gap-2">
-              <span className="font-medium text-foreground">Kuota AI Bulan Ini:</span>
-              {quota?.has_byok ? (
-                <Badge className="bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
-                  BYOK Aktif (Tanpa Batas)
-                </Badge>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Compact Instagram Status Trigger */}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!activeStore}
+              onClick={() => {
+                setConfirmDisconnectId(null);
+                setIgDialogOpen(true);
+              }}
+              className="min-h-11 px-3.5 gap-2 text-xs font-medium rounded-lg"
+            >
+              <InstagramIcon className="w-4 h-4 text-foreground" />
+              {connectedAccount ? (
+                <>
+                  <span className="truncate max-w-[130px]">@{connectedAccount.username}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                </>
               ) : (
-                <span className="font-bold text-primary">
-                  {quota ? `${quota.caption_left} / ${quota.caption_limit}` : "15"} tersisa
+                <span>Akun Instagram</span>
+              )}
+            </Button>
+
+            {/* Quota & BYOK Trigger */}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!activeStore}
+              onClick={() => setByokModalOpen(true)}
+              className="min-h-11 px-3.5 gap-2 text-xs font-medium rounded-lg"
+            >
+              <Key className="w-4 h-4 text-primary" />
+              {quota?.has_byok ? (
+                <span>AI: BYOK Aktif</span>
+              ) : (
+                <span>
+                  Kuota AI: <strong className="text-foreground">{quota ? `${quota.caption_left}/${quota.caption_limit}` : "15"}</strong>
                 </span>
               )}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setByokModalOpen(true)}
-              className="gap-1.5 text-xs h-9"
-            >
-              <Key className="w-3.5 h-3.5" />
-              BYOK API Key
             </Button>
           </div>
         </div>
 
-        {/* OAuth Feedback Alert if any */}
-        {oauthFeedback && (
+        {/* Store Sync Info Banner when no active store is selected */}
+        {!isLoadingStores && !activeStore && (
+          <div className="p-3.5 rounded-xl border border-border bg-muted/40 flex items-center gap-2.5 text-xs text-muted-foreground">
+            <StoreIcon className="w-4 h-4 text-primary shrink-0" />
+            <span>
+              Mode desain cepat aktif: Anda tetap dapat mengedit poster, mengunggah foto, dan mengunduh PNG/JPG sekarang. Pilih atau masuk ke akun toko di menu samping untuk menyinkronkan produk inventori dan asisten AI.
+            </span>
+          </div>
+        )}
+
+        {/* Inline Toast Feedback Banner */}
+        {toastBanner && (
           <div
-            className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium ${
-              oauthFeedback.type === "success"
-                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                : "bg-destructive/10 text-destructive border-destructive/20"
+            role="status"
+            className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs font-medium ${
+              toastBanner.type === "success"
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                : "bg-destructive/10 text-destructive border-destructive/25"
             }`}
           >
-            <div className="flex items-center gap-2">
-              {oauthFeedback.type === "success" ? (
+            <div className="flex items-center gap-2.5">
+              {toastBanner.type === "success" ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
               ) : (
                 <AlertCircle className="w-4 h-4 shrink-0" />
               )}
-              <span>{oauthFeedback.message}</span>
+              <span>{toastBanner.message}</span>
             </div>
             <button
-              onClick={() => setOauthFeedback(null)}
-              className="text-xs opacity-70 hover:opacity-100"
+              type="button"
+              onClick={() => setToastBanner(null)}
+              className="min-w-11 min-h-11 -my-2 -mr-2 flex items-center justify-center rounded-lg opacity-75 hover:opacity-100"
+              aria-label="Tutup pesan"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* INSTAGRAM ACCOUNT INTEGRATION CARD (FASE 2) */}
-        <Card className="border-border/80 bg-gradient-to-r from-card via-card to-muted/20 shadow-xs">
-          <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start sm:items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md shrink-0">
-                <InstagramIcon className="w-6 h-6" />
+        {/* SPLIT STICKY WORKSPACE: Preview first on mobile so edits are visible immediately */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT INSPECTOR (5 cols on desktop, second on mobile) */}
+          <div className="order-2 lg:order-1 lg:col-span-5">
+            <Card className="rounded-xl border-border overflow-hidden">
+              {/* 4-Tab Studio Inspector Navigation */}
+              <div
+                role="tablist"
+                aria-label="Pengaturan desain poster"
+                className="grid grid-cols-4 border-b border-border bg-muted/40 p-1 gap-1"
+              >
+                {[
+                  { id: "design" as const, label: "Desain", icon: Palette },
+                  { id: "media" as const, label: "Foto", icon: ImagePlus },
+                  { id: "content" as const, label: "Teks", icon: Type },
+                  { id: "ai" as const, label: "AI Copy", icon: Wand2 },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`min-h-11 px-2 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        isActive
+                          ? "bg-card text-foreground font-semibold border border-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                      <span className="whitespace-nowrap text-xs">{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-sm">Akun Instagram Bisnis</h3>
-                  {connectedAccount ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[11px] gap-1">
-                      <ShieldCheck className="w-3 h-3" />
-                      Terhubung
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                      Belum Terhubung
-                    </Badge>
-                  )}
-                </div>
 
-                {connectedAccount ? (
-                  <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="font-semibold text-foreground">@{connectedAccount.username}</span>
-                    <span className="flex items-center gap-1 text-[11px]">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                      {connectedAccount.token_expires_at
-                        ? `Token aktif hingga ${new Date(connectedAccount.token_expires_at).toLocaleDateString("id-ID")}`
-                        : "Token aktif (60 hari)"}
-                    </span>
+              <CardContent className="p-4 sm:p-5 space-y-5">
+                {/* ==================== TAB 1: DESAIN ==================== */}
+                {activeTab === "design" && (
+                  <div className="space-y-5">
+                    {/* Aspect Ratio Selector */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Ukuran & Format Kanvas
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(Object.keys(ASPECT_RATIO_SPECS) as PosterAspectRatio[]).map((ratioKey) => {
+                          const spec = ASPECT_RATIO_SPECS[ratioKey];
+                          const isSelected = aspectRatio === ratioKey;
+                          return (
+                            <button
+                              key={ratioKey}
+                              type="button"
+                              onClick={() => {
+                                setAspectRatio(ratioKey);
+                                setStageTab("canvas");
+                              }}
+                              className={`min-h-12 p-2.5 rounded-lg border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border bg-background hover:bg-muted/50 text-muted-foreground"
+                              }`}
+                            >
+                              <div className="text-xs font-semibold text-foreground">{spec.shortLabel}</div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5">{spec.sublabel}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Curated 6 Visual Template Grid */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Pilih Tata Letak Template
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">6 gaya kurasi</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {CURATED_TEMPLATES.map((tmpl) => {
+                          const isSelected = selectedTemplateId === tmpl.id;
+                          return (
+                            <button
+                              key={tmpl.id}
+                              type="button"
+                              onClick={() => handleSelectTemplate(tmpl.id)}
+                              className={`p-2 rounded-xl border text-left transition-colors flex flex-col gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                                  : "border-border bg-background hover:bg-muted/40"
+                              }`}
+                            >
+                              <TemplateThumbnail
+                                templateId={tmpl.id}
+                                themeId={isSelected ? themeId : tmpl.defaultTheme}
+                                brandColor={isSelected ? brandColor : tmpl.defaultBrandColor}
+                                hasPhoto={Boolean(loadedImageEl)}
+                              />
+                              <div>
+                                <div className="text-xs font-semibold text-foreground leading-tight">
+                                  {tmpl.shortName}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                  {tmpl.categoryLabel}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Surface Theme Mode */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Suasana Warna Dasar
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(Object.keys(POSTER_THEMES) as PosterThemeId[]).map((tKey) => {
+                          const tMeta = POSTER_THEMES[tKey];
+                          const isSelected = themeId === tKey;
+                          return (
+                            <button
+                              key={tKey}
+                              type="button"
+                              onClick={() => setThemeId(tKey)}
+                              className={`min-h-11 px-3 py-2 rounded-lg border flex items-center gap-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-foreground font-semibold"
+                                  : "border-border bg-background hover:bg-muted/50 text-muted-foreground"
+                              }`}
+                            >
+                              <span
+                                className="w-4 h-4 rounded-full border border-border shrink-0"
+                                style={{ backgroundColor: tMeta.previewSwatch }}
+                                aria-hidden="true"
+                              />
+                              <span className="truncate">{tMeta.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Curated Font Pairings */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Gaya Tipografi Poster
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(Object.keys(FONT_PRESETS) as PosterFontPresetId[]).map((fKey) => {
+                          const fMeta = FONT_PRESETS[fKey];
+                          const isSelected = fontPresetId === fKey;
+                          return (
+                            <button
+                              key={fKey}
+                              type="button"
+                              onClick={() => setFontPresetId(fKey)}
+                              className={`min-h-12 p-2.5 rounded-lg border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border bg-background hover:bg-muted/50"
+                              }`}
+                            >
+                              <div
+                                className="text-sm font-bold text-foreground leading-tight"
+                                style={{ fontFamily: `var(${fMeta.headingVar}), sans-serif` }}
+                              >
+                                {fMeta.name}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                                {fMeta.desc}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Brand Accent Color Swatches (44px accessible hit areas) */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Warna Aksen Toko
+                        </Label>
+                        <span className="text-xs font-mono text-muted-foreground uppercase">
+                          {brandColor}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {BRAND_COLOR_SWATCHES.map((swatch) => {
+                          const isSelected = brandColor.toLowerCase() === swatch.hex.toLowerCase();
+                          return (
+                            <button
+                              key={swatch.hex}
+                              type="button"
+                              onClick={() => setBrandColor(swatch.hex)}
+                              title={swatch.name}
+                              aria-label={`Pilih warna ${swatch.name}`}
+                              className={`w-11 h-11 rounded-lg border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-background hover:bg-muted/50"
+                              }`}
+                            >
+                              <span
+                                className="w-6 h-6 rounded-full border border-black/15 dark:border-white/20"
+                                style={{ backgroundColor: swatch.hex }}
+                              />
+                            </button>
+                          );
+                        })}
+
+                        <label
+                          title="Pilih warna kustom"
+                          className="min-h-11 px-3 rounded-lg border border-border bg-background hover:bg-muted/50 flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer"
+                        >
+                          <input
+                            type="color"
+                            value={brandColor}
+                            onChange={(e) => setBrandColor(e.target.value)}
+                            className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent p-0"
+                            aria-label="Pemilih warna kustom"
+                          />
+                          <span>Kustom</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Hubungkan akun Instagram Business untuk auto-post & penjadwalan. Anda tetap bisa mengunduh poster secara manual.
-                  </p>
                 )}
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              {connectedAccount ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDisconnectInstagram(connectedAccount.id)}
-                  disabled={isDisconnecting}
-                  className="text-xs text-destructive hover:bg-destructive/10 gap-1.5 h-9"
-                >
-                  <Unlink className="w-3.5 h-3.5" />
-                  {isDisconnecting ? "Memutuskan..." : "Putuskan Akun"}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleConnectInstagram}
-                  disabled={isConnecting}
-                  className="text-xs bg-gradient-to-r from-rose-500 to-purple-600 hover:from-rose-600 hover:to-purple-700 text-white gap-1.5 h-9 shadow-sm"
-                >
-                  <InstagramIcon className="w-3.5 h-3.5" />
-                  {isConnecting ? "Mengarahkan ke Meta..." : "Hubungkan Akun"}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                {/* ==================== TAB 2: FOTO & PRODUK ==================== */}
+                {activeTab === "media" && (
+                  <div className="space-y-5">
+                    {/* Product Photo Upload & Framing */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Foto Produk / Makanan (Opsional)
+                        </Label>
+                        {loadedImageEl && (
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            Foto Aktif
+                          </span>
+                        )}
+                      </div>
 
-        {/* Hidden high-res canvas for rendering */}
-        <canvas ref={canvasRef} className="hidden" />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handlePhotoFile(e.target.files?.[0])}
+                        className="hidden"
+                      />
 
-        {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT COLUMN: Generator Controls (5 cols) */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  Generator Materi Konten
-                </CardTitle>
-                <CardDescription>
-                  Pilih tujuan, gaya komunikasi, dan produk toko yang ingin dipromosikan.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {/* 1. Goal Selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Tujuan Konten
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {GOAL_OPTIONS.map((item) => {
-                      const Icon = item.icon;
-                      const isSelected = goal === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setGoal(item.id)}
-                          className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                            isSelected
-                              ? "border-primary bg-primary/5 text-primary shadow-xs ring-1 ring-primary"
-                              : "border-border hover:border-muted-foreground/30 hover:bg-muted/30 text-foreground"
+                      {!loadedImageEl ? (
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDraggingDropzone(true);
+                          }}
+                          onDragLeave={() => setIsDraggingDropzone(false)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDraggingDropzone(false);
+                            handlePhotoFile(e.dataTransfer.files?.[0]);
+                          }}
+                          className={`p-5 rounded-xl border-2 border-dashed text-center transition-colors ${
+                            isDraggingDropzone
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-muted/20 hover:bg-muted/40"
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Icon className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className="font-semibold text-xs">{item.label.split(" / ")[0]}</span>
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2.5">
+                            <ImagePlus className="w-5 h-5" />
                           </div>
-                          <span className="text-[11px] text-muted-foreground leading-tight line-clamp-2">
-                            {item.desc}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Tone Selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Gaya Bahasa (Tone)
-                  </Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TONE_OPTIONS.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setTone(item.id)}
-                        className={`p-2.5 rounded-lg border text-center transition-all ${
-                          tone === item.id
-                            ? "border-primary bg-primary/10 text-primary font-semibold shadow-xs"
-                            : "border-border hover:bg-muted/40 text-muted-foreground text-xs"
-                        }`}
-                      >
-                        <div className="text-xs font-medium">{item.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. Product Selector */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Produk Toko Terkait (Opsional)
-                    </Label>
-                    {selectedProductIds.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProductIds([])}
-                        className="text-[11px] text-primary hover:underline"
-                      >
-                        Hapus pilihan ({selectedProductIds.length})
-                      </button>
-                    )}
-                  </div>
-                  {isLoadingStoreData ? (
-                    <div className="py-4 text-center text-xs text-muted-foreground">Memuat produk toko...</div>
-                  ) : products.length === 0 ? (
-                    <div className="p-3 bg-muted/40 rounded-lg text-xs text-muted-foreground text-center">
-                      Belum ada produk aktif di toko ini.
-                    </div>
-                  ) : (
-                    <div className="max-h-40 overflow-y-auto space-y-1.5 p-1 border rounded-lg bg-background">
-                      {products.map((p) => {
-                        const isChecked = selectedProductIds.includes(p.id);
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => toggleProductSelect(p.id)}
-                            className={`flex items-center justify-between p-2 rounded-md text-xs cursor-pointer transition-colors ${
-                              isChecked ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
-                            }`}
+                          <p className="text-sm font-medium text-foreground">
+                            Unggah foto menu atau produk nyata
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tarik foto ke sini atau ambil dari galeri HP. Tanpa foto pun poster tetap tampil rapi dengan mode tipografi.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="mt-3.5 min-h-11 px-4 text-xs font-semibold gap-2"
                           >
-                            <span className="truncate pr-2">{p.name}</span>
-                            <span className="text-muted-foreground font-mono shrink-0">
-                              Rp {p.sell_price.toLocaleString("id-ID")}
-                            </span>
+                            <ImagePlus className="w-4 h-4" />
+                            Pilih Foto dari Perangkat
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-3.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {uploadedPhotoUrl && (
+                                <img
+                                  src={uploadedPhotoUrl}
+                                  alt="Foto produk terpilih"
+                                  className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
+                                />
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-foreground truncate">
+                                  {uploadedPhotoName || "Foto Produk"}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  Bisa digeser langsung pada pratinjau kanvas
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="min-h-11 px-3 text-xs"
+                              >
+                                Ganti
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleClearPhoto}
+                                className="min-h-11 min-w-11 px-2.5 text-destructive hover:bg-destructive/10"
+                                aria-label="Hapus foto produk"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
-                        );
-                      })}
+
+                          {/* Zoom & Pan Sliders */}
+                          <div className="space-y-2.5 pt-2 border-t border-border">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Perbesar Foto (Zoom)</span>
+                                <span className="font-mono text-foreground">{Math.round(imageZoom * 100)}%</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="2.4"
+                                step="0.05"
+                                value={imageZoom}
+                                onChange={(e) => setImageZoom(parseFloat(e.target.value))}
+                                className="w-full h-2 accent-primary cursor-pointer"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[11px] text-muted-foreground">
+                                  <span>Geser Kiri/Kanan</span>
+                                  <span className="font-mono">{Math.round(imagePanX * 100)}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="-1"
+                                  max="1"
+                                  step="0.05"
+                                  value={imagePanX}
+                                  onChange={(e) => setImagePanX(parseFloat(e.target.value))}
+                                  className="w-full h-2 accent-primary cursor-pointer"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[11px] text-muted-foreground">
+                                  <span>Geser Atas/Bawah</span>
+                                  <span className="font-mono">{Math.round(imagePanY * 100)}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="-1"
+                                  max="1"
+                                  step="0.05"
+                                  value={imagePanY}
+                                  onChange={(e) => setImagePanY(parseFloat(e.target.value))}
+                                  className="w-full h-2 accent-primary cursor-pointer"
+                                />
+                              </div>
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setImageZoom(1);
+                                setImagePanX(0);
+                                setImagePanY(0);
+                              }}
+                              className="w-full min-h-11 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Reset Posisi & Zoom Foto
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* 4. Extra Note */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="extra_note" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Catatan Tambahan (Opsional)
-                  </Label>
-                  <Textarea
-                    id="extra_note"
-                    value={extraNote}
-                    onChange={(e) => setExtraNote(e.target.value)}
-                    placeholder="Contoh: Diskon khusus berlaku hari Jumat s/d Minggu, beli 2 gratis 1."
-                    rows={2}
-                    className="text-xs resize-none"
-                    maxLength={1000}
-                  />
-                </div>
+                    {/* Store Products Quick Fill */}
+                    <div className="space-y-2.5 pt-2 border-t border-border">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Pilih Produk Toko (Isi Instan)
+                          </Label>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Klik produk untuk langsung mengisi judul dan harga di poster tanpa kuota AI.
+                          </p>
+                        </div>
+                        {selectedProductIds.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProductIds([])}
+                            className="min-h-11 px-2 text-xs text-primary font-medium hover:underline shrink-0"
+                          >
+                            Reset ({selectedProductIds.length})
+                          </button>
+                        )}
+                      </div>
 
-                {errorMsg && (
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{errorMsg}</span>
+                      {products.length > 4 && (
+                        <div className="relative">
+                          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Input
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            placeholder="Cari nama produk atau SKU..."
+                            className="pl-9 h-11 text-xs rounded-lg"
+                          />
+                        </div>
+                      )}
+
+                      {isLoadingStoreData ? (
+                        <div className="p-4 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground text-center">
+                          Memuat daftar produk aktif toko...
+                        </div>
+                      ) : products.length === 0 ? (
+                        <div className="p-4 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground text-center">
+                          Belum ada produk aktif di inventori toko ini. Anda tetap bisa menulis teks promo secara bebas di tab Teks & Harga.
+                        </div>
+                      ) : filteredProducts.length === 0 ? (
+                        <div className="p-4 rounded-lg border border-border bg-muted/20 text-xs text-muted-foreground text-center">
+                          Tidak ada produk yang cocok dengan pencarian &ldquo;{productSearch}&rdquo;.
+                        </div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                          {filteredProducts.map((prod) => {
+                            const isSelected = selectedProductIds.includes(prod.id);
+                            return (
+                              <button
+                                key={prod.id}
+                                type="button"
+                                onClick={() => handleSelectStoreProduct(prod)}
+                                className={`w-full min-h-11 px-3 py-2 rounded-lg border text-left transition-colors flex items-center justify-between gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                  isSelected
+                                    ? "border-primary bg-primary/10 text-foreground"
+                                    : "border-border bg-background hover:bg-muted/50 text-foreground"
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <div className="text-xs font-medium truncate">{prod.name}</div>
+                                  {prod.sku && (
+                                    <div className="text-[11px] text-muted-foreground font-mono">
+                                      {prod.sku}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs font-semibold font-mono text-foreground">
+                                    {formatIdr(prod.sell_price)}
+                                  </span>
+                                  {isSelected && <Check className="w-4 h-4 text-primary" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {/* Generate Button */}
-                <Button
-                  onClick={handleGenerateAI}
-                  disabled={isGenerating || !activeStore}
-                  className="w-full gap-2 h-11 text-sm font-semibold shadow-md"
-                >
-                  {isGenerating ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Sedang Menyusun Konten AI...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Buat Konten dengan AI
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Poster Template & Color Customization */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-primary" />
-                  Kustomisasi Desain Poster
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Template selector */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground">Pilih Desain Template</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {templates.map((tmpl) => (
-                      <button
-                        key={tmpl.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedTemplateId(tmpl.id);
-                          if (tmpl.default_brand_color) setBrandColor(tmpl.default_brand_color);
-                        }}
-                        className={`p-2 rounded-lg border text-left transition-all ${
-                          selectedTemplateId === tmpl.id
-                            ? "border-primary bg-primary/10 text-primary font-semibold shadow-xs"
-                            : "border-border hover:bg-muted text-muted-foreground text-xs"
-                        }`}
-                      >
-                        <div className="text-xs font-semibold truncate">{tmpl.name.split(" & ")[0]}</div>
-                        <div className="text-[10px] text-muted-foreground capitalize mt-0.5">{tmpl.category}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Color presets */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground">Warna Aksen Brand</Label>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {COLOR_PRESETS.map((color) => (
-                      <button
-                        key={color.hex}
-                        type="button"
-                        onClick={() => setBrandColor(color.hex)}
-                        title={color.name}
-                        className={`w-7 h-7 rounded-full border-2 transition-transform ${
-                          brandColor.toLowerCase() === color.hex.toLowerCase()
-                            ? "scale-110 border-white ring-2 ring-primary"
-                            : "border-transparent hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: color.hex }}
+                {/* ==================== TAB 3: TEKS & HARGA ==================== */}
+                {activeTab === "content" && (
+                  <div className="space-y-4">
+                    {/* Top Badge Label */}
+                    <div className="space-y-2">
+                      <Label htmlFor="poster_badge" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Label Badge Atas (Opsional)
+                      </Label>
+                      <Input
+                        id="poster_badge"
+                        value={badgeText}
+                        onChange={(e) => setBadgeText(e.target.value)}
+                        placeholder="Contoh: PROMO AKHIR PEKAN"
+                        className="h-11 text-xs font-medium rounded-lg"
+                        maxLength={32}
                       />
-                    ))}
-                    <input
-                      type="color"
-                      value={brandColor}
-                      onChange={(e) => setBrandColor(e.target.value)}
-                      className="w-7 h-7 rounded-full cursor-pointer bg-transparent border-0"
-                      title="Pilih warna kustom"
-                    />
-                  </div>
-                </div>
+                      <div className="flex flex-wrap gap-2">
+                        {BADGE_QUICK_CHIPS.map((chip) => (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => setBadgeText(chip)}
+                            className="min-h-11 px-3 py-2 rounded-lg border border-border bg-muted/40 hover:bg-muted text-xs font-medium text-foreground"
+                          >
+                            {chip}
+                          </button>
+                        ))}
+                        {badgeText && (
+                          <button
+                            type="button"
+                            onClick={() => setBadgeText("")}
+                            className="min-h-11 px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Sembunyikan
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Text overrides */}
-                <div className="space-y-3 pt-2 border-t">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Teks Judul (Headline Poster)</Label>
-                    <Input
-                      value={headline}
-                      onChange={(e) => setHeadline(e.target.value)}
-                      placeholder="Judul utama poster"
-                      className="text-xs h-9 font-medium"
-                    />
+                    {/* Headline */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="poster_headline" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Judul Utama Poster
+                      </Label>
+                      <Textarea
+                        id="poster_headline"
+                        value={headline}
+                        onChange={(e) => setHeadline(e.target.value)}
+                        placeholder="Tulis judul promo atau nama menu unggulan"
+                        rows={2}
+                        className="text-sm font-semibold resize-none rounded-lg"
+                        maxLength={110}
+                      />
+                    </div>
+
+                    {/* Subheadline */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="poster_subheadline" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Deskripsi Singkat (Subjudul)
+                      </Label>
+                      <Textarea
+                        id="poster_subheadline"
+                        value={subheadline}
+                        onChange={(e) => setSubheadline(e.target.value)}
+                        placeholder="Tambahkan keterangan singkat produk, syarat promo, atau jam berlaku"
+                        rows={2}
+                        className="text-xs resize-none rounded-lg"
+                        maxLength={220}
+                      />
+                    </div>
+
+                    {/* Promo Price & Strikethrough Price */}
+                    <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Informasi Harga & Diskon
+                        </Label>
+                        {discountPercent && (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[11px]">
+                            Otomatis: Hemat {discountPercent}%
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="promo_price" className="text-xs text-foreground font-medium">
+                            Harga Jual / Promo
+                          </Label>
+                          <Input
+                            id="promo_price"
+                            value={promoPrice}
+                            onChange={(e) => setPromoPrice(e.target.value)}
+                            placeholder="Contoh: Rp 18.000"
+                            className="h-11 text-xs font-semibold rounded-lg"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label htmlFor="orig_price" className="text-xs text-muted-foreground">
+                            Harga Normal Coret (Opsional)
+                          </Label>
+                          <Input
+                            id="orig_price"
+                            value={originalPrice}
+                            onChange={(e) => setOriginalPrice(e.target.value)}
+                            placeholder="Contoh: Rp 24.000"
+                            className="h-11 text-xs rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Store Name & Dynamic Footer */}
+                    <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="poster_store_name" className="text-xs text-foreground font-medium">
+                          Nama Toko di Header Poster
+                        </Label>
+                        <Input
+                          id="poster_store_name"
+                          value={posterStoreName}
+                          onChange={(e) => setPosterStoreName(e.target.value)}
+                          placeholder={fallbackStoreName}
+                          className="h-11 text-xs rounded-lg"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <Label htmlFor="toggle_footer" className="text-xs font-medium text-foreground cursor-pointer">
+                          Tampilkan Baris Ajakan & Kontak Bawah
+                        </Label>
+                        <input
+                          id="toggle_footer"
+                          type="checkbox"
+                          checked={showFooter}
+                          onChange={(e) => setShowFooter(e.target.checked)}
+                          className="w-5 h-5 accent-primary rounded cursor-pointer"
+                        />
+                      </div>
+
+                      {showFooter && (
+                        <div className="space-y-2.5 pt-1">
+                          <div className="space-y-1">
+                            <Label htmlFor="cta_text" className="text-xs text-muted-foreground">
+                              Teks Ajakan (CTA)
+                            </Label>
+                            <Input
+                              id="cta_text"
+                              value={ctaText}
+                              onChange={(e) => setCtaText(e.target.value)}
+                              placeholder="Contoh: Pesan Sekarang via WhatsApp"
+                              className="h-11 text-xs rounded-lg"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label htmlFor="contact_text" className="text-xs text-muted-foreground">
+                              Info Kontak / Alamat / Username IG
+                            </Label>
+                            <Input
+                              id="contact_text"
+                              value={contactText}
+                              onChange={(e) => setContactText(e.target.value)}
+                              placeholder="Contoh: WA 0812-xxxx-xxxx atau Jl. Merdeka No. 10"
+                              className="h-11 text-xs rounded-lg"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              {connectedAccount && (
+                                <button
+                                  type="button"
+                                  onClick={() => setContactText(`@${connectedAccount.username}`)}
+                                  className="min-h-11 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted text-xs font-medium"
+                                >
+                                  Pakai @{connectedAccount.username}
+                                </button>
+                              )}
+                              {activeStore?.address && (
+                                <button
+                                  type="button"
+                                  onClick={() => setContactText(activeStore.address || "")}
+                                  className="min-h-11 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted text-xs font-medium truncate max-w-[240px]"
+                                >
+                                  Pakai Alamat Toko
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Teks Penjelasan (Subheadline)</Label>
-                    <Input
-                      value={subheadline}
-                      onChange={(e) => setSubheadline(e.target.value)}
-                      placeholder="Penjelasan ringkas"
-                      className="text-xs h-9"
-                    />
+                )}
+
+                {/* ==================== TAB 4: ASISTEN AI ==================== */}
+                {activeTab === "ai" && (
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground leading-relaxed">
+                      Gunakan asisten copywriting untuk merangkai kalimat judul poster, caption Instagram/WhatsApp, dan rekomendasi tagar secara otomatis.
+                    </div>
+
+                    {/* Goal Selector */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Tujuan Promosi
+                      </Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {GOAL_OPTIONS.map((item) => {
+                          const Icon = item.icon;
+                          const isSelected = goal === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setGoal(item.id)}
+                              className={`min-h-12 p-3 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border bg-background hover:bg-muted/40 text-foreground"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <Icon className={`w-4 h-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                                <span className="font-semibold text-xs">{item.label}</span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-snug">
+                                {item.desc}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Tone Selector */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Gaya Bahasa
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {TONE_OPTIONS.map((item) => {
+                          const isSelected = tone === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setTone(item.id)}
+                              className={`min-h-11 px-2.5 py-2 rounded-lg border text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-foreground font-semibold"
+                                  : "border-border bg-background hover:bg-muted/50 text-muted-foreground"
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Extra Promo Context */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ai_extra_note" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Detail Promo Tambahan (Opsional)
+                      </Label>
+                      <Textarea
+                        id="ai_extra_note"
+                        value={extraNote}
+                        onChange={(e) => setExtraNote(e.target.value)}
+                        placeholder="Contoh: Beli 2 gratis 1 khusus Jumat sampai Minggu, tersedia pesan antar."
+                        rows={3}
+                        className="text-xs resize-none rounded-lg"
+                        maxLength={1000}
+                      />
+                      {selectedProductIds.length > 0 && (
+                        <p className="text-[11px] text-primary font-medium">
+                          Menyertakan {selectedProductIds.length} produk terpilih dari tab Foto & Produk.
+                        </p>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer py-1">
+                      <input
+                        type="checkbox"
+                        checked={applyAiToPoster}
+                        onChange={(e) => setApplyAiToPoster(e.target.checked)}
+                        className="w-4 h-4 accent-primary rounded"
+                      />
+                      <span>Perbarui juga teks Judul & Subjudul di kanvas poster</span>
+                    </label>
+
+                    <Button
+                      type="button"
+                      onClick={handleGenerateAI}
+                      disabled={isGenerating || !activeStore}
+                      className="w-full min-h-11 gap-2 text-sm font-semibold rounded-lg"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Menyusun Teks Promosi...
+                        </>
+                      ) : (
+                        <>
+                          {/* Purpose (R-04): Wand2 marks explicit user-triggered AI text generation */}
+                          <Wand2 className="w-4 h-4" />
+                          Buat Teks & Caption AI
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Label Harga Promo (Opsional)</Label>
-                    <Input
-                      value={priceText}
-                      onChange={(e) => setPriceText(e.target.value)}
-                      placeholder="Contoh: Mulai Rp 15.000"
-                      className="text-xs h-9"
-                    />
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT COLUMN: Interactive Poster Preview & Caption Editor (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Visual Poster Live Preview */}
-            <Card className="overflow-hidden border-primary/20 shadow-lg">
-              <CardHeader className="py-3 px-4 bg-muted/30 border-b flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-semibold">Pratinjau Poster Instagram (4:5)</CardTitle>
-                  <CardDescription className="text-xs">Resolusi tinggi 1080×1350 px siap diunduh</CardDescription>
-                </div>
-                <Badge variant="outline" className="text-xs uppercase font-mono">
-                  1080 × 1350
-                </Badge>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 flex flex-col items-center bg-black/30">
-                {/* Scaled visual frame */}
-                <div className="relative w-full max-w-[340px] sm:max-w-[380px] aspect-[4/5] rounded-xl overflow-hidden shadow-2xl border border-white/10 group">
-                  {previewImgUrl ? (
-                    <img
-                      src={previewImgUrl}
-                      alt="Pratinjau Poster"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground bg-muted">
-                      Membuat pratinjau...
-                    </div>
-                  )}
-                </div>
-
-                {/* Primary Download & Cloud Action Bar */}
-                <div className="w-full max-w-[380px] grid grid-cols-2 gap-2 mt-4">
-                  <Button
-                    onClick={handleDownloadPoster}
-                    disabled={isDownloading}
-                    className="gap-2 h-10 text-xs font-semibold"
-                  >
-                    <Download className="w-4 h-4" />
-                    Unduh Poster (JPEG)
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={handleSaveToCloud}
-                    disabled={isUploading}
-                    className="gap-2 h-10 text-xs"
-                  >
-                    {isUploading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <CloudUpload className="w-3.5 h-3.5" />
-                    )}
-                    Simpan ke Cloud
-                  </Button>
-                </div>
-
-                {cloudUrl && (
-                  <div className="mt-3 p-2 bg-muted/60 rounded-lg text-[11px] text-muted-foreground flex items-center justify-between w-full max-w-[380px]">
-                    <span className="truncate pr-2">URL: {cloudUrl}</span>
-                    <a
-                      href={cloudUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary hover:underline shrink-0 flex items-center gap-1 font-medium"
-                    >
-                      Buka <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Caption & Hashtag Editor */}
-            <Card>
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Type className="w-4 h-4 text-primary" />
-                    Caption & Tagar Instagram
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Dapat diedit bebas sebelum disalin ke Instagram.
-                  </CardDescription>
-                </div>
-                <Button
-                  size="sm"
-                  variant={isCopied ? "default" : "secondary"}
-                  onClick={handleCopyCaption}
-                  className="gap-1.5 text-xs h-8"
+          {/* RIGHT STICKY STAGE (7 cols on desktop, first on mobile) */}
+          <div className="order-1 lg:order-2 lg:col-span-7 lg:sticky lg:top-6 space-y-4">
+            <Card className="rounded-xl border-border overflow-hidden">
+              {/* Stage Header with Canvas vs Caption Switcher */}
+              <div className="px-4 py-3 border-b border-border bg-card flex flex-wrap items-center justify-between gap-3">
+                <div
+                  role="tablist"
+                  aria-label="Mode tampilan studio"
+                  className="inline-flex rounded-lg border border-border bg-muted/40 p-1 gap-1"
                 >
-                  {isCopied ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      Tersalin!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      Salin Caption
-                    </>
-                  )}
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Tulis atau hasilkan caption di sini..."
-                  rows={6}
-                  className="text-xs leading-relaxed font-sans"
-                />
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-muted-foreground">Tagar Rekomendasi:</Label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {hashtags.map((tag, idx) => (
-                      <Badge
-                        key={idx}
-                        variant="secondary"
-                        className="text-xs font-mono py-1 px-2.5 bg-muted hover:bg-muted/80 cursor-pointer"
-                        onClick={() => {
-                          navigator.clipboard.writeText(tag);
-                        }}
-                        title="Klik untuk salin tagar"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={stageTab === "canvas"}
+                    onClick={() => setStageTab("canvas")}
+                    className={`min-h-11 px-3.5 py-2 rounded-md text-xs font-medium transition-colors ${
+                      stageTab === "canvas"
+                        ? "bg-card text-foreground font-semibold border border-border"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Kanvas Poster
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={stageTab === "caption"}
+                    onClick={() => setStageTab("caption")}
+                    className={`min-h-11 px-3.5 py-2 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                      stageTab === "caption"
+                        ? "bg-card text-foreground font-semibold border border-border"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span>Caption & Tagar</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      {hashtags.length}
+                    </Badge>
+                  </button>
                 </div>
-              </CardContent>
+
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {activeRatioSpec.label}
+                  </Badge>
+                </div>
+              </div>
+
+              {stageTab === "canvas" ? (
+                <>
+                  {/* Matte Neutral Live Poster Stage */}
+                  <div className="p-3 sm:p-5 bg-muted/40 flex flex-col items-center justify-center">
+                    <div
+                      onPointerDown={handleStagePointerDown}
+                      onPointerMove={handleStagePointerMove}
+                      onPointerUp={handleStagePointerUp}
+                      onPointerCancel={handleStagePointerUp}
+                      style={{
+                        aspectRatio: `${activeRatioSpec.width} / ${activeRatioSpec.height}`,
+                      }}
+                      className={`relative max-h-[300px] sm:max-h-[410px] lg:max-h-[450px] w-auto max-w-full rounded-xl overflow-hidden border border-border bg-card select-none ${
+                        loadedImageEl ? "cursor-grab active:cursor-grabbing touch-none" : ""
+                      }`}
+                    >
+                      {previewImgUrl ? (
+                        <img
+                          src={previewImgUrl}
+                          alt="Pratinjau langsung poster toko"
+                          draggable={false}
+                          className="w-full h-full object-contain pointer-events-none"
+                        />
+                      ) : (
+                        <div className="w-64 h-80 flex items-center justify-center text-xs text-muted-foreground">
+                          Menyiapkan kanvas poster...
+                        </div>
+                      )}
+                    </div>
+
+                    {loadedImageEl && (
+                      <p className="mt-2.5 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                        <Move className="w-3.5 h-3.5 text-primary" />
+                        Geser langsung pada poster untuk mengatur posisi foto produk
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Export, Share & Cloud Action Footer */}
+                  <div className="p-4 bg-card border-t border-border space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => handleDownloadPoster("png")}
+                        className="min-h-11 gap-1.5 text-xs font-semibold rounded-lg"
+                      >
+                        <Download className="w-4 h-4 shrink-0" />
+                        <span>Unduh PNG</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleDownloadPoster("jpeg")}
+                        className="min-h-11 gap-1.5 text-xs font-semibold rounded-lg"
+                      >
+                        <Download className="w-4 h-4 shrink-0" />
+                        <span>Unduh JPG</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleQuickShare}
+                        disabled={isSharing}
+                        className="min-h-11 gap-1.5 text-xs font-medium rounded-lg"
+                      >
+                        <Share2 className="w-4 h-4 shrink-0" />
+                        <span>{isSharing ? "Menyiapkan..." : "Bagikan WA/IG"}</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleSaveToCloud}
+                        disabled={isUploadingCloud || !activeStore}
+                        className="min-h-11 gap-1.5 text-xs font-medium rounded-lg"
+                      >
+                        {isUploadingCloud ? (
+                          <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                        ) : (
+                          <CloudUpload className="w-4 h-4 shrink-0" />
+                        )}
+                        <span>Simpan Cloud</span>
+                      </Button>
+                    </div>
+
+                    {cloudUrl && (
+                      <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-xs flex items-center justify-between gap-3">
+                        <span className="truncate text-muted-foreground font-mono text-[11px]">
+                          {cloudUrl}
+                        </span>
+                        <a
+                          href={cloudUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="min-h-11 px-3 inline-flex items-center gap-1 text-primary font-semibold hover:underline shrink-0"
+                        >
+                          Buka File <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* CAPTION & HASHTAGS STAGE VIEW */
+                <CardContent className="p-4 sm:p-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <CardTitle className="text-base font-semibold text-foreground">
+                        Editor Caption & Tagar
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Sesuaikan caption sebelum ditempel ke Instagram, WhatsApp, atau Facebook.
+                      </CardDescription>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyText("caption")}
+                        className="min-h-11 px-3 gap-1.5 text-xs rounded-lg"
+                      >
+                        {copiedMode === "caption" ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-500" />
+                            <span>Tersalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Salin Caption</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleCopyText("all")}
+                        className="min-h-11 px-3.5 gap-1.5 text-xs font-semibold rounded-lg"
+                      >
+                        {copiedMode === "all" ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>Caption + Tagar Tersalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Salin Semua</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Textarea
+                      value={caption}
+                      onChange={(e) => setCaption(e.target.value)}
+                      placeholder="Tulis caption promosi di sini..."
+                      rows={8}
+                      className="text-sm leading-relaxed rounded-lg"
+                    />
+                    <div className="flex justify-end text-[11px] text-muted-foreground">
+                      {caption.length} karakter
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 pt-2 border-t border-border">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Tagar Promosi ({hashtags.length})
+                    </Label>
+
+                    <div className="flex flex-wrap gap-2">
+                      {hashtags.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setHashtags((prev) => prev.filter((t) => t !== tag))}
+                          title={`Klik untuk menghapus ${tag}`}
+                          className="min-h-11 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-muted hover:bg-destructive/10 border border-border text-xs font-mono text-foreground hover:text-destructive transition-colors"
+                        >
+                          <span>{tag}</span>
+                          <X className="w-3.5 h-3.5 opacity-70" />
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Input
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddHashtag();
+                          }
+                        }}
+                        placeholder="Tambah tagar baru (misal: kulinerbandung)"
+                        className="h-11 text-xs rounded-lg"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleAddHashtag}
+                        className="min-h-11 px-4 gap-1.5 text-xs shrink-0 rounded-lg"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Tambah
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           </div>
         </div>
       </div>
 
-      {/* BYOK Modal Dialog */}
-      <Dialog open={byokModalOpen} onOpenChange={setByokModalOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* INSTAGRAM INTEGRATION DIALOG */}
+      <Dialog open={igDialogOpen} onOpenChange={setIgDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5 text-primary" />
-              Gunakan API Key Sendiri (BYOK)
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <InstagramIcon className="w-5 h-5 text-primary" />
+              Integrasi Akun Instagram Bisnis
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              Masukkan API key Groq pribadi Anda untuk mendapatkan kuota pembuatan caption tanpa batas (unlimited). Key disimpan terenkripsi dengan aman.
+            <DialogDescription className="text-xs leading-relaxed">
+              Hubungkan akun Instagram Business atau Creator toko Anda untuk menyinkronkan username toko di poster dan fitur publikasi.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Groq API Key (gsk_...)</Label>
-              <Input
-                type="password"
-                value={byokKey}
-                onChange={(e) => setByokKey(e.target.value)}
-                placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
-                className="font-mono text-xs"
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Kosongkan dan klik simpan jika ingin kembali menggunakan kuota standar bawaan ArthaOS.
-            </p>
-            {byokSuccessMsg && (
-              <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-medium flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                {byokSuccessMsg}
+          <div className="py-2 space-y-3">
+            {connectedAccount ? (
+              <div className="p-3.5 rounded-xl border border-border bg-muted/30 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    @{connectedAccount.username}
+                  </span>
+                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 text-[11px] gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Terhubung
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>
+                    {connectedAccount.token_expires_at
+                      ? `Akses aktif hingga ${new Date(connectedAccount.token_expires_at).toLocaleDateString("id-ID")}`
+                      : "Token akses aktif"}
+                  </span>
+                </div>
+
+                {confirmDisconnectId === connectedAccount.id ? (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/25 space-y-2.5 mt-2">
+                    <p className="text-xs text-destructive font-medium">
+                      Yakin ingin memutuskan koneksi @{connectedAccount.username} dari toko ini?
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfirmDisconnectId(null)}
+                        className="min-h-11 text-xs"
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDisconnectInstagram(connectedAccount.id)}
+                        disabled={isDisconnecting}
+                        className="min-h-11 text-xs"
+                      >
+                        {isDisconnecting ? "Memutuskan..." : "Ya, Putuskan"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setConfirmDisconnectId(connectedAccount.id)}
+                    className="w-full min-h-11 text-xs text-destructive hover:bg-destructive/10 gap-1.5 mt-1"
+                  >
+                    <Unlink className="w-4 h-4" />
+                    Putuskan Akun Instagram
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-border bg-muted/20 space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Belum ada akun Instagram Bisnis yang terhubung. Anda tetap bisa membuat, mengunduh, dan membagikan poster resolusi penuh secara bebas tanpa menghubungkan akun.
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleConnectInstagram}
+                  disabled={isConnecting}
+                  className="w-full min-h-11 gap-2 text-xs font-semibold"
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                  {isConnecting ? "Mengarahkan ke Meta..." : "Hubungkan Instagram Bisnis"}
+                </Button>
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setByokModalOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIgDialogOpen(false)}
+              className="min-h-11 text-xs"
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* BYOK API KEY DIALOG */}
+      <Dialog open={byokModalOpen} onOpenChange={setByokModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Key className="w-5 h-5 text-primary" />
+              Gunakan API Key Sendiri (BYOK)
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              Masukkan Groq API Key pribadi Anda untuk membuka batas kuota bulanan pembuatan teks promosi AI. Kunci disimpan terenkripsi AES-256-GCM.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="byok_input" className="text-xs font-medium">
+                Groq API Key (gsk_...)
+              </Label>
+              <Input
+                id="byok_input"
+                type="password"
+                value={byokKey}
+                onChange={(e) => setByokKey(e.target.value)}
+                placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
+                className="h-11 font-mono text-xs rounded-lg"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Kosongkan kolom lalu klik simpan apabila ingin kembali memakai kuota standar toko ({quota ? `${quota.caption_left}/${quota.caption_limit}` : "15"} tersisa bulan ini).
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setByokModalOpen(false)}
+              className="min-h-11 text-xs"
+            >
               Batal
             </Button>
-            <Button size="sm" onClick={handleSaveBYOK} disabled={isSavingBYOK}>
+            <Button
+              type="button"
+              onClick={handleSaveBYOK}
+              disabled={isSavingBYOK}
+              className="min-h-11 text-xs font-semibold"
+            >
               {isSavingBYOK ? "Menyimpan..." : "Simpan Pengaturan"}
             </Button>
           </DialogFooter>
@@ -1127,63 +2067,7 @@ function SocialContent() {
 export default function SocialMediaPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-background" />}>
-      <SocialContent />
+      <SocialStudioContent />
     </Suspense>
   );
-}
-
-// Canvas helper functions
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
-
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
-  maxLines: number
-) {
-  const words = text.split(" ");
-  let line = "";
-  let lineCount = 0;
-
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + " ";
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-    if (testWidth > maxWidth && n > 0) {
-      ctx.fillText(line, x, y);
-      line = words[n] + " ";
-      y += lineHeight;
-      lineCount++;
-      if (lineCount >= maxLines - 1 && n < words.length - 1) {
-        line = line + words.slice(n + 1).join(" ") + "...";
-        ctx.fillText(line, x, y);
-        return;
-      }
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
 }

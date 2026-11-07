@@ -89,6 +89,8 @@ type RenderPosterRequest struct {
 	Subheadline string `json:"subheadline"`
 	PriceText   string `json:"price_text,omitempty"`
 	BrandColor  string `json:"brand_color,omitempty"`
+	Theme       string `json:"theme,omitempty"`        // light, cream, dark
+	AspectRatio string `json:"aspect_ratio,omitempty"` // 4:5, 9:16, 1:1
 	StoreName   string `json:"store_name,omitempty"`
 	ImageData   string `json:"image_data,omitempty"` // Base64 data URL from frontend canvas (optional)
 	ImageURL    string `json:"image_url,omitempty"`  // Existing image URL
@@ -159,31 +161,73 @@ func NewSocialService(
 func (s *socialService) GetTemplates() []models.PosterTemplate {
 	return []models.PosterTemplate{
 		{
+			ID:                "editorial-fnb",
+			Name:              "Editorial Kuliner & Kopi",
+			Category:          "new_product",
+			DefaultBrandColor: "#C2410C",
+			DefaultTheme:      "cream",
+			DefaultFont:       "editorial",
+			Description:       "Gaya menu editorial hangat dengan bingkai foto proporsional dan tipografi serif elegan.",
+			AspectRatio:       "4:5",
+			Width:             1080,
+			Height:            1350,
+		},
+		{
 			ID:                "promo-deal",
-			Name:              "Promo Diskon & Flash Sale",
+			Name:              "Promo Diskon & Harga Coret",
 			Category:          "promo",
 			DefaultBrandColor: "#E11D48",
-			Description:       "Desain tebal berenergi tinggi dengan badge harga dan aksen promo mencolok.",
+			DefaultTheme:      "light",
+			DefaultFont:       "promo-bold",
+			Description:       "Tata letak ritel tegas dengan sorotan harga coret, kalkulasi persen hemat, dan CTA jelas.",
+			AspectRatio:       "4:5",
+			Width:             1080,
+			Height:            1350,
+		},
+		{
+			ID:                "hero-scrim",
+			Name:              "Foto Penuh (Full Hero)",
+			Category:          "promo",
+			DefaultBrandColor: "#D97706",
+			DefaultTheme:      "dark",
+			DefaultFont:       "modern",
+			Description:       "Foto produk memenuhi kanvas dengan gradasi baca halus untuk tampilan visual maksimal.",
 			AspectRatio:       "4:5",
 			Width:             1080,
 			Height:            1350,
 		},
 		{
 			ID:                "new-arrival",
-			Name:              "Produk Baru & Menu Baru",
+			Name:              "Katalog Minimalis Bersih",
 			Category:          "new_product",
-			DefaultBrandColor: "#4F46E5",
-			Description:       "Tampilan modern dan estetik untuk peluncuran menu atau kedatangan stok baru.",
+			DefaultBrandColor: "#0F766E",
+			DefaultTheme:      "light",
+			DefaultFont:       "modern",
+			Description:       "Komposisi galeri bersih bergaris tipis untuk produk baru, fesyen, atau katalog toko.",
+			AspectRatio:       "4:5",
+			Width:             1080,
+			Height:            1350,
+		},
+		{
+			ID:                "warm-artisan",
+			Name:              "Bingkai Lengkung Artisan",
+			Category:          "promo",
+			DefaultBrandColor: "#9333EA",
+			DefaultTheme:      "cream",
+			DefaultFont:       "warm-casual",
+			Description:       "Jendela foto lengkung lembut untuk kuliner rumahan, hampers, roti, dan paket spesial.",
 			AspectRatio:       "4:5",
 			Width:             1080,
 			Height:            1350,
 		},
 		{
 			ID:                "tips-quote",
-			Name:              "Tips, Edukasi & Quote Toko",
+			Name:              "Info Toko & Kutipan",
 			Category:          "education",
-			DefaultBrandColor: "#059669",
-			Description:       "Layout tipografi editorial elegan untuk kutipan inspiratif dan tips pelanggan.",
+			DefaultBrandColor: "#2563EB",
+			DefaultTheme:      "light",
+			DefaultFont:       "editorial",
+			Description:       "Fokus tipografi rapi untuk pengumuman jam buka, edukasi pelanggan, dan kutipan brand.",
 			AspectRatio:       "4:5",
 			Width:             1080,
 			Height:            1350,
@@ -415,13 +459,23 @@ func (s *socialService) RenderPoster(ctx context.Context, storeID uint, req Rend
 	relativeURL := fmt.Sprintf("/uploads/posters/%s", randomFilename)
 	fullURL := fmt.Sprintf("%s%s", s.appBaseURL, relativeURL)
 
+	bounds := outputImg.Bounds()
+	renderedWidth := bounds.Dx()
+	renderedHeight := bounds.Dy()
+	if renderedWidth <= 0 {
+		renderedWidth = 1080
+	}
+	if renderedHeight <= 0 {
+		renderedHeight = 1350
+	}
+
 	return &RenderPosterResponse{
 		URL:        relativeURL,
 		FullURL:    fullURL,
 		Filename:   randomFilename,
 		TemplateID: req.TemplateID,
-		Width:      1080,
-		Height:     1350,
+		Width:      renderedWidth,
+		Height:     renderedHeight,
 		Format:     "jpeg",
 		FileSize:   fileSize,
 	}, nil
@@ -468,39 +522,56 @@ func parseHexColor(hexStr string, defaultColor color.RGBA) color.RGBA {
 	return defaultColor
 }
 
+func resolvePosterDimensions(aspectRatio string) (int, int) {
+	switch strings.TrimSpace(aspectRatio) {
+	case "9:16":
+		return 1080, 1920
+	case "1:1":
+		return 1080, 1080
+	default:
+		return 1080, 1350
+	}
+}
+
 func generateServerPoster(req RenderPosterRequest) image.Image {
-	width := 1080
-	height := 1350
+	width, height := resolvePosterDimensions(req.AspectRatio)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	brandColor := parseHexColor(req.BrandColor, color.RGBA{R: 225, G: 29, B: 72, A: 255}) // Default rose
+	brandColor := parseHexColor(req.BrandColor, color.RGBA{R: 225, G: 29, B: 72, A: 255})
+	theme := strings.ToLower(strings.TrimSpace(req.Theme))
 
-	// Fill background with a modern gradient dark theme
-	for y := 0; y < height; y++ {
-		ratio := float64(y) / float64(height)
-		// Blend from brand dark tint to deep charcoal
-		r := uint8(float64(brandColor.R)*0.25*(1-ratio) + 15*ratio)
-		g := uint8(float64(brandColor.G)*0.25*(1-ratio) + 23*ratio)
-		b := uint8(float64(brandColor.B)*0.25*(1-ratio) + 42*ratio)
-		c := color.RGBA{R: r, G: g, B: b, A: 255}
-		for x := 0; x < width; x++ {
-			img.Set(x, y, c)
+	switch theme {
+	case "light":
+		bg := color.RGBA{R: 250, G: 249, B: 246, A: 255}
+		draw.Draw(img, img.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
+		cardColor := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+		draw.Draw(img, image.Rect(72, 180, width-72, height-180), &image.Uniform{cardColor}, image.Point{}, draw.Src)
+	case "cream":
+		bg := color.RGBA{R: 245, G: 239, B: 230, A: 255}
+		draw.Draw(img, img.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
+		cardColor := color.RGBA{R: 252, G: 248, B: 242, A: 255}
+		draw.Draw(img, image.Rect(72, 180, width-72, height-180), &image.Uniform{cardColor}, image.Point{}, draw.Src)
+	default:
+		for y := 0; y < height; y++ {
+			ratio := float64(y) / float64(height)
+			r := uint8(float64(brandColor.R)*0.20*(1-ratio) + 16*ratio)
+			g := uint8(float64(brandColor.G)*0.20*(1-ratio) + 18*ratio)
+			b := uint8(float64(brandColor.B)*0.20*(1-ratio) + 24*ratio)
+			c := color.RGBA{R: r, G: g, B: b, A: 255}
+			for x := 0; x < width; x++ {
+				img.Set(x, y, c)
+			}
 		}
+		cardRect := image.Rect(72, 200, width-72, height-200)
+		cardColor := color.RGBA{R: 255, G: 255, B: 255, A: 16}
+		draw.Draw(img, cardRect, &image.Uniform{cardColor}, image.Point{}, draw.Over)
 	}
 
-	// Draw top decorative accent bar
-	accentBar := image.Rect(0, 0, width, 24)
+	accentBar := image.Rect(0, 0, width, 20)
 	draw.Draw(img, accentBar, &image.Uniform{brandColor}, image.Point{}, draw.Src)
 
-	// Draw decorative card in the middle
-	cardRect := image.Rect(80, 240, width-80, height-240)
-	cardColor := color.RGBA{R: 255, G: 255, B: 255, A: 16}
-	draw.Draw(img, cardRect, &image.Uniform{cardColor}, image.Point{}, draw.Over)
-
-	// Draw bottom brand banner
-	footerRect := image.Rect(0, height-120, width, height)
-	footerColor := color.RGBA{R: 10, G: 15, B: 30, A: 255}
-	draw.Draw(img, footerRect, &image.Uniform{footerColor}, image.Point{}, draw.Src)
+	footerRect := image.Rect(72, height-140, width-72, height-60)
+	draw.Draw(img, footerRect, &image.Uniform{brandColor}, image.Point{}, draw.Src)
 
 	return img
 }

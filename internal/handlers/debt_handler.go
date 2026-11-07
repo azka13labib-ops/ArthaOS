@@ -37,7 +37,7 @@ func (h *DebtHandler) GetDebts(c fiber.Ctx) error {
 
 type PayDebtRequest struct {
 	Amount        int64   `json:"amount"         validate:"required,gt=0"`
-	PaymentMethod string  `json:"payment_method" validate:"required,oneof=cash transfer"`
+	PaymentMethod string  `json:"payment_method" validate:"required,oneof=cash transfer qris"`
 	Notes         *string `json:"notes"`
 }
 

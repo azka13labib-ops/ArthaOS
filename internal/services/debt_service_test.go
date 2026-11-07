@@ -59,7 +59,7 @@ func TestDebtService_PayDebt_Integration(t *testing.T) {
 		StoreID:         testStoreID,
 		CustomerID:      cust.ID,
 		TransactionID:   &trx.ID,
-		Source:          "pos_kasbon",
+		Source:          "sale",
 		OriginalAmount:  100000,
 		RemainingAmount: 100000,
 		Status:          "unpaid",

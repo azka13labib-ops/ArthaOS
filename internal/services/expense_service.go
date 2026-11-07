@@ -26,6 +26,7 @@ func NewExpenseService(db *gorm.DB, trxRepo repository.TransactionRepository) Ex
 
 type ExpenseRequest struct {
 	TotalAmount int64                `json:"total_amount"`
+	Category    string               `json:"category"`
 	Description string               `json:"description"`
 	Payments    []SaleRequestPayment `json:"payments"`
 }
@@ -65,12 +66,18 @@ func (s *expenseService) CreateExpense(storeID uint, req ExpenseRequest) (*model
 		desc = &req.Description
 	}
 
+	var category *string
+	if req.Category != "" {
+		category = &req.Category
+	}
+
 	trx := models.Transaction{
-		StoreID:     storeID,
-		Type:        "expense",
-		TotalAmount: req.TotalAmount,
-		Description: desc,
-		OccurredAt:  time.Now(),
+		StoreID:         storeID,
+		Type:            "expense",
+		TotalAmount:     req.TotalAmount,
+		Description:     desc,
+		ExpenseCategory: category,
+		OccurredAt:      time.Now(),
 	}
 
 	err := s.trxRepo.CreateTransaction(s.db, &trx, nil, payments, nil, nil)
@@ -82,5 +89,5 @@ func (s *expenseService) CreateExpense(storeID uint, req ExpenseRequest) (*model
 }
 
 func (s *expenseService) GetExpenses(storeID uint, limit, offset int) ([]models.Transaction, error) {
-	return s.trxRepo.GetByStore(storeID, limit, offset)
+	return s.trxRepo.GetByStoreAndType(storeID, "expense", limit, offset)
 }

@@ -71,6 +71,7 @@ type SaleRequest struct {
 	Items         []SaleRequestItem    `json:"items"`
 	Payments      []SaleRequestPayment `json:"payments"`
 	Description   string               `json:"description"`
+	TaxAmount     int64                `json:"tax_amount"`
 }
 
 func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transaction, error) {
@@ -223,6 +224,18 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 				if p.CustomerID == nil {
 					return errors.New("customer_id must not be null when payment_method is debt")
 				}
+
+				// Security Loophole #5: Validasi kepemilikan customer_id (Cegah IDOR lintas outlet)
+				var cust models.Customer
+				if err := tx.Where("id = ? AND store_id = ?", *p.CustomerID, storeID).First(&cust).Error; err != nil {
+					return errors.New("pelanggan kasbon tidak ditemukan atau bukan milik outlet ini")
+				}
+
+				// Loophole #9: Hanya boleh 1 metode kasbon per transaksi
+				if debt != nil {
+					return errors.New("hanya diperbolehkan satu pembayaran kasbon per transaksi")
+				}
+
 				debtAmount += p.Amount
 
 				var dueDate *time.Time
@@ -256,9 +269,23 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 			})
 		}
 
-		if totalPaid != totalAmount {
-			return errors.New("sum of payments must equal total amount")
+		// Loophole #2: Dukungan fitur Pajak Restoran / PB1 (10%)
+		var storeSettings models.StoreSettings
+		isTaxEnabled := false
+		if err := tx.Where("store_id = ?", storeID).First(&storeSettings).Error; err == nil {
+			isTaxEnabled = storeSettings.FeatureTaxCalculation
 		}
+
+		expectedTotal := totalAmount
+		if isTaxEnabled {
+			taxCalc := int64(float64(totalAmount) * 0.10)
+			expectedTotal = totalAmount + taxCalc
+		}
+
+		if totalPaid != totalAmount && totalPaid != expectedTotal {
+			return fmt.Errorf("sum of payments (%d) must equal total amount (%d)", totalPaid, expectedTotal)
+		}
+		totalAmount = totalPaid
 
 		var desc *string
 		if req.Description != "" {
@@ -315,7 +342,7 @@ func (s *saleService) CreateSale(storeID uint, req SaleRequest) (*models.Transac
 }
 
 func (s *saleService) GetSales(storeID uint, limit, offset int) ([]models.Transaction, error) {
-	return s.trxRepo.GetByStore(storeID, limit, offset)
+	return s.trxRepo.GetByStoreAndType(storeID, "sale", limit, offset)
 }
 
 func (s *saleService) VoidSale(storeID uint, transactionID uint, authorizedByID uint, reason string) (*models.Transaction, error) {
@@ -342,37 +369,119 @@ func (s *saleService) VoidSale(storeID uint, transactionID uint, authorizedByID 
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Reverse stock and raw materials for each transaction item
-		for _, item := range trx.Items {
-			product, err := s.productRepo.GetByIDAndStoreWithLock(tx, item.ProductID, storeID)
-			if err != nil {
-				return fmt.Errorf("gagal memuat data produk ID %d: %w", item.ProductID, err)
-			}
-
-			if product.IsRecipeBased {
-				// Revert raw materials
-				var recipes []models.RecipeItem
-				if err := tx.Where("product_id = ?", item.ProductID).Find(&recipes).Error; err != nil {
-					return err
+		// 1. Revert stock and raw materials based on exact historical movements
+		var movements []models.InventoryMovement
+		if err := tx.Where("store_id = ? AND reference_type = ? AND reference_id = ?", storeID, "sale", trx.ID).Find(&movements).Error; err == nil && len(movements) > 0 {
+			for _, m := range movements {
+				revertQty := -m.QuantityDelta // reverse negative delta to positive
+				if revertQty <= 0 {
+					continue
 				}
-				for _, r := range recipes {
-					restockQty := r.Quantity * item.Quantity
+
+				if m.RawMaterialID != nil {
 					res := tx.Exec(`
 						UPDATE raw_materials 
 						SET current_stock = current_stock + $1, updated_at = NOW() 
 						WHERE id = $2 AND store_id = $3
-					`, restockQty, r.RawMaterialID, storeID)
+					`, revertQty, *m.RawMaterialID, storeID)
 					if res.Error != nil {
 						return res.Error
 					}
 
-					rmID := r.RawMaterialID
-					notes := fmt.Sprintf("Void sale #%d: pengembalian resep %s", trx.ID, product.Name)
+					notes := fmt.Sprintf("Void sale #%d: pengembalian bahan baku", trx.ID)
+					voidMovement := models.InventoryMovement{
+						StoreID:       storeID,
+						RawMaterialID: m.RawMaterialID,
+						MovementType:  "adjustment",
+						QuantityDelta: revertQty,
+						ReferenceType: "transaction",
+						ReferenceID:   &trx.ID,
+						Notes:         &notes,
+					}
+					if err := tx.Create(&voidMovement).Error; err != nil {
+						return err
+					}
+				} else if m.ProductID != nil {
+					res := tx.Exec(`
+						UPDATE products 
+						SET current_stock = current_stock + $1, updated_at = NOW() 
+						WHERE id = $2 AND store_id = $3
+					`, revertQty, *m.ProductID, storeID)
+					if res.Error != nil {
+						return res.Error
+					}
+
+					notes := fmt.Sprintf("Void sale #%d: pengembalian produk", trx.ID)
+					voidMovement := models.InventoryMovement{
+						StoreID:       storeID,
+						ProductID:     m.ProductID,
+						MovementType:  "adjustment",
+						QuantityDelta: revertQty,
+						ReferenceType: "transaction",
+						ReferenceID:   &trx.ID,
+						Notes:         &notes,
+					}
+					if err := tx.Create(&voidMovement).Error; err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			// Fallback jika transaksi lawas tidak memiliki inventory_movements
+			for _, item := range trx.Items {
+				product, err := s.productRepo.GetByIDAndStoreWithLock(tx, item.ProductID, storeID)
+				if err != nil {
+					return fmt.Errorf("gagal memuat data produk ID %d: %w", item.ProductID, err)
+				}
+
+				if product.IsRecipeBased {
+					var recipes []models.RecipeItem
+					if err := tx.Where("product_id = ?", item.ProductID).Find(&recipes).Error; err != nil {
+						return err
+					}
+					for _, r := range recipes {
+						restockQty := r.Quantity * item.Quantity
+						res := tx.Exec(`
+							UPDATE raw_materials 
+							SET current_stock = current_stock + $1, updated_at = NOW() 
+							WHERE id = $2 AND store_id = $3
+						`, restockQty, r.RawMaterialID, storeID)
+						if res.Error != nil {
+							return res.Error
+						}
+
+						rmID := r.RawMaterialID
+						notes := fmt.Sprintf("Void sale #%d: pengembalian resep %s", trx.ID, product.Name)
+						movement := models.InventoryMovement{
+							StoreID:       storeID,
+							RawMaterialID: &rmID,
+							MovementType:  "adjustment",
+							QuantityDelta: restockQty,
+							ReferenceType: "transaction",
+							ReferenceID:   &trx.ID,
+							Notes:         &notes,
+						}
+						if err := tx.Create(&movement).Error; err != nil {
+							return err
+						}
+					}
+				} else {
+					res := tx.Exec(`
+						UPDATE products 
+						SET current_stock = current_stock + $1, updated_at = NOW() 
+						WHERE id = $2 AND store_id = $3
+					`, item.Quantity, item.ProductID, storeID)
+					if res.Error != nil {
+						return res.Error
+					}
+
+					pid := item.ProductID
+					notes := fmt.Sprintf("Void sale #%d: pengembalian produk %s", trx.ID, product.Name)
 					movement := models.InventoryMovement{
 						StoreID:       storeID,
-						RawMaterialID: &rmID,
+						ProductID:     &pid,
 						MovementType:  "adjustment",
-						QuantityDelta: restockQty,
+						QuantityDelta: item.Quantity,
 						ReferenceType: "transaction",
 						ReferenceID:   &trx.ID,
 						Notes:         &notes,
@@ -381,37 +490,17 @@ func (s *saleService) VoidSale(storeID uint, transactionID uint, authorizedByID 
 						return err
 					}
 				}
-			} else {
-				// Revert standard product stock
-				res := tx.Exec(`
-					UPDATE products 
-					SET current_stock = current_stock + $1, updated_at = NOW() 
-					WHERE id = $2 AND store_id = $3
-				`, item.Quantity, item.ProductID, storeID)
-				if res.Error != nil {
-					return res.Error
-				}
-
-				pid := item.ProductID
-				notes := fmt.Sprintf("Void sale #%d: pengembalian produk %s", trx.ID, product.Name)
-				movement := models.InventoryMovement{
-					StoreID:       storeID,
-					ProductID:     &pid,
-					MovementType:  "adjustment",
-					QuantityDelta: item.Quantity,
-					ReferenceType: "transaction",
-					ReferenceID:   &trx.ID,
-					Notes:         &notes,
-				}
-				if err := tx.Create(&movement).Error; err != nil {
-					return err
-				}
 			}
 		}
 
 		// 2. Reverse / cancel associated debt if paid via debt
 		var debt models.Debt
-		if err := tx.Where("store_id = ? AND transaction_id = ?", storeID, trx.ID).First(&debt).Error; err == nil {
+		if err := tx.Preload("Payments").Where("store_id = ? AND transaction_id = ?", storeID, trx.ID).First(&debt).Error; err == nil {
+			// Loophole #8: Cegah pembatalan transaksi jika kasbon sudah mulai dicicil
+			if len(debt.Payments) > 0 || debt.RemainingAmount < debt.OriginalAmount {
+				return errors.New("tidak dapat membatalkan transaksi: kasbon sudah memiliki pembayaran cicilan")
+			}
+
 			if err := tx.Model(&debt).Updates(map[string]interface{}{
 				"remaining_amount": 0,
 				"status":           "paid",

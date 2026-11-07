@@ -54,6 +54,7 @@ func (h *ExpenseHandler) Create(c fiber.Ctx) error {
 
 	serviceReq := services.ExpenseRequest{
 		TotalAmount: req.Amount,
+		Category:    req.Category,
 		Description: req.Description,
 		Payments:    payments,
 	}

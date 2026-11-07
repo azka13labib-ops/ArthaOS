@@ -1,6 +1,8 @@
 package services
 
 import (
+	"app/internal/models"
+
 	"gorm.io/gorm"
 )
 
@@ -72,13 +74,25 @@ func NewReportService(db *gorm.DB) ReportService {
 	return &reportService{db}
 }
 
+func (s *reportService) getStoreTimezone(storeID uint) string {
+	var tz string
+	_ = s.db.Model(&models.Store{}).Where("id = ?", storeID).Select("timezone").Scan(&tz).Error
+	if tz == "" {
+		tz = "Asia/Jakarta"
+	}
+	return tz
+}
+
 func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (*ProfitLossReport, error) {
+	tz := s.getStoreTimezone(storeID)
+
 	var grossSales int64
 	err := s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&grossSales).Error
+		WHERE store_id = ? AND type = 'sale' AND status != 'voided' 
+			AND (occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
+	`, storeID, tz, startDate, endDate).Scan(&grossSales).Error
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +102,9 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 		SELECT COALESCE(SUM(ti.cost_price * ti.quantity), 0)
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' AND DATE(t.occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&cogs).Error
+		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' 
+			AND (t.occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
+	`, storeID, tz, startDate, endDate).Scan(&cogs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +113,9 @@ func (s *reportService) GetProfitLoss(storeID uint, startDate, endDate string) (
 	err = s.db.Raw(`
 		SELECT COALESCE(SUM(total_amount), 0)
 		FROM transactions
-		WHERE store_id = ? AND type = 'expense' AND status != 'voided' AND DATE(occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&expenses).Error
+		WHERE store_id = ? AND type = 'expense' AND status != 'voided' 
+			AND (occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
+	`, storeID, tz, startDate, endDate).Scan(&expenses).Error
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +189,8 @@ func (s *reportService) GetStockValuation(storeID uint) (*StockValuationReport, 
 }
 
 func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*CashFlowReport, error) {
+	tz := s.getStoreTimezone(storeID)
+
 	// Cash flow follows actual payment methods, not sale totals: debt is receivable, not cash in.
 	var cashIn int64
 	err := s.db.Raw(`
@@ -183,8 +201,8 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 			AND t.status != 'voided'
 			AND t.type IN ('sale', 'debt_payment')
 			AND tp.payment_method != 'debt'
-			AND DATE(t.occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&cashIn).Error
+			AND (t.occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
+	`, storeID, tz, startDate, endDate).Scan(&cashIn).Error
 	if err != nil {
 		return nil, err
 	}
@@ -194,8 +212,9 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 		SELECT COALESCE(SUM(tp.amount), 0)
 		FROM transaction_payments tp
 		JOIN transactions t ON t.id = tp.transaction_id
-		WHERE t.store_id = ? AND t.status != 'voided' AND t.type = 'expense' AND DATE(t.occurred_at) BETWEEN ? AND ?
-	`, storeID, startDate, endDate).Scan(&operatingExpenses).Error
+		WHERE t.store_id = ? AND t.status != 'voided' AND t.type = 'expense' 
+			AND (t.occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
+	`, storeID, tz, startDate, endDate).Scan(&operatingExpenses).Error
 	if err != nil {
 		return nil, err
 	}
@@ -210,15 +229,15 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 				AND payment_status = 'paid'
 				AND payment_method != 'debt'
 				AND id NOT IN (SELECT purchase_id FROM supplier_payments WHERE store_id = ?)
-				AND DATE(purchase_date) BETWEEN ? AND ?
+				AND (purchase_date AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
 			UNION ALL
 			-- Supplier debt/tempo repayments recorded on actual payment_date
 			SELECT COALESCE(SUM(amount), 0) AS total
 			FROM supplier_payments
 			WHERE store_id = ?
-				AND DATE(payment_date) BETWEEN ? AND ?
+				AND (payment_date AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
 		) combined
-	`, storeID, storeID, startDate, endDate, storeID, startDate, endDate).Scan(&stockPurchases).Error
+	`, storeID, storeID, tz, startDate, endDate, storeID, tz, startDate, endDate).Scan(&stockPurchases).Error
 	if err != nil {
 		return nil, err
 	}
@@ -234,9 +253,9 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 			AND t.status != 'voided'
 			AND t.type IN ('sale', 'debt_payment')
 			AND tp.payment_method != 'debt'
-			AND DATE(t.occurred_at) BETWEEN ? AND ?
+			AND (t.occurred_at AT TIME ZONE ?)::date BETWEEN ?::date AND ?::date
 		GROUP BY tp.payment_method
-	`, storeID, startDate, endDate).Scan(&paymentMethods).Error; err != nil {
+	`, storeID, tz, startDate, endDate).Scan(&paymentMethods).Error; err != nil {
 		return nil, err
 	}
 
@@ -253,19 +272,36 @@ func (s *reportService) GetCashFlow(storeID uint, startDate, endDate string) (*C
 }
 
 func (s *reportService) GetDashboardMetrics(storeID uint) (*DashboardMetrics, error) {
+	tz := s.getStoreTimezone(storeID)
+
 	// A summary for the dashboard
 	var totalSales int64
-	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalSales).Error; err != nil {
+	if err := s.db.Raw(`
+		SELECT COALESCE(SUM(total_amount), 0) 
+		FROM transactions 
+		WHERE store_id = ? AND type = 'sale' AND status != 'voided' 
+			AND (occurred_at AT TIME ZONE ?)::date = (CURRENT_TIMESTAMP AT TIME ZONE ?)::date
+	`, storeID, tz, tz).Scan(&totalSales).Error; err != nil {
 		return nil, err
 	}
 
 	var totalExpenses int64
-	if err := s.db.Raw("SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE store_id = ? AND type = 'expense' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalExpenses).Error; err != nil {
+	if err := s.db.Raw(`
+		SELECT COALESCE(SUM(total_amount), 0) 
+		FROM transactions 
+		WHERE store_id = ? AND type = 'expense' AND status != 'voided' 
+			AND (occurred_at AT TIME ZONE ?)::date = (CURRENT_TIMESTAMP AT TIME ZONE ?)::date
+	`, storeID, tz, tz).Scan(&totalExpenses).Error; err != nil {
 		return nil, err
 	}
 
 	var totalTransactions int64
-	if err := s.db.Raw("SELECT COUNT(*) FROM transactions WHERE store_id = ? AND type = 'sale' AND status != 'voided' AND DATE(occurred_at) = CURRENT_DATE", storeID).Scan(&totalTransactions).Error; err != nil {
+	if err := s.db.Raw(`
+		SELECT COUNT(*) 
+		FROM transactions 
+		WHERE store_id = ? AND type = 'sale' AND status != 'voided' 
+			AND (occurred_at AT TIME ZONE ?)::date = (CURRENT_TIMESTAMP AT TIME ZONE ?)::date
+	`, storeID, tz, tz).Scan(&totalTransactions).Error; err != nil {
 		return nil, err
 	}
 
@@ -275,11 +311,12 @@ func (s *reportService) GetDashboardMetrics(storeID uint) (*DashboardMetrics, er
 		FROM transaction_items ti
 		JOIN transactions t ON t.id = ti.transaction_id
 		JOIN products p ON p.id = ti.product_id
-		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' AND DATE(t.occurred_at) = CURRENT_DATE
+		WHERE t.store_id = ? AND t.type = 'sale' AND t.status != 'voided' 
+			AND (t.occurred_at AT TIME ZONE ?)::date = (CURRENT_TIMESTAMP AT TIME ZONE ?)::date
 		GROUP BY p.name
 		ORDER BY quantity DESC
 		LIMIT 5
-	`, storeID).Scan(&topProducts).Error; err != nil {
+	`, storeID, tz, tz).Scan(&topProducts).Error; err != nil {
 		return nil, err
 	}
 

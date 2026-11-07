@@ -63,7 +63,8 @@ func (h *RawMaterialHandler) GetAll(c fiber.Ctx) error {
 }
 
 type AdjustRawMaterialStockRequest struct {
-	QuantityDelta int `json:"quantity_delta" validate:"required"`
+	QuantityDelta int    `json:"quantity_delta" validate:"required"`
+	Notes         string `json:"notes"          validate:"max=500"`
 }
 
 func (h *RawMaterialHandler) AdjustStock(c fiber.Ctx) error {
@@ -86,7 +87,7 @@ func (h *RawMaterialHandler) AdjustStock(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Validation failed", "fields": errs})
 	}
 
-	if err := h.rmService.UpdateStock(storeID, uint(id), req.QuantityDelta); err != nil {
+	if err := h.rmService.UpdateStock(storeID, uint(id), req.QuantityDelta, req.Notes); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 

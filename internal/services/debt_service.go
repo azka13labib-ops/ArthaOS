@@ -60,17 +60,6 @@ func (s *debtService) PayDebt(storeID uint, debtID uint, amount int64, paymentMe
 		}
 
 		now := time.Now()
-		payment = &models.DebtPayment{
-			DebtID:        debtID,
-			Amount:        amount,
-			PaymentMethod: paymentMethod,
-			PaidAt:        now,
-			Notes:         notes,
-		}
-		if err := s.debtRepo.CreatePayment(tx, payment); err != nil {
-			return err
-		}
-
 		desc := fmt.Sprintf("Payment for debt %d", debtID)
 		if notes != nil {
 			desc += " - " + *notes
@@ -90,6 +79,18 @@ func (s *debtService) PayDebt(storeID uint, debtID uint, amount int64, paymentMe
 		}
 
 		if err := s.trxRepo.CreateTransaction(tx, trx, nil, []models.TransactionPayment{trxPayment}, nil, nil); err != nil {
+			return err
+		}
+
+		payment = &models.DebtPayment{
+			DebtID:        debtID,
+			TransactionID: trx.ID,
+			Amount:        amount,
+			PaymentMethod: paymentMethod,
+			PaidAt:        now,
+			Notes:         notes,
+		}
+		if err := s.debtRepo.CreatePayment(tx, payment); err != nil {
 			return err
 		}
 

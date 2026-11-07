@@ -115,6 +115,21 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 		paymentMethod = "cash"
 	}
 
+	// Loophole #12: Validasi konsistensi status dan metode pembayaran pembelian
+	if paymentMethod == "debt" {
+		if paymentStatus != "pending" {
+			return nil, errors.New("pembelian dengan metode kasbon/tempo harus berstatus 'pending'")
+		}
+		if req.SupplierID == nil || *req.SupplierID == 0 {
+			return nil, errors.New("pembelian tempo/kasbon wajib memilih pemasok (supplier) terdaftar")
+		}
+	} else if paymentStatus == "pending" && paymentMethod != "debt" {
+		// Jika pending tanpa debt, tetap wajib ada supplier agar tercatat hutang usaha
+		if req.SupplierID == nil || *req.SupplierID == 0 {
+			return nil, errors.New("faktur pembelian tempo wajib memilih pemasok (supplier) terdaftar")
+		}
+	}
+
 	var purchase *models.Purchase
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -169,9 +184,23 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 					return fmt.Errorf("bahan baku ID %d tidak ditemukan: %w", *it.RawMaterialID, err)
 				}
 
-				rm.CurrentStock += it.Quantity
-				if it.BuyPrice > 0 {
-					rm.CostPerUnit = it.BuyPrice
+				// Loophole #10: Weighted Moving Average Costing untuk bahan baku
+				oldStock := rm.CurrentStock
+				oldCost := rm.CostPerUnit
+				newQty := it.Quantity
+				newPrice := it.BuyPrice
+
+				rm.CurrentStock += newQty
+				if newPrice > 0 {
+					if oldStock <= 0 {
+						rm.CostPerUnit = newPrice
+					} else {
+						totalVal := (int64(oldStock) * oldCost) + (int64(newQty) * newPrice)
+						totalStock := int64(oldStock + newQty)
+						if totalStock > 0 {
+							rm.CostPerUnit = totalVal / totalStock
+						}
+					}
 				}
 				if err := tx.Save(&rm).Error; err != nil {
 					return err
@@ -197,9 +226,23 @@ func (s *purchaseService) Create(storeID uint, req CreatePurchaseRequest) (*mode
 					return fmt.Errorf("produk ID %d tidak ditemukan: %w", *it.ProductID, err)
 				}
 
-				prod.CurrentStock += it.Quantity
-				if it.BuyPrice > 0 {
-					prod.BuyPrice = it.BuyPrice
+				// Loophole #10: Weighted Moving Average Costing untuk produk retail
+				oldStock := prod.CurrentStock
+				oldCost := prod.BuyPrice
+				newQty := it.Quantity
+				newPrice := it.BuyPrice
+
+				prod.CurrentStock += newQty
+				if newPrice > 0 {
+					if oldStock <= 0 {
+						prod.BuyPrice = newPrice
+					} else {
+						totalVal := (int64(oldStock) * oldCost) + (int64(newQty) * newPrice)
+						totalStock := int64(oldStock + newQty)
+						if totalStock > 0 {
+							prod.BuyPrice = totalVal / totalStock
+						}
+					}
 				}
 				if err := tx.Save(&prod).Error; err != nil {
 					return err
@@ -264,7 +307,8 @@ func (s *purchaseService) AddPayment(storeID uint, purchaseID uint, req CreateSu
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		var purchase models.Purchase
-		if err := tx.Where("id = ? AND store_id = ?", purchaseID, storeID).First(&purchase).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND store_id = ?", purchaseID, storeID).First(&purchase).Error; err != nil {
 			return errors.New("data faktur pembelian tidak ditemukan")
 		}
 
@@ -280,6 +324,9 @@ func (s *purchaseService) AddPayment(storeID uint, purchaseID uint, req CreateSu
 		remaining := purchase.TotalAmount - existingPaid
 		if remaining <= 0 {
 			return errors.New("faktur pembelian ini sudah lunas")
+		}
+		if req.Amount > remaining {
+			return fmt.Errorf("nominal pembayaran (Rp %d) melebihi sisa tagihan faktur (Rp %d)", req.Amount, remaining)
 		}
 
 		payment = &models.SupplierPayment{

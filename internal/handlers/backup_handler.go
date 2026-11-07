@@ -92,6 +92,15 @@ func (h *BackupHandler) Restore(c fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized", "code": "UNAUTHORIZED"})
 	}
+
+	// Security Loophole #4: Cegah penimpaan database global SaaS oleh sembarang pemilik outlet
+	if !h.cfg.IsDevelopment() {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Fitur pemulihan database global dinonaktifkan via API untuk menjaga isolasi data multi-tenant",
+			"code":  "RESTORE_FORBIDDEN",
+		})
+	}
+
 	userID, _ := c.Locals("user_id").(uint)
 
 	var req RestoreRequest

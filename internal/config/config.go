@@ -79,3 +79,7 @@ func LoadConfig() Config {
 func (c Config) IsProduction() bool {
 	return c.AppEnv == "production"
 }
+
+func (c Config) IsDevelopment() bool {
+	return c.AppEnv == "development" || c.AppEnv == "local" || c.AppEnv == "test" || c.AppEnv == ""
+}

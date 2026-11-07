@@ -42,7 +42,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB, cfg config.Config, pool *worker.Po
 	customerService := services.NewCustomerService(customerRepo)
 	debtService := services.NewDebtService(db, debtRepo, trxRepo)
 	reportService := services.NewReportService(db)
-	rmService := services.NewRawMaterialService(rmRepo)
+	rmService := services.NewRawMaterialService(db, rmRepo, invRepo)
 	recipeService := services.NewRecipeService(recipeRepo, productRepo, rmRepo)
 	supplierService := services.NewSupplierService(supplierRepo)
 	purchaseService := services.NewPurchaseService(db, purchaseRepo)

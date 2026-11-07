@@ -264,8 +264,47 @@ CREATE TABLE push_subscriptions (
 );
 
 -- ==========================================
--- 7. SUPPLIER PAYMENTS & SOCIAL MARKETING
+-- 7. PURCHASES, SUPPLIERS & SOCIAL MARKETING
 -- ==========================================
+CREATE TABLE suppliers (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    email VARCHAR(100),
+    address TEXT,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE purchases (
+    id SERIAL PRIMARY KEY,
+    store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+    invoice_number VARCHAR(100) NOT NULL,
+    purchase_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    total_amount BIGINT NOT NULL DEFAULT 0,
+    payment_status VARCHAR(50) DEFAULT 'paid' NOT NULL,
+    payment_method VARCHAR(50) DEFAULT 'cash' NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE purchase_items (
+    id SERIAL PRIMARY KEY,
+    purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,
+    item_type VARCHAR(50) NOT NULL DEFAULT 'product',
+    product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+    raw_material_id INTEGER REFERENCES raw_materials(id) ON DELETE SET NULL,
+    item_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    buy_price BIGINT NOT NULL,
+    subtotal BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE supplier_payments (
     id SERIAL PRIMARY KEY,
     purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,

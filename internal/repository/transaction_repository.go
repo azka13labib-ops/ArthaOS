@@ -16,6 +16,7 @@ type TransactionRepository interface {
 	CreateTransaction(tx *gorm.DB, trx *models.Transaction, items []models.TransactionItem, payments []models.TransactionPayment, movements []models.InventoryMovement, debt *models.Debt) error
 	GetByIDAndStore(id uint, storeID uint) (*models.Transaction, error)
 	GetByStore(storeID uint, limit int, offset int) ([]models.Transaction, error)
+	GetByStoreAndType(storeID uint, trxType string, limit int, offset int) ([]models.Transaction, error)
 	GetSalesAggregate(storeID uint) (*SalesAggregate, error)
 }
 
@@ -83,6 +84,19 @@ func (r *transactionRepository) GetByIDAndStore(id uint, storeID uint) (*models.
 func (r *transactionRepository) GetByStore(storeID uint, limit int, offset int) ([]models.Transaction, error) {
 	var trxs []models.Transaction
 	q := r.db.Preload("Items").Preload("Payments").Where("store_id = ?", storeID).Order("occurred_at DESC")
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	if offset > 0 {
+		q = q.Offset(offset)
+	}
+	err := q.Find(&trxs).Error
+	return trxs, err
+}
+
+func (r *transactionRepository) GetByStoreAndType(storeID uint, trxType string, limit int, offset int) ([]models.Transaction, error) {
+	var trxs []models.Transaction
+	q := r.db.Preload("Items").Preload("Payments").Where("store_id = ? AND type = ?", storeID, trxType).Order("occurred_at DESC")
 	if limit > 0 {
 		q = q.Limit(limit)
 	}

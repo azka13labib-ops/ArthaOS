@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"app/internal/models"
@@ -115,6 +116,15 @@ func (r *settingsRepository) AcceptInvitation(token string, userID uint) error {
 		var inv models.StoreInvitation
 		if err := tx.Where("token = ? AND accepted_at IS NULL AND expires_at > ?", token, time.Now()).First(&inv).Error; err != nil {
 			return err
+		}
+
+		// Security Loophole #6: Verifikasi bahwa email user yang login cocok dengan email yang diundang
+		var user models.User
+		if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
+			return errors.New("user tidak ditemukan")
+		}
+		if !strings.EqualFold(strings.TrimSpace(user.Email), strings.TrimSpace(inv.Email)) {
+			return errors.New("email akun yang login tidak sesuai dengan email pada tautan undangan")
 		}
 
 		now := time.Now()

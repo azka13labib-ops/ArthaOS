@@ -27,6 +27,10 @@ func (s *recipeService) Create(storeID, productID, rawMaterialID uint, quantity 
 	if quantity <= 0 {
 		return nil, errors.New("recipe quantity must be greater than zero")
 	}
+	if quantity > 1000000 {
+		return nil, errors.New("kuantitas bahan per porsi melebihi batas wajar (maksimal 1.000.000 unit)")
+	}
+
 	prod, err := s.productRepo.GetByIDAndStore(productID, storeID)
 	if err != nil {
 		return nil, errors.New("product not found")
@@ -40,6 +44,16 @@ func (s *recipeService) Create(storeID, productID, rawMaterialID uint, quantity 
 		if err := s.productRepo.SetRecipeBased(productID, storeID, true); err != nil {
 			return nil, errors.New("failed to enable recipe mode on product")
 		}
+	}
+
+	// Jika bahan baku ini sudah ada di dalam resep produk, perbarui kuantitasnya (upsert)
+	existing, err := s.recipeRepo.FindItem(productID, rawMaterialID)
+	if err == nil && existing != nil && existing.ID > 0 {
+		existing.Quantity = quantity
+		if err := s.recipeRepo.Update(existing); err != nil {
+			return nil, err
+		}
+		return existing, nil
 	}
 
 	item := &models.RecipeItem{
@@ -56,5 +70,23 @@ func (s *recipeService) GetByProductID(storeID, productID uint) ([]models.Recipe
 }
 
 func (s *recipeService) Delete(storeID, id uint) error {
-	return s.recipeRepo.Delete(storeID, id)
+	// Dapatkan info item untuk mengetahui productID sebelum dihapus
+	item, err := s.recipeRepo.GetByIDAndStore(storeID, id)
+	if err != nil {
+		return errors.New("komponen resep tidak ditemukan")
+	}
+	productID := item.ProductID
+
+	if err := s.recipeRepo.Delete(storeID, id); err != nil {
+		return err
+	}
+
+	// Cek apakah produk masih memiliki komponen resep lain
+	remainingCount, err := s.recipeRepo.CountByProduct(productID)
+	if err == nil && remainingCount == 0 {
+		// Jika 0 bahan tersisa, reset is_recipe_based kembali ke false agar produk tidak terkunci
+		_ = s.productRepo.SetRecipeBased(productID, storeID, false)
+	}
+
+	return nil
 }

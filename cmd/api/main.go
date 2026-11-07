@@ -56,6 +56,7 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
+		BodyLimit:       12 * 1024 * 1024,
 		ReadBufferSize:  64 * 1024,
 		WriteBufferSize: 64 * 1024,
 		ErrorHandler: func(c fiber.Ctx, err error) error {

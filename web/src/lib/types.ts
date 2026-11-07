@@ -21,6 +21,8 @@ export interface Product {
   buy_price: number;
   sell_price: number;
   current_stock: number;
+  is_recipe_based?: boolean;
+  recipe_items?: RecipeItem[];
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -166,6 +168,9 @@ export interface DashboardMetrics {
 export interface BatchSyncResponse {
   synced_sales: number;
   failed_sales: number;
+  synced_ids?: string[];
+  failed_ids?: string[];
+  errors?: string[];
 }
 
 export interface StoreSettings {
@@ -304,6 +309,8 @@ export interface PosterTemplate {
   name: string;
   category: "promo" | "new_product" | "education";
   default_brand_color: string;
+  default_theme?: "light" | "cream" | "dark";
+  default_font?: "modern" | "editorial" | "promo-bold" | "warm-casual";
   description: string;
   aspect_ratio: string;
   width: number;

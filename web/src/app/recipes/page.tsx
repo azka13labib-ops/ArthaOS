@@ -668,16 +668,16 @@ export default function RecipesPage() {
                   ) : (
                     <>
                       {/* Desktop Table View */}
-                      <div className="hidden sm:block overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
+                      <div className="hidden sm:block overflow-x-auto w-full">
+                        <table className="w-full min-w-[620px] text-left text-sm whitespace-nowrap">
                           <thead className="bg-muted/30 text-muted-foreground border-b border-border text-xs uppercase tracking-wider font-semibold">
                             <tr>
-                              <th className="px-5 py-3">Bahan Baku</th>
-                              <th className="px-5 py-3 text-right">Kebutuhan / Porsi</th>
-                              <th className="px-5 py-3 text-right">Harga Pokok Modal</th>
-                              <th className="px-5 py-3 text-right">Subtotal Biaya</th>
-                              <th className="px-5 py-3 text-right">Kontribusi HPP</th>
-                              <th className="px-5 py-3 text-center">Aksi</th>
+                              <th className="px-3.5 py-2.5 sm:px-4 sm:py-3">Bahan Baku</th>
+                              <th className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right">Kebutuhan / Porsi</th>
+                              <th className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right">Harga Pokok Modal</th>
+                              <th className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right">Subtotal Biaya</th>
+                              <th className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right">Kontribusi HPP</th>
+                              <th className="px-2 py-2.5 sm:px-3 sm:py-3 text-center">Aksi</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
@@ -692,7 +692,7 @@ export default function RecipesPage() {
                                   key={item.id}
                                   className="hover:bg-muted/20 transition-colors"
                                 >
-                                  <td className="px-5 py-3.5">
+                                  <td className="px-3.5 py-2.5 sm:px-4 sm:py-3">
                                     <div className="font-semibold text-foreground">
                                       {item.material?.name || "Bahan Baku"}
                                     </div>
@@ -702,7 +702,7 @@ export default function RecipesPage() {
                                       {item.material?.unit}
                                     </div>
                                   </td>
-                                  <td className="px-5 py-3.5 text-right font-medium text-foreground">
+                                  <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right font-medium text-foreground">
                                     <span className="text-base font-bold">
                                       {item.quantity}
                                     </span>{" "}
@@ -710,18 +710,18 @@ export default function RecipesPage() {
                                       {item.material?.unit}
                                     </span>
                                   </td>
-                                  <td className="px-5 py-3.5 text-right text-xs text-muted-foreground">
+                                  <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right text-xs text-muted-foreground">
                                     {formatIDR(item.costPerUnit)} / {item.material?.unit}
                                   </td>
-                                  <td className="px-5 py-3.5 text-right font-bold text-foreground">
+                                  <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right font-bold text-foreground">
                                     {formatIDR(item.subtotalCost)}
                                   </td>
-                                  <td className="px-5 py-3.5 text-right">
+                                  <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right">
                                     <span className="text-xs font-semibold text-muted-foreground">
                                       {contributionPercent.toFixed(1)}%
                                     </span>
                                   </td>
-                                  <td className="px-5 py-3.5 text-center">
+                                  <td className="px-2 py-2.5 sm:px-3 sm:py-3 text-center">
                                     <Button
                                       type="button"
                                       variant="ghost"
@@ -739,13 +739,13 @@ export default function RecipesPage() {
                           </tbody>
                           <tfoot className="bg-muted/20 border-t border-border font-bold">
                             <tr>
-                              <td className="px-5 py-3 text-foreground" colSpan={3}>
+                              <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-foreground" colSpan={3}>
                                 Total Biaya HPP per Porsi:
                               </td>
-                              <td className="px-5 py-3 text-right text-primary text-base">
+                              <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right text-primary text-base">
                                 {formatIDR(hppAnalysis?.totalHPP || 0)}
                               </td>
-                              <td className="px-5 py-3 text-right text-xs text-muted-foreground">
+                              <td className="px-3.5 py-2.5 sm:px-4 sm:py-3 text-right text-xs text-muted-foreground">
                                 100%
                               </td>
                               <td></td>

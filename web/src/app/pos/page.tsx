@@ -36,6 +36,25 @@ import { api } from "@/lib/api";
 import { formatIDR, formatDate } from "@/lib/utils";
 import { Product, Customer, CartItem, Transaction } from "@/lib/types";
 
+export function getAvailableStock(product: Product): number {
+  if (product.is_recipe_based) {
+    if (!product.recipe_items || product.recipe_items.length === 0) {
+      return 0;
+    }
+    let maxPortions = Infinity;
+    for (const item of product.recipe_items) {
+      if (!item.quantity || item.quantity <= 0) continue;
+      const rawStock = item.raw_material?.current_stock ?? 0;
+      const portions = Math.floor(rawStock / item.quantity);
+      if (portions < maxPortions) {
+        maxPortions = portions;
+      }
+    }
+    return maxPortions === Infinity ? 0 : Math.max(0, maxPortions);
+  }
+  return product.current_stock ?? 0;
+}
+
 function PosContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -127,7 +146,8 @@ function PosContent() {
       if (!di.productId || !di.quantity || isNaN(di.productId) || isNaN(di.quantity)) continue;
       const product = products.find((p) => p.id === di.productId);
       if (!product) continue;
-      const qty = Math.min(di.quantity, product.current_stock);
+      const available = getAvailableStock(product);
+      const qty = Math.min(di.quantity, available);
       if (qty <= 0) continue;
       newCart.push({ product, quantity: qty });
     }
@@ -150,12 +170,13 @@ function PosContent() {
 
   // Cart operations
   const addToCart = (product: Product) => {
-    if (product.current_stock <= 0) return;
+    const available = getAvailableStock(product);
+    if (available <= 0) return;
 
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        if (existing.quantity >= product.current_stock) return prev;
+        if (existing.quantity >= available) return prev;
         return prev.map((item) =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
@@ -173,7 +194,8 @@ function PosContent() {
           if (item.product.id === productId) {
             const nextQty = item.quantity + delta;
             if (nextQty <= 0) return null;
-            if (nextQty > item.product.current_stock) return item;
+            const available = getAvailableStock(item.product);
+            if (nextQty > available) return item;
             return { ...item, quantity: nextQty };
           }
           return item;
@@ -290,8 +312,20 @@ function PosContent() {
       try {
         transactionResponse = await api.sales.create(activeStore.id, payload);
       } catch (err: unknown) {
-        // 2. If it fails (likely network error), save to offline queue
-        console.warn("Network error or server unreachable. Saving to offline queue.", err);
+        const errorObj = err as Error & { status?: number };
+        const isNetworkErr =
+          !navigator.onLine ||
+          errorObj.status === undefined ||
+          errorObj.status === 0 ||
+          errorObj.name === "TypeError";
+
+        if (!isNetworkErr) {
+          // Real backend validation or business error (e.g. HTTP 400 "stok bahan baku tidak mencukupi")
+          throw err;
+        }
+
+        // True network drop: queue offline
+        console.warn("Network offline. Saving to offline queue.", err);
         isOffline = true;
         const offlineQueueRaw = localStorage.getItem(`offline_sales_${activeStore.id}`);
         const offlineQueue = offlineQueueRaw ? JSON.parse(offlineQueueRaw) : [];
@@ -324,6 +358,24 @@ function PosContent() {
         prev.map((prod) => {
           const cartMatch = cart.find((c) => c.product.id === prod.id);
           if (cartMatch) {
+            if (prod.is_recipe_based && prod.recipe_items) {
+              const updatedRecipeItems = prod.recipe_items.map((ri) => {
+                const deduction = cartMatch.quantity * ri.quantity;
+                return {
+                  ...ri,
+                  raw_material: ri.raw_material
+                    ? {
+                        ...ri.raw_material,
+                        current_stock: Math.max(0, ri.raw_material.current_stock - deduction),
+                      }
+                    : ri.raw_material,
+                };
+              });
+              return {
+                ...prod,
+                recipe_items: updatedRecipeItems,
+              };
+            }
             return {
               ...prod,
               current_stock: Math.max(0, prod.current_stock - cartMatch.quantity),
@@ -332,6 +384,9 @@ function PosContent() {
           return prod;
         })
       );
+
+      // Silently revalidate products from backend in background
+      api.products.list(activeStore.id).then((fresh) => setProducts(fresh)).catch(() => {});
 
       setCompletedTransaction(transactionResponse);
       setIsCheckoutOpen(false);
@@ -369,7 +424,7 @@ function PosContent() {
     
     try {
       const offlineQueue = JSON.parse(offlineQueueRaw);
-      if (offlineQueue.length === 0) return;
+      if (!Array.isArray(offlineQueue) || offlineQueue.length === 0) return;
       
       // Clean up temp_id before sending to backend, ensure correlation_id is preserved
       const transactionsToSync = offlineQueue.map((tx: { temp_id?: number; correlation_id?: string; [key: string]: unknown }) => {
@@ -381,10 +436,20 @@ function PosContent() {
         return copy;
       });
       
-      await api.sales.batchSync(storeId, transactionsToSync as Parameters<typeof api.sales.batchSync>[1]);
-      // Clear queue on success
-      localStorage.removeItem(`offline_sales_${storeId}`);
-      console.log("Offline sync successful");
+      const res = await api.sales.batchSync(storeId, transactionsToSync as Parameters<typeof api.sales.batchSync>[1]);
+      if (res && Array.isArray(res.synced_ids) && res.synced_ids.length > 0) {
+        const remaining = offlineQueue.filter(
+          (tx: { correlation_id?: string }) => !res.synced_ids!.includes(tx.correlation_id || "")
+        );
+        if (remaining.length > 0) {
+          localStorage.setItem(`offline_sales_${storeId}`, JSON.stringify(remaining));
+        } else {
+          localStorage.removeItem(`offline_sales_${storeId}`);
+        }
+      } else if (res && res.failed_sales === 0) {
+        localStorage.removeItem(`offline_sales_${storeId}`);
+      }
+      console.log("Offline sync completed:", res);
     } catch (err) {
       console.error("Background sync failed, will retry later.", err);
     }
@@ -496,7 +561,8 @@ function PosContent() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredProducts.map((p) => {
-                  const isOutOfStock = p.current_stock <= 0;
+                  const availableStock = getAvailableStock(p);
+                  const isOutOfStock = availableStock <= 0;
                   const inCartItem = cart.find((c) => c.product.id === p.id);
 
                   return (
@@ -520,7 +586,7 @@ function PosContent() {
                             {p.sku}
                           </span>
                           {inCartItem && (
-                            <span className="w-5 h-5 bg-primary text-foreground text-foreground font-bold text-[11px] flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 bg-primary text-foreground font-bold text-[11px] rounded flex items-center justify-center shrink-0">
                               {inCartItem.quantity}
                             </span>
                           )}
@@ -531,20 +597,20 @@ function PosContent() {
                       </div>
 
                       {/* Price & Stock info */}
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                         <span className="text-sm font-bold text-primary">
                           {formatIDR(p.sell_price)}
                         </span>
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 uppercase tracking-wide ${
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
                             isOutOfStock
-                              ? "bg-rose-100 text-rose-700"
-                              : p.current_stock <= 5
-                              ? "bg-amber-100 text-amber-800"
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400"
+                              : availableStock <= 5
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
-                          {isOutOfStock ? "Habis" : `${p.current_stock} pcs`}
+                          {isOutOfStock ? "Habis" : `${availableStock} ${p.is_recipe_based ? "porsi" : "pcs"}`}
                         </span>
                       </div>
                     </button>
@@ -624,7 +690,7 @@ function PosContent() {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.product.id, 1)}
-                          disabled={item.quantity >= item.product.current_stock}
+                          disabled={item.quantity >= getAvailableStock(item.product)}
                           className="w-8 h-8 sm:w-9 sm:h-9 rounded text-foreground hover:bg-muted active:scale-95 disabled:opacity-30 flex items-center justify-center transition-transform"
                           aria-label="Tambah jumlah"
                         >

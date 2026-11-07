@@ -589,7 +589,7 @@ export default function PurchasesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[700px] text-left text-sm">
                 <thead className="bg-muted/50 border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="py-3 px-4">No. Faktur</th>
@@ -780,7 +780,7 @@ export default function PurchasesPage() {
 
       {/* Modal 1: Catat Pembelian Baru */}
       <Dialog open={isPurchaseModalOpen} onOpenChange={setIsPurchaseModalOpen}>
-        <DialogContent className="w-full sm:max-w-4xl max-h-[92vh] overflow-y-auto p-6 sm:p-8 rounded-2xl border border-border shadow-2xl bg-card">
+        <DialogContent className="w-full max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[92vh] overflow-y-auto p-5 sm:p-7 rounded-2xl border border-border shadow-2xl bg-card min-w-0">
           <DialogHeader className="pb-4 border-b border-border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -859,12 +859,19 @@ export default function PurchasesPage() {
                   <Label className="text-xs font-medium text-foreground">Status Pembayaran Faktur</Label>
                   <select
                     value={purchaseForm.payment_status}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newStatus = e.target.value as "paid" | "pending";
                       setPurchaseForm({
                         ...purchaseForm,
-                        payment_status: e.target.value as "paid" | "pending",
-                      })
-                    }
+                        payment_status: newStatus,
+                        payment_method:
+                          newStatus === "paid" && purchaseForm.payment_method === "debt"
+                            ? "cash"
+                            : newStatus === "pending" && purchaseForm.payment_method === "cash"
+                            ? "debt"
+                            : purchaseForm.payment_method,
+                      });
+                    }}
                     className="w-full mt-1.5 h-10 px-3 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
                     <option value="paid">✓ Lunas Sekarang</option>
@@ -876,18 +883,25 @@ export default function PurchasesPage() {
                   <Label className="text-xs font-medium text-foreground">Metode Pembayaran</Label>
                   <select
                     value={purchaseForm.payment_method}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newMethod = e.target.value as "cash" | "transfer" | "debt";
                       setPurchaseForm({
                         ...purchaseForm,
-                        payment_method: e.target.value as "cash" | "transfer" | "debt",
-                      })
-                    }
+                        payment_method: newMethod,
+                        payment_status: newMethod === "debt" ? "pending" : purchaseForm.payment_status,
+                      });
+                    }}
                     className="w-full mt-1.5 h-10 px-3 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   >
                     <option value="cash">Tunai (Cash)</option>
                     <option value="transfer">Transfer Rekening Bank</option>
                     <option value="debt">Kasbon / Tempo Supplier</option>
                   </select>
+                  {purchaseForm.payment_method === "debt" && !purchaseForm.supplier_id && (
+                    <p className="text-[11px] text-amber-500 font-medium mt-1">
+                      * Pembayaran tempo mewajibkan memilih pemasok terdaftar di atas.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -950,8 +964,8 @@ export default function PurchasesPage() {
               </div>
 
               {/* Items Table */}
-              <div className="rounded-xl border border-border overflow-hidden shadow-xs">
-                <table className="w-full text-left text-xs">
+              <div className="rounded-xl border border-border overflow-x-auto shadow-xs">
+                <table className="w-full min-w-[560px] text-left text-xs">
                   <thead className="bg-muted/70 border-b border-border uppercase tracking-wider text-muted-foreground font-semibold">
                     <tr>
                       <th className="py-2.5 px-4">Nama Barang</th>

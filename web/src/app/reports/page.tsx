@@ -32,6 +32,13 @@ import { formatIDR } from "@/lib/utils";
 import { exportToCSV, printFormattedReport } from "@/lib/exportUtils";
 import { ProfitLossReport, StockValuationReport, CashFlowReport } from "@/lib/types";
 
+function formatLocalDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function ReportsPage() {
   const router = useRouter();
   const { token, isLoading: authLoading } = useAuth();
@@ -45,11 +52,10 @@ export default function ReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Date Filters
-  const todayStr = new Date().toISOString().split("T")[0];
-  const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
+  // Date Filters (Local Timezone)
+  const now = new Date();
+  const todayStr = formatLocalDate(now);
+  const firstDayOfMonth = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(todayStr);
@@ -117,28 +123,28 @@ export default function ReportsPage() {
     year: "numeric",
   })}`;
 
-  // Quick Preset Handlers
+  // Quick Preset Handlers (Local Timezone)
   const handlePreset = (preset: "today" | "7days" | "month" | "last_month") => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const current = new Date();
+    const today = formatLocalDate(current);
 
     if (preset === "today") {
       setStartDate(today);
       setEndDate(today);
     } else if (preset === "7days") {
-      const d = new Date(now);
+      const d = new Date(current);
       d.setDate(d.getDate() - 6);
-      setStartDate(d.toISOString().split("T")[0]);
+      setStartDate(formatLocalDate(d));
       setEndDate(today);
     } else if (preset === "month") {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-      setStartDate(firstDay);
+      const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
+      setStartDate(formatLocalDate(firstDay));
       setEndDate(today);
     } else if (preset === "last_month") {
-      const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split("T")[0];
-      const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
-      setStartDate(firstDayLastMonth);
-      setEndDate(lastDayLastMonth);
+      const firstDayLastMonth = new Date(current.getFullYear(), current.getMonth() - 1, 1);
+      const lastDayLastMonth = new Date(current.getFullYear(), current.getMonth(), 0);
+      setStartDate(formatLocalDate(firstDayLastMonth));
+      setEndDate(formatLocalDate(lastDayLastMonth));
     }
   };
 

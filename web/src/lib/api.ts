@@ -60,7 +60,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   if (!response.ok) {
     const errorMsg = data?.error || data?.message || response.statusText || "Permintaan gagal diproses";
-    throw new Error(errorMsg);
+    const err = new Error(errorMsg) as Error & { status?: number; data?: unknown };
+    err.status = response.status;
+    err.data = data;
+    throw err;
   }
 
   return data as T;
@@ -591,6 +594,9 @@ export const api = {
         subheadline: string;
         price_text?: string;
         brand_color?: string;
+        theme?: string;
+        aspect_ratio?: string;
+        store_name?: string;
         image_data?: string;
         image_url?: string;
       }
